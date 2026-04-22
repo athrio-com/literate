@@ -1,0 +1,18 @@
+# Goal Status (base vocabulary)
+
+Closed set of `Status:` values a session-Goal can carry.
+
+## Members
+
+- `Active` — being worked on now.
+- `Completed` — Acceptance met; set atomically on completion.
+- `Superseded by Goal N` — replaced by a later Goal.
+- `Abandoned` — retired without completion; gated.
+
+## Transitions
+
+```
+Active → Completed
+Active → Superseded by Goal N
+Active → Abandoned (gated)
+```

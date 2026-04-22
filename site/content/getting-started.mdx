@@ -1,0 +1,53 @@
+---
+title: Getting started
+description: Install the CLI, scaffold a repo, run your first session.
+---
+
+# Getting started
+
+LF is published as a set of npm packages under `@literate/*`. The
+CLI is `@literate/cli`; the framework primitives are
+`@literate/core` and individual `@literate/concept-*` and
+`@literate/trope-*` packages.
+
+## 1. Install the CLI
+
+```bash
+bun add -d @literate/cli
+# or
+npm install --save-dev @literate/cli
+```
+
+## 2. Scaffold a repo
+
+```bash
+bunx literate init minimal --target ./my-project
+```
+
+This copies the `minimal` template — a `corpus/` tree, a
+`package.json` with the `"literate"` manifest, and a `CLAUDE.md` —
+and runs `compile` to materialise `.literate/`.
+
+## 3. Author your first ADR
+
+Open `.literate/tropes/adr-flow/TROPE.mdx` and follow the steps:
+draft the file at `corpus/decisions/ADR-001-<slug>.md`, ensure tags
+are members of `corpus/categories/tags.md`, present for the
+review gate.
+
+## 4. Start a session
+
+Create a session log at
+`corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md` per the `session`
+Trope. Draft Goals, gate them, then begin work.
+
+## 5. Compose
+
+When you want more Tropes:
+
+```bash
+bunx literate add trope @literate/trope-term
+```
+
+This appends the package to the `"literate"` manifest and
+recompiles.

@@ -1,0 +1,34 @@
+# ADR-Flow Trope
+
+The workflow Trope for creating an ADR. Draft → gate → Accept →
+dependent updates.
+
+## Steps
+
+1. **Find next number.** Scan `corpus/decisions/` for the highest
+   existing ADR number; next number is highest + 1, zero-padded to
+   three digits.
+2. **Draft the file.** Write at
+   `corpus/decisions/ADR-NNN-<slug>.md` with the canonical header
+   and `Context`, `Decision`, `Consequences` sections filled under
+   the Person's direction.
+3. **Validate tags.** Every tag must be a declared member of the
+   consumer's Tag category. A tag not in the closed set is a
+   blocker: either the tag is added via a gated category revision,
+   or a different tag is chosen.
+4. **Present for gate.** AI presents the draft to the Person for
+   Accept / Correct / Clarify / Reject.
+5. **On Accept:** stamp `Status: Accepted`, add a row to
+   `decisions.md`, apply any supersession (updating the superseded
+   ADR's `Status:` atomically). Add the ADR to the current
+   session's `## Decisions Made` section.
+6. **On Reject:** delete the file, return the number to the pool.
+7. **On Correct:** rewrite in place and re-present.
+8. **On Clarify:** explore alternatives without rewriting; resolve
+   to Accept / Correct / Reject.
+
+## Effect service
+
+This Trope contributes an `AdrFlow` service via its `layer`. The
+CLI uses the default Layer; consumers can substitute their own
+(e.g. for richer numbering schemes or git-aware staging).

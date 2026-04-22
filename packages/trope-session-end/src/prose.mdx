@@ -1,0 +1,30 @@
+# Session-End Trope
+
+The workflow Trope that closes every LF session. Validates the log,
+stamps the Closed status, and (when configured) produces a git
+commit.
+
+## Validations
+
+Before stamping Closed:
+
+1. `## Goals` section exists and contains at least one entry. Every
+   entry carries a `Status` (post-Accept). No entry remains
+   `Active`.
+2. `## Decisions Made` exists.
+3. `## Work Done` exists and is populated.
+4. `## Summary` exists and is non-empty.
+5. `## Deferred / Discovered` exists.
+
+On validation fail, the Trope returns
+`SessionEndIncomplete` listing what is missing. The session stays
+Open until the gaps are resolved.
+
+## Steps
+
+1. Run validations.
+2. Stamp the header `Status:` line:
+   `Closed (YYYY-MM-DDTHH:MM)` in UTC.
+3. Update `corpus/sessions/sessions.md` row.
+4. (Optional) Produce a git commit with an imperative subject
+   derived from the session slug and Summary.

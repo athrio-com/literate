@@ -1,0 +1,33 @@
+# Decisions Trope
+
+The canonical realisation of the `decisions` Concept. Declares the
+on-disk shape of decision files, the append-only discipline, the
+mutable `Status` line, and the subkind mechanism.
+
+## File layout
+
+Decisions live at `corpus/decisions/<SUBKIND>-NNN-<slug>.md` with a
+zero-padded three-digit number. The subkind prefix distinguishes
+families: `ADR` (Architecture Decision Record, the v0.1 default).
+The folder index is `corpus/decisions/decisions.md` with columns
+`# | Title | Status | Tags`.
+
+## Mutability
+
+- Body is append-only once `Accepted`.
+- `Status:` line is the sole mutable part of an accepted decision.
+- The folder index is mechanical.
+
+## Tags
+
+Every decision carries at least one tag drawn from the consumer's
+`corpus/categories/tags.md` (closed set). A tag not in the set is a
+blocker; either the set is extended via a gated category revision,
+or a different tag is chosen.
+
+## Subkinds
+
+Subkinds are refinements *within* the decisions Trope, not
+alternative realisations of the Concept. v0.1 ships the `ADR`
+subkind; other subkinds (SDR for story decisions, PDR for product
+decisions) plug in by exporting another `Subkind` value.

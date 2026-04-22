@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node / Bun / future tooling
+node_modules/
+dist/
+build/
+.turbo/
+.cache/
+.moon/cache/
+coverage/
+
+# Next.js
+.next/
+out/
+
+# Local scratch
+.scratch/
+temp/

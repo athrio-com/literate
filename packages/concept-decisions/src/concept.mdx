@@ -1,0 +1,37 @@
+# Decisions
+
+A decision is a record of an architectural or structural choice made
+during a product's development. Each decision lives as a single file
+in `corpus/decisions/` with an append-only body and a mutable
+`Status` line. The reasoning chain is preserved; only the record of
+whether the decision is in force (`Accepted`, `Deferred`,
+`Superseded by ...`) is mutated over time.
+
+The `decisions` Concept supports subkinds. v0.1 ships one subkind —
+**ADR** (Architecture Decision Record) — realising the classical
+form. Future subkinds (SDR for story decisions in book projects,
+PDR for product decisions) realise the same Concept with different
+framing and conventions.
+
+## Shape
+
+A decision file carries a header (`# <SUBKIND>-NNN — title`,
+`Date:`, `Status:`, `Tags:`), a `Context:` block, a `Decision:` block
+(optionally with structured sub-sections), and a `Consequences:`
+block. An optional `Deferred:` block scopes follow-up work.
+
+## Mutability
+
+- Body is append-only once Accepted. No editing of `Context`,
+  `Decision`, or `Consequences`.
+- `Status:` line is the sole mutable part.
+- Accepted → Superseded by the later decision's number, atomically
+  on the new decision's Accept.
+- The folder index (`decisions.md`) is fully mutable; it is
+  mechanical and reflects the folder state.
+
+## Relationships
+
+- Realised by the `decisions` Trope with the ADR subkind.
+- Depends on `corpus` (decisions live inside it).
+- Depends on `category` (tags are drawn from a closed Tag category).

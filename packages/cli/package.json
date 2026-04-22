@@ -1,0 +1,48 @@
+{
+  "name": "@literate/cli",
+  "version": "0.1.0",
+  "description": "The `literate` CLI — scaffold, compile, check, and manage .literate/ in consumer repos.",
+  "license": "(MIT OR Apache-2.0)",
+  "type": "module",
+  "bin": {
+    "literate": "./src/bin.ts"
+  },
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun run src/bin.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@effect/cli": "^0.48.0",
+    "@effect/platform": "^0.69.0",
+    "@effect/platform-bun": "^0.49.0",
+    "@literate/core": "workspace:*",
+    "@literate/concept-concept": "workspace:*",
+    "@literate/concept-trope": "workspace:*",
+    "@literate/concept-corpus": "workspace:*",
+    "@literate/concept-session": "workspace:*",
+    "@literate/concept-decisions": "workspace:*",
+    "@literate/concept-category": "workspace:*",
+    "@literate/concept-chapters": "workspace:*",
+    "@literate/trope-corpus": "workspace:*",
+    "@literate/trope-session": "workspace:*",
+    "@literate/trope-session-start": "workspace:*",
+    "@literate/trope-session-end": "workspace:*",
+    "@literate/trope-decisions": "workspace:*",
+    "@literate/trope-category": "workspace:*",
+    "@literate/trope-chapters": "workspace:*",
+    "@literate/trope-adr-flow": "workspace:*",
+    "@literate/trope-goal-flow": "workspace:*",
+    "@literate/template-minimal": "workspace:*",
+    "effect": "^3.10.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/bun": "latest"
+  }
+}

@@ -1,0 +1,57 @@
+# Concept
+
+A Concept is the metalanguage entry for a kind of thing LF
+recognises. Concepts are the *interfaces* of the three-level
+algebra: they declare what something *is* — its schema, invariants,
+and relationships — without prescribing how it is *done*. A Concept
+is realised by a Trope, which carries the prose and code that
+satisfy the Concept's contract.
+
+## Two scopes
+
+Concepts come in two scopes; the shape and machinery are identical
+(ADR-010).
+
+- **At the LF level.** A Concept ships as a TypeScript workspace
+  package (`@literate/concept-<id>`) that exports a `Concept<I>`
+  value carrying an Effect Schema for its instance shape, an MDX
+  prose body, and dependency references to other Concepts. This
+  is how LF declares its own metalanguage (`session`, `decisions`,
+  `category`, etc.).
+- **At the corpus level.** A consumer authors their own Concepts
+  as markdown files at `corpus/concepts/<slug>.md`. Each file is
+  an authored instance of the `concept` Concept itself: a header,
+  a one-paragraph definition, a `## Used in` list, and optional
+  `## Not to be confused with` and `## See also` sections. This is
+  how a consumer declares the reserved vocabulary of their
+  product (e.g. *Tenant*, *Workflow*, *Approval Chain*).
+
+The two scopes share the same gating discipline: new Concepts and
+material revisions pass the review gate; editorial revisions are
+ungated.
+
+## Capitalisation
+
+Concepts authored at the corpus level are capitalised in prose
+(*Person*, *Protocol*, *Approval Chain*) to distinguish them from
+generic English usage. A reference that does not capitalise is not
+a Concept reference.
+
+## Relationships
+
+- Every LF-level Concept has exactly one canonical realising Trope
+  at v0.1 (ADR-008). Multi-realisation is structurally permitted
+  but unimplemented.
+- A Concept may depend on other Concepts; LF-level dependencies are
+  typed module references and are validated at compile time.
+- Corpus-level Concepts cite each other via `## See also` and are
+  validated only structurally in v0.1; cross-reference resolution
+  is follow-up work.
+- The `concept` Concept is its own root: it declares itself.
+
+## Open questions
+
+- Whether a Concept's instance Schema can be parametric (one
+  Concept, many Schema variants chosen by consumer config) is
+  deferred. Subkinds (within a Trope) are the v0.1 mechanism for
+  variation under a single Concept.

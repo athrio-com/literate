@@ -1,0 +1,36 @@
+---
+title: Overview
+description: What the Literate Framework is and what it ships.
+---
+
+# Overview
+
+The **Literate Framework (LF)** is a methodology and toolkit for
+authoring software where prose is the source. A person authors
+decisions, specifications, chapter plans, persona stories, and
+session logs. An AI collaborator drafts prose under the person's
+direction and derives code from prose that has been accepted.
+
+LF differs from Knuth's classical Literate Programming in two
+pragmatic ways:
+
+- Prose and code live in separate files (no interleaving).
+- The AI replaces the mechanical *tangle* step. The *weave* output
+  is the prose corpus itself.
+
+## What this site documents
+
+- **The algebra** — the three-level model (Concept, Trope,
+  Authored instance) plus the supporting subkinds and members.
+- **Concepts** — eight metalanguage entries declaring the kinds
+  LF recognises.
+- **Tropes** — ten composable realisations of those Concepts,
+  each shipped as a typed, npm-publishable workspace package.
+- **The CLI** — the five v0.1 verbs (`init`, `add trope`,
+  `compile`, `check`, `version`) and the manifest format.
+
+## Where to start
+
+If you're new, read [Getting started](/docs/getting-started),
+then the [algebra](/docs/algebra). If you're integrating LF into
+an existing repo, jump to the [`init` verb](/docs/cli/init).

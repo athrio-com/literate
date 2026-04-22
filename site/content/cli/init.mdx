@@ -1,0 +1,43 @@
+---
+title: literate init
+description: Scaffold a new consumer repo from a template.
+---
+
+# `literate init [template]`
+
+Scaffold a new consumer repo. Copies a template package's tree into
+the target directory and runs `compile` to materialise
+`.literate/`.
+
+## Synopsis
+
+```
+literate init [template] [--target <dir>]
+```
+
+| Argument | Default | Description |
+|---|---|---|
+| `template` | `minimal` | Template id. v0.1 ships `minimal`. |
+| `--target`, `-t` | `.` | Target directory (default: cwd). |
+
+## What gets created
+
+For the `minimal` template:
+
+```
+<target>/
+├── corpus/
+│   ├── CLAUDE.md
+│   ├── decisions/decisions.md
+│   ├── categories/categories.md
+│   └── sessions/sessions.md
+├── .literate/         (compiled by `literate compile` after copy)
+├── CLAUDE.md
+├── README.md
+├── LICENSE
+├── .gitignore
+└── package.json       (with the "literate" manifest)
+```
+
+After `init`, you can begin authoring inside `corpus/` and add
+more Tropes via [`literate add trope`](/docs/cli/add-trope).

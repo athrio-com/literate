@@ -1,0 +1,53 @@
+# Session Trope
+
+The canonical realisation of the `session` Concept. Declares the
+on-disk shape of session logs, the lifecycle operations
+(`session-start`, `session-end`), and the gating rules applied to
+`## Goals` entries.
+
+## File layout
+
+Session logs live at `corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md`.
+The filename encodes date and start-time to minute precision; the
+slug is a short topical handle. The folder index is
+`corpus/sessions/sessions.md` listing logs newest first, with
+Status.
+
+## Header
+
+```markdown
+# Session: YYYY-MM-DD — topic
+
+**Date:** YYYY-MM-DD
+**Started:** YYYY-MM-DDTHH:MM
+**Status:** Open | Closed (YYYY-MM-DDTHH:MM)
+**Chapter:** <handle> — <title> | —
+**Agent:** <model id>
+```
+
+## Sections
+
+1. `## Goals` — gated entries. Each Goal carries `Topic`,
+   `Upstream`, optional `Scope`, `Out of scope`, `Acceptance`,
+   `Notes`. On Accept, `Status` and `Category` are added.
+2. `## Decisions Made` — append-only references to ADRs accepted
+   during the session.
+3. `## Work Done` — append-only file-touch log with rationale.
+4. `## Summary` — 2–4 sentences written once at session end.
+5. `## Deferred / Discovered` — optional carry-over items.
+
+## Mutability
+
+- Body outside `## Goals` lands without a gate.
+- `## Goals` entries are gated at append and on material revision.
+- Status transitions (`Active` → `Completed` /
+  `Superseded by Goal N`) are atomic and ungated.
+- `Abandoned` is gated.
+- `## Summary` is written once at session end; later edits are
+  gated.
+
+## Relationships
+
+- Realises the `session` Concept.
+- Depends on the `corpus` Trope.
+- Composed with `session-start`, `session-end`, `goal-flow`.

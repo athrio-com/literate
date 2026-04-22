@@ -1,0 +1,43 @@
+# Corpus Trope
+
+The canonical realisation of the `corpus` Concept. Declares the
+directory layout of `corpus/` in any LF-using repo, the index-file
+convention, and the minimal contents.
+
+## Layout
+
+```
+corpus/
+├── CLAUDE.md                 # operational Protocol for this repo
+├── decisions/
+│   ├── decisions.md          # mutable index
+│   └── ADR-NNN-<slug>.md
+├── categories/
+│   ├── categories.md         # mutable index
+│   └── <slug>.md
+├── sessions/
+│   ├── sessions.md           # mutable index
+│   └── YYYY-MM-DDTHHMM-<slug>.md
+├── specs/                    # optional
+│   └── specs.md
+├── chapters/                 # optional
+│   └── chapters.md
+├── concepts/                 # optional (consumer-authored Concepts)
+│   └── concepts.md
+└── memos/                    # optional
+    └── memos.md
+```
+
+## Index convention
+
+Every subfolder carries an index file whose stem matches the folder
+name. Indexes are mutable and mechanical — they reflect the folder
+state. Indexes are not authoritative above the artefacts they index;
+on conflict, the artefact wins.
+
+## Minimal contents
+
+An LF-initialised corpus starts with `corpus/CLAUDE.md`, an empty
+`decisions/decisions.md`, the category member files installed via
+the `category` Trope, and an empty `sessions/sessions.md`. Other
+folders appear as Tropes that use them are installed.

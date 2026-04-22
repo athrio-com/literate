@@ -1,0 +1,25 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: typescript
+type: application
+
+dependsOn:
+  - core
+
+tasks:
+  typecheck:
+    command: 'tsc --noEmit'
+    deps:
+      - 'core:typecheck'
+
+  build:
+    command: 'tsc'
+    deps:
+      - 'core:build'
+    outputs:
+      - 'dist'
+
+  start:
+    command: 'bun run src/bin.ts'
+    platform: system
+    local: true

@@ -1,0 +1,13 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: typescript
+type: library
+
+tasks:
+  typecheck:
+    command: 'tsc --noEmit'
+
+  build:
+    command: 'tsc'
+    outputs:
+      - 'dist'

@@ -1,0 +1,27 @@
+{
+  "name": "@literate/site",
+  "version": "0.1.0",
+  "description": "Public documentation site for the Literate Framework.",
+  "license": "(MIT OR Apache-2.0)",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "echo 'no tests'"
+  },
+  "dependencies": {
+    "gray-matter": "^4",
+    "next": "^14.2.0",
+    "next-mdx-remote": "^5",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.5.0"
+  }
+}

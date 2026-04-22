@@ -1,0 +1,12 @@
+A *session* is a bounded work unit with a log that records its
+Goals, decisions, work done, and summary. Sessions are LF's
+operational heartbeat: work happens inside a session, gated Goals
+scope what is authored, and a session-end validation step catches
+drift before it accumulates.
+
+This page assembles everything you need to run sessions in LF: the
+`session` Concept (the shape of a session log), the `session`
+Trope (LF's canonical realisation), the `session-start` and
+`session-end` workflow Tropes (how a session begins and closes),
+and the `goal-flow` Trope (how Goals are drafted, gated, and
+retired).

@@ -1,0 +1,37 @@
+# Trope
+
+A Trope is the canonical realisation of a Concept. Where a Concept
+declares what something is, a Trope describes how that something is
+done in LF. Each Trope is a TypeScript module that imports its
+Concept, exports a typed `Trope<C>` value, and ships an MDX prose
+sibling that describes the realisation in narrative form.
+
+A Trope carries:
+
+- `realises` — a real module reference to the Concept it realises.
+  Missing or wrong-typed reference is a TypeScript error.
+- `dependencies` — real module references to other Tropes this
+  Trope composes with.
+- `subkinds` — typed refinements within the Trope. The `decisions`
+  Trope's `ADR` subkind is the v0.1 example.
+- `members` — typed primitives within a collection-shaped Trope.
+  The `category` Trope's `tags`, `adr-status`, `goal-status`, and
+  `goal-category` members are the v0.1 examples.
+- `layer` (optional) — an Effect Layer the Trope contributes when
+  the consumer's runtime composes installed Tropes. Most v0.1
+  Tropes do not need a Layer; workflow Tropes (`session-start`,
+  `session-end`) may.
+
+## Relationships
+
+- Every Trope realises exactly one Concept. The realising Concept's
+  instance Schema is the contract authored instances must satisfy.
+- v0.1 ships exactly one canonical Trope per Concept (ADR-008).
+- Cross-Trope references are real npm module imports; the Trope
+  graph composes via TypeScript's type system, not string lookups.
+
+## Open questions
+
+- Multi-realisation (alternate Tropes for one Concept) and the
+  selection mechanism (per-Concept manifest pin? tag-based
+  dispatch?) are deferred to a future ADR.

@@ -1,0 +1,33 @@
+---
+title: Authored instances
+description: The third level — what consumers actually write.
+---
+
+# Authored instances
+
+An Authored instance is a file in the consumer's `corpus/` that
+matches the shape declared by some Trope. A specific ADR a consumer
+writes (`corpus/decisions/ADR-042-foo.md`) is an Authored instance
+of the ADR subkind of the `decisions` Trope. A specific session log
+is an Authored instance of the `session` Trope.
+
+## What LF does and does not ship
+
+LF ships **Concepts** (interfaces) and **Tropes** (realisations)
+plus their **subkinds** and **members**. LF does not ship Authored
+instances — those are the consumer's product.
+
+The CLI's `compile` verb materialises Concept and Trope prose into
+`.literate/`. The CLI's `check` verb validates the consumer's
+Authored instances against the installed Trope schemas.
+
+## Validation
+
+Each Trope's `realises` Concept exposes an `instanceSchema`. At
+`literate check`, the CLI parses Authored instances (e.g., ADR
+files) and decodes them with the Schema; failures are surfaced with
+the exact field that did not match.
+
+In v0.1, only structural checks are wired up
+(folders/indexes exist). Schema-level decode of authored content
+is follow-up work.

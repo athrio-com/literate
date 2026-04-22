@@ -1,0 +1,40 @@
+---
+title: literate check
+description: Validate corpus layout and .literate/ presence.
+---
+
+# `literate check`
+
+Validate the consumer's corpus layout. v0.1 scope: verify required
+folders and index files exist; flag a missing `.literate/` unless
+the project is LF's own repo.
+
+## Synopsis
+
+```
+literate check [--target <dir>]
+```
+
+## Required folders
+
+- `corpus/`
+- `corpus/decisions/`
+- `corpus/categories/`
+- `corpus/sessions/`
+
+## Required indexes
+
+- `corpus/decisions/decisions.md`
+- `corpus/categories/categories.md`
+- `corpus/sessions/sessions.md`
+
+## .literate/ presence
+
+A consumer repo missing `.literate/` will fail unless `LITERATE.md`
+is present at the root (the LF self-hosting marker).
+
+## Future scope
+
+Schema-level decode of Authored instances (decode each ADR file
+against `ADRInstanceSchema`, etc.), supersession-graph acyclicity,
+cross-reference validation are follow-up work for v0.2+.

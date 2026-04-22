@@ -1,0 +1,21 @@
+# Root Moon workspace for the Literate Framework monorepo.
+#
+# Per-project tasks live in packages/*/moon.yml and site/moon.yml.
+
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+type: monorepo
+language: typescript
+
+tasks:
+  typecheck:
+    command: 'bun run --filter \"*\" typecheck'
+    platform: system
+    options:
+      cache: false
+
+  build:
+    command: 'bun run --filter \"*\" build'
+    platform: system
+    options:
+      cache: false

@@ -1,0 +1,31 @@
+# Chapters Trope
+
+The canonical realisation of the `chapters` Concept. Declares the
+on-disk shape of chapter files and the mutability profile for living
+plans.
+
+## File layout
+
+Chapter files live at `corpus/chapters/<handle>.md`. Handles may be
+numbers (`1`, `2`, `3`) or slugs (`onboarding`, `migration-to-v2`).
+Numbers are stable handles; they do not imply sequencing or
+dependency. The folder index is `corpus/chapters/chapters.md`.
+
+## File shape
+
+```markdown
+# Chapter <handle> — <title>
+
+**Status:** In progress | Completed
+**Depends on:** <handle> (optional)
+**Unlocks:** <handle> (optional)
+
+[prose body: intent, scope, arc, milestones]
+```
+
+## Mutability
+
+- Body is fully mutable.
+- New chapter files and material revisions pass the review gate.
+- Status transition is ungated when it flows atomically from the
+  work completing.

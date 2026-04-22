@@ -1,0 +1,20 @@
+A *Trope* is the realisation primitive of LF. Each Trope realises
+exactly one Concept by carrying:
+
+- A prose-first MDX body describing how the Concept is done in LF.
+- An Effect Schema (where applicable) for the instance shape.
+- Real TypeScript imports for cross-Trope dependencies.
+- Optional subkinds (typed refinements) and members (typed
+  primitives).
+- Optional Effect `Layer` for runtime services the Trope
+  contributes.
+
+LF v0.1 ships ten Tropes total: six **canonical** Tropes (one per
+domain Concept — `corpus`, `session`, `decisions`, `category`,
+`chapters`) and four **workflow** Tropes (`session-start`,
+`session-end`, `adr-flow`, `goal-flow`) that describe recurring
+authoring patterns. Workflow Tropes realise the meta-Concept
+`trope` rather than a specific domain Concept.
+
+Below: the `trope` Concept — the meta-Concept that describes what
+a Trope realisation looks like.

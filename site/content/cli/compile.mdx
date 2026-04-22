@@ -1,0 +1,38 @@
+---
+title: literate compile
+description: Recompile .literate/ from the consumer manifest.
+---
+
+# `literate compile`
+
+Recompile `.literate/` from the consumer's `package.json`
+`"literate"` manifest.
+
+## Synopsis
+
+```
+literate compile [--target <dir>]
+```
+
+## Behaviour
+
+1. Read `<target>/package.json`.
+2. Validate the `"literate"` key against the
+   `LiterateManifest` Effect Schema.
+3. Resolve each Trope package name to a Trope value (typed module
+   reference, no string lookup).
+4. Run `composeTropes(roots)` to produce the topologically sorted
+   list, detecting cycles.
+5. Materialise:
+   - `.literate/concepts/<id>.mdx` — every reachable Concept.
+   - `.literate/tropes/<id>/TROPE.mdx` — every resolved Trope.
+   - `.literate/tropes/<id>/subkinds/<subkind>.mdx` — every subkind.
+   - `.literate/tropes/<id>/members/<member>.mdx` — every member.
+   - `.literate/manifest.json` — the resolved graph snapshot.
+
+## Errors
+
+- `MissingManifest` — no `package.json` at target.
+- `UnknownTropePackage` — manifest names a Trope not in the
+  bundled catalog.
+- `CyclicTropeDependency` — the typed graph contains a cycle.

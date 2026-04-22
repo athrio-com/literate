@@ -1,0 +1,50 @@
+# Session
+
+A session is a bounded work unit with a log that records its Goals,
+decisions, work done, and summary. Sessions are LF's operational
+heartbeat: work happens inside a session, gated Goals scope what is
+authored, and session-end validation catches drift before it
+accumulates.
+
+Each session has a log file at
+`corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md`. The body is append-once;
+the `## Goals` section is gated (each entry passes the review gate);
+the `## Summary` is written once at session end.
+
+## Log shape
+
+Header:
+
+- `Date` — `YYYY-MM-DD`.
+- `Started` — `YYYY-MM-DDTHH:MM`.
+- `Status` — `Open` or `Closed (YYYY-MM-DDTHH:MM)`.
+- `Chapter` — chapter handle, or `—` if none.
+- `Agent` — model identifier.
+
+Sections:
+
+- `## Goals` — session-scope specifications. Each entry declares
+  `Topic`, `Upstream`, optional `Scope`, `Out of scope`,
+  `Acceptance`, `Notes`. On Accept, `Status` and `Category` are
+  added.
+- `## Decisions Made` — references to ADRs accepted during the
+  session.
+- `## Work Done` — files created / modified / deleted with
+  rationale.
+- `## Summary` — 2–4 sentences written at session end.
+- `## Deferred / Discovered` — optional carry-over items.
+
+## Lifecycle
+
+1. Session begins; the `session-start` Trope executes.
+2. Goal(s) drafted; gated; on Accept work proceeds.
+3. ADRs/specs/chapters drafted and gated as work demands.
+4. Session ends; the `session-end` Trope executes; `Summary` is
+   written; `Status` is stamped `Closed`.
+
+## Relationships
+
+- Realised by the `session` Trope.
+- Depends on `corpus` (sessions live in `corpus/sessions/`).
+- Composed with `session-start`, `session-end`, and `goal-flow`
+  workflow Tropes.

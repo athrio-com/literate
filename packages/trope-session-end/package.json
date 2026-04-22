@@ -1,0 +1,18 @@
+{
+  "name": "@literate/trope-session-end",
+  "version": "0.1.0",
+  "description": "Workflow Trope: how an LF session closes — validation, stamping, summary.",
+  "license": "(MIT OR Apache-2.0)",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts", "./prose": "./src/prose.mdx" },
+  "scripts": { "typecheck": "tsc --noEmit", "build": "tsc" },
+  "dependencies": {
+    "@literate/core": "workspace:*",
+    "@literate/concept-trope": "workspace:*",
+    "@literate/trope-session": "workspace:*",
+    "effect": "^3.10.0"
+  },
+  "devDependencies": { "typescript": "^5.5.0" }
+}

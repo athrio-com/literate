@@ -1,0 +1,54 @@
+---
+title: Members
+description: Typed primitives within a collection-shaped Trope.
+---
+
+# Members
+
+A Member is a typed primitive within a collection-shaped Trope. The
+canonical example is the `category` Trope's four members:
+
+- `tags` — the base tag vocabulary.
+- `adr-status` — ADR Status values and transitions.
+- `goal-status` — session-Goal Status values and transitions.
+- `goal-category` — session-Goal Category values.
+
+Each member exports both an Effect Schema (for type-checked use in
+TS code) and an MDX prose file (for the docs and the vendored
+`.literate/`).
+
+## Shape
+
+```ts
+import { Schema } from 'effect'
+import type { Member } from '@literate/core'
+
+export const BaseTag = Schema.Literal(
+  '#process', '#protocol', '#corpus',
+  '#tooling', '#algebra', '#licensing', '#release',
+)
+
+export const tagsMember: Member<{ schema: typeof BaseTag }> = {
+  _tag: 'Member',
+  id: 'tags',
+  description: 'Base tag vocabulary.',
+  value: { schema: BaseTag },
+  prose: proseFrom(import.meta.url, './tags.mdx'),
+}
+```
+
+The parent Trope lists its members:
+
+```ts
+export const categoryTrope: Trope<typeof CategoryConcept> = {
+  // ...
+  members: [tagsMember, adrStatusMember, goalStatusMember, goalCategoryMember],
+}
+```
+
+## When to use members
+
+Use members when a Trope owns a *collection* of typed primitives
+that ship together (the four base categories), and not when the
+collection is open-ended (consumer ADRs are not Members of the
+decisions Trope; they are Authored instances).

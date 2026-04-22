@@ -1,0 +1,28 @@
+# Session-Start Trope
+
+The workflow Trope that begins every LF session. Session-start
+establishes the log, surfaces context from prior work, and orients
+the AI so authoring begins from a grounded state.
+
+## Steps
+
+1. Generate the log filename:
+   `corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md`.
+2. Create the log from the Session Trope template, populated
+   header (`Date`, `Started`, `Status: Open`, `Chapter`, `Agent`),
+   empty section bodies.
+3. Read the prior session's `## Summary` and
+   `## Deferred / Discovered`; surface to the Person.
+4. Print the `decisions/decisions.md` index for context.
+5. If the most recent session still shows `Status: Open`, warn and
+   ask how to proceed.
+6. Ready for Goal drafting; the `goal-flow` Trope governs each
+   Goal's gate.
+
+## Effect service
+
+This Trope contributes a `SessionStart` service via its `layer`.
+The CLI (or any Effect runtime composing installed Tropes) can
+require `SessionStart` and call `start(slug)` to execute the
+workflow. The default Layer logs the intended path; consumers may
+substitute richer Layers for I/O.
