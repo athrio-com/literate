@@ -43,17 +43,38 @@ export const Goal = Schema.Struct({
 export type Goal = Schema.Schema.Type<typeof Goal>
 
 export const SessionStatus = Schema.Union(
+  Schema.Literal('Planned'),
   Schema.Literal('Open'),
   Schema.TemplateLiteral(Schema.Literal('Closed ('), Schema.String),
+  Schema.Literal('Abandoned'),
 )
+export type SessionStatus = Schema.Schema.Type<typeof SessionStatus>
+
+export const PlanGoal = Schema.Struct({
+  topic: Schema.String,
+  upstream: Schema.Array(Schema.String),
+  acceptance: Schema.Array(Schema.String),
+})
+export type PlanGoal = Schema.Schema.Type<typeof PlanGoal>
+
+export const PlanEntry = Schema.Struct({
+  slug: Schema.String,
+  topic: Schema.String,
+  dependsOn: Schema.optional(Schema.Array(Schema.String)),
+  goals: Schema.Array(PlanGoal),
+  realisedBy: Schema.optional(Schema.String),
+})
+export type PlanEntry = Schema.Schema.Type<typeof PlanEntry>
 
 export const SessionInstanceSchema = Schema.Struct({
   date: Schema.String,
-  started: Schema.String,
+  started: Schema.optional(Schema.String),
   status: SessionStatus,
   chapter: Schema.optional(Schema.String),
   agent: Schema.String,
+  plannedBy: Schema.optional(Schema.String),
   goals: Schema.Array(Goal),
+  plan: Schema.optional(Schema.Array(PlanEntry)),
   decisionsMade: Schema.Array(Schema.String),
   workDone: Schema.Array(Schema.String),
   summary: Schema.optional(Schema.String),

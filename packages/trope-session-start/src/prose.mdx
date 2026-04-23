@@ -2,9 +2,28 @@
 
 The workflow Trope that begins every LF session. Session-start
 establishes the log, surfaces context from prior work, and orients
-the AI so authoring begins from a grounded state.
+the AI so authoring begins from a grounded state. Two entry paths:
+*spontaneous start* (no parent Plan) and *planned start* (the
+session was named in a parent session's `## Plan`).
 
-## Steps
+The mandatory imperative wrapper — **how to detect which path
+applies and what to do for ambiguous prompts** — lives in
+`corpus/CLAUDE.md` under `## Mandatory Agent Instructions` (IMP-1).
+This Trope describes the deep procedure the imperatives invoke.
+
+## Path detection (precedes either path below)
+
+A vague continuation prompt ("continue", "next", "let's keep
+going", "continue with goals") is a **planned-start trigger**, not
+a spontaneous one, when exactly one ready-to-start `Planned`
+session exists. If multiple are ready, list them and ask the
+Person which to open. If none are ready, proceed spontaneously.
+
+If the most recent non-`Planned` session shows `Status: Open`
+from a prior thread, do **not** open a new session. Surface the
+orphan to the Person and ask whether to resume, close, or revert.
+
+## Spontaneous start
 
 1. Generate the log filename:
    `corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md`.
@@ -14,15 +33,43 @@ the AI so authoring begins from a grounded state.
 3. Read the prior session's `## Summary` and
    `## Deferred / Discovered`; surface to the Person.
 4. Print the `decisions/decisions.md` index for context.
-5. If the most recent session still shows `Status: Open`, warn and
-   ask how to proceed.
+5. List any `Planned` sessions in `corpus/sessions/` whose
+   dependencies are satisfied; surface to the Person as
+   candidates ("you have N sessions Planned that could be
+   started instead — proceed spontaneously or pick one?"). Skip
+   only when path detection above already established that none
+   are ready.
 6. Ready for Goal drafting; the `goal-flow` Trope governs each
-   Goal's gate.
+   Goal's gate. **Do not proceed past a Goal until Accepted.**
+
+## Planned start
+
+Triggered when the Person elects to start an existing `Planned`
+session log (or when the CLI is invoked with `--from-planned
+<slug>`).
+
+1. Open the chosen `Planned` log.
+2. Stamp `Status: Open`, fill in `Started: YYYY-MM-DDTHH:MM`
+   (UTC, current time), and bind `Agent` if `—`. If the filename
+   timestamp differs from the actual start time by more than the
+   session-day, propose a rename to the Person; do not rename
+   without consent.
+3. Re-present each provisional Goal to the Person for
+   re-gating: Accept verbatim, Correct, Clarify, or Reject. The
+   Goals carried over from the parent's Plan are *drafts*; they
+   land authoritatively on this re-gate.
+4. In the parent session referenced by `Planned by`, freeze the
+   corresponding Plan entry and set its `Realised by` field to
+   the path of this log. (Mechanical edit; ungated.)
+5. Run steps 3–5 of the spontaneous start (prior summary, ADR
+   index, planned-sessions list excluding self). Then proceed
+   per step 6 of the spontaneous path: do not skip the gate.
 
 ## Effect service
 
 This Trope contributes a `SessionStart` service via its `layer`.
 The CLI (or any Effect runtime composing installed Tropes) can
-require `SessionStart` and call `start(slug)` to execute the
-workflow. The default Layer logs the intended path; consumers may
-substitute richer Layers for I/O.
+require `SessionStart` and call `start(slug)` (spontaneous) or
+`startPlanned(slug)` (planned) to execute the workflow. The
+default Layer logs the intended path; consumers may substitute
+richer Layers for I/O.

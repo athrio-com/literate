@@ -6,6 +6,36 @@ for the work you're about to do.*
 
 ---
 
+## Before any action — Mandatory Agent Instructions
+
+These steps are imperative, in order, and override any urge to begin
+investigating the repo from the prompt alone. The full agent
+procedure (start path detection, gating, end procedure, NEVER list)
+lives in [`corpus/CLAUDE.md`](./corpus/CLAUDE.md) under
+**Mandatory Agent Instructions**. Read it before acting.
+
+1. **Open** [`corpus/CLAUDE.md`](./corpus/CLAUDE.md) and read its
+   `## Mandatory Agent Instructions` section in full. It tells you
+   exactly what to do for SESSION START, DURING-session decisions,
+   the optional planning step, SESSION END, and the NEVER list.
+2. **Detect the start path** per IMP-1 in that file: check for a
+   `Status: Open` orphan, then for ready `Status: Planned` sessions,
+   then default to spontaneous. Do **not** open exploratory tool
+   calls into `packages/` or anywhere else before this step
+   resolves.
+3. **Re-gate every Goal** before any work, even when continuing a
+   planned session. "Continue with goals" is a planned-start
+   trigger, not a permission to skip the gate (IMP-1.6).
+4. **When in doubt, ask the Person.** A clarifying question costs
+   less than a wrong session-Open or a wrong scope.
+
+If you are reading this file because the Person typed "continue",
+"next", "let's go", "continue with goals" or similar in a fresh
+thread: there is almost certainly a `Status: Planned` session
+waiting. Resolve it via IMP-1 in `corpus/CLAUDE.md`.
+
+---
+
 ## Where you are
 
 You are in the LF source repository. LF is **self-hosted** in a narrow

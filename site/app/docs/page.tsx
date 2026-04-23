@@ -1,8 +1,9 @@
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import { getContent } from '@/lib/source'
+import { mdxComponents } from '@/components/mdx-components'
 
 export const metadata = {
-  title: 'Docs — Literate Framework',
+  title: 'Docs',
 }
 
 export default async function DocsHomePage() {
@@ -10,15 +11,17 @@ export default async function DocsHomePage() {
   if (!doc) {
     return (
       <>
-        <h1>Docs</h1>
+        <h1 className="lf-h1">Docs</h1>
         <p>Overview content missing — see <code>site/content/overview.mdx</code>.</p>
       </>
     )
   }
   return (
     <>
-      <p className="breadcrumb">Docs</p>
-      <MDXRemote source={doc.body} />
+      <div className="lf-breadcrumbs">
+        <span className="is-current">Docs</span>
+      </div>
+      <MDXRemote source={doc.body} components={mdxComponents} />
     </>
   )
 }

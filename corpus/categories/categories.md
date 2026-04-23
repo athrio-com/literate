@@ -11,3 +11,4 @@ ungated.
 | [`adr-status.md`](./adr-status.md) | ADR `Status:` values and transitions | ADR-007 |
 | [`goal-status.md`](./goal-status.md) | Session-Goal `Status:` values and transitions | ADR-007 |
 | [`goal-category.md`](./goal-category.md) | Session-Goal `Category:` values | ADR-007 |
+| [`session-status.md`](./session-status.md) | Session `Status:` values and transitions (Planned / Open / Closed / Abandoned) | Session 2026-04-23T0818 |
