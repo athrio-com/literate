@@ -20,6 +20,14 @@ categorical types; one ADR can carry multiple tags.
 - `#release` — versioning, publishing, distribution.
 - `#site` — the Next.js public documentation site.
 - `#template` — starter templates and their manifests.
+- `#execution` — runtime, replay, Effect-based Step machinery, and the
+  session-log-as-event-store substrate (introduced with ADR-011
+  through ADR-014).
+- `#migration` — transitions between framework generations:
+  legacy-code freeze, corpus-as-global-coordination (introduced
+  with ADR-018); namespace-scope corrections (ADR-019 reinstating
+  `@literate/*` for rewrite packages). Use when a decision moves a
+  structural commitment across the legacy/rewrite boundary.
 
 ## Morphisms
 

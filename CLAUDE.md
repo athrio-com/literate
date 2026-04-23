@@ -38,42 +38,57 @@ waiting. Resolve it via IMP-1 in `corpus/CLAUDE.md`.
 
 ## Where you are
 
-You are in the LF source repository. LF is **self-hosted** in a narrow
-sense: LF's own authoring follows LF's own rules, but the invariant
-`corpus/ → src/ ← .literate/` collapses here. There is **no
-`.literate/` folder** in this repo — LF *is* the thing `.literate/` is
-compiled from, so there is no snapshot to vendor against yourself.
-The `src/` role is realised as `packages/*` (see ADR-002, ADR-009)
-because LF the product is a set of typed npm-publishable units.
+This repository is fully dedicated to the Literate Framework (LF).
+One active workspace, one coordination area, one frozen reference
+tree (see [ADR-020](./corpus/decisions/ADR-020-unify-monorepo-layout.md)
+for the layout decision; previous split at `framework/` vs. root
+`packages/` was collapsed on 2026-04-23).
 
-The two places you will read and write:
+Living:
 
-- **`corpus/`** — LF-project prose. ADRs, specs, chapters, sessions,
-  categories, terms about *LF-as-a-product*: tooling choices, release
-  process, layout decisions, dev log. Governed by
-  [`corpus/CLAUDE.md`](./corpus/CLAUDE.md), which is the operational
-  Protocol for LF-project work.
-- **`packages/*`** — LF the product. Each Concept, each Trope, the
-  starter template, the core library, and the CLI ship as a
-  workspace package. Cross-references are real TypeScript imports;
-  missing or wrong-typed references are compile errors.
+- **`packages/`** — the active `@literate/*` workspace packages.
+  V0.1 ships `@literate/core` (the Step substrate from ADR-011
+  through ADR-014). Every new Concept, Trope, template, and the
+  CLI lands here as an independently shippable npm package
+  (ADR-009, preserved).
+- **`corpus/`** — the **global living corpus**. ADRs, sessions,
+  categories, concepts, specs, chapters tracking LF as a project.
+  Legacy decisions (ADR-001…ADR-010) and rewrite decisions
+  (ADR-011 onwards) live here. Governed by
+  [`corpus/CLAUDE.md`](./corpus/CLAUDE.md).
 
-The root of LF's product surface — the Protocol as consumers read it —
-is [`LITERATE.md`](./LITERATE.md). When you draft or revise Protocol
-text, you draft a Concept package or a Trope package under
-`packages/` and the compiled `LITERATE.md` plus consumer
-`.literate/` snapshots are derived from those pieces.
+Frozen (read-only per ADR-018 + ADR-020):
+
+- **`legacy/`** — the legacy scaffold, preserved verbatim as
+  historical reference. Contains the prior `packages/` (20+
+  legacy `@literate/*` packages), `site/` (legacy Next.js),
+  `LITERATE.md` (legacy framework Protocol prose), and the
+  pre-rewrite root tooling (`package.json`, `mise.toml`,
+  `moon.yml`, `tsconfig.*.json`, lockfiles, `.moon/`). Never
+  publishes. Never edited without an explicit Person-authorised
+  freeze lift recorded in the active session's `## Decisions
+  Made` (ADR-018 §8 procedure stays).
 
 ## Before authoring anything
 
 1. Open [`corpus/CLAUDE.md`](./corpus/CLAUDE.md) — it defines the
    session lifecycle, gating rules, mutability profiles, and tag
-   vocabulary for LF-project work.
-2. Open [`LITERATE.md`](./LITERATE.md) — the authoritative framework
-   Protocol. Anything that ships to consumers (Concepts, Tropes,
-   schemas) must be consistent with it.
-3. Check [`corpus/decisions/decisions.md`](./corpus/decisions/decisions.md)
-   for prior decisions that constrain this session's work.
+   vocabulary for LF-project work. Its NEVER list includes the
+   ADR-018 freeze (now targeting `legacy/`).
+2. Check [`corpus/decisions/decisions.md`](./corpus/decisions/decisions.md)
+   for prior decisions that constrain this session's work. ADRs
+   011–020 are the rewrite-stage foundations; read them in order
+   before authoring workflow Tropes or touching `packages/`.
+   Notes on supersession: ADR-019 supersedes ADR-016's namespace
+   clause (LF ships under `@literate/*`, not `@athrio/*`); ADR-020
+   supersedes ADR-016's layout clause (one workspace at repo root;
+   no `framework/` folder).
+3. `legacy/LITERATE.md` is the legacy Protocol (frozen per
+   ADR-018). Read it for historical context; do not edit it. New
+   Protocol prose ships inside `packages/*` as `@literate/concept-*`
+   or `@literate/trope-*` packages, with prose in sibling `.md`
+   files referenced by `.ts` via `prose(import.meta.url, …)`
+   per [ADR-015](./corpus/decisions/ADR-015-typescript-composition-md-siblings.md).
 
 ## The two protocols
 
@@ -95,6 +110,23 @@ in LF's own prose for LPP.
 3. **Person authors meaning; AI drafts and derives syntax.** The
    Person owns all output. The AI drafts prose, surfaces
    inconsistencies, and produces code from accepted prose.
-4. **The algebra holds.** Everything authored fits one of three
-   levels: Concept (what), Trope (how), Authored (instance).
-   Reach for the right level; do not conflate.
+4. **The algebra holds.** Everything authored fits one of four
+   levels: Concept (what), Trope (how), **Step** (executable unit
+   of how), Authored (instance). Reach for the right level; do
+   not conflate. The Step layer was added by
+   [ADR-011](./corpus/decisions/ADR-011-executable-monadic-prose.md);
+   read it before authoring workflow Tropes.
+5. **The Protocol is the program.** `Protocol.continue(repoRoot)`
+   is the single entry point the agent harness invokes each turn
+   (see [ADR-014](./corpus/decisions/ADR-014-protocol-continue-entry-point.md)).
+   The imperatives in `corpus/CLAUDE.md` are the prose
+   explanation of what that function does, not instructions the
+   agent interprets from prose.
+
+## The `@athrio/` scope
+
+The `@athrio/` npm scope is reserved for the sister-repo Athrio
+product at `/Users/yegor/Projects/Coding/athrio-com/athrio/` — the
+Literate-Programming-Protocol implementation from which LF is
+abstracted. LF never publishes under `@athrio/*`
+(ADR-019 supersedes ADR-016 on this).

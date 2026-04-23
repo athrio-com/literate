@@ -13,9 +13,10 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "isolatedModules": true,
-    "composite": false,
-    "lib": ["ES2022"],
-    "types": ["bun"]
+    "lib": ["ES2022"]
   },
-  "include": ["src/**/*.ts"]
+  "include": [],
+  "references": [
+    { "path": "./packages/core" }
+  ]
 }

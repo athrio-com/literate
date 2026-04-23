@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-25
 **Started:** —
-**Status:** Planned
+**Status:** Abandoned (2026-04-23T1630; superseded by the MVP arc authored in session 2026-04-23T1600-unify-monorepo-layout.md — the docs-templating-mechanism choice is out of scope for the MVP; v0.1 ships only `@literate/template-minimal`)
 **Chapter:** — (no chapter yet)
 **Agent:** —
 **Planned by:** corpus/sessions/2026-04-23T0818-planned-sessions-and-arc.md

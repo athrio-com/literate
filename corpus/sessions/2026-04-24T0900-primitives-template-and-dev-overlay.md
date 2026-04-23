@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-24
 **Started:** —
-**Status:** Planned
+**Status:** Abandoned (2026-04-23T1630; superseded by the MVP arc authored in session 2026-04-23T1600-unify-monorepo-layout.md — this session targeted the legacy algebra's `concept-template` / `concept-dev-overlay` primitives, which do not translate to the Step-substrate rewrite)
 **Chapter:** — (no chapter yet)
 **Agent:** —
 **Planned by:** corpus/sessions/2026-04-23T0818-planned-sessions-and-arc.md

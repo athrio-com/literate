@@ -16,12 +16,20 @@ descriptive lifecycle / mutability / vocabulary sections that follow
 are reference material the imperatives point at; do not skip the
 imperatives in favour of skimming the descriptive sections.
 
-The two **canonical procedure sources** are:
+The two **canonical procedure sources** (authoritative historical
+prose, authored on the legacy algebra; preserved verbatim under
+the ADR-020 freeze) are:
 
-- `packages/trope-session-start/src/prose.mdx` — the start procedure
-  (spontaneous + planned paths, pre-work steps).
-- `packages/trope-session-end/src/prose.mdx` — the end procedure
-  (validations including Plan-entry coverage, Closed stamp).
+- `legacy/packages/trope-session-start/src/prose.mdx` — the
+  start procedure (spontaneous + planned paths, pre-work steps).
+- `legacy/packages/trope-session-end/src/prose.mdx` — the end
+  procedure (validations including Plan-entry coverage, Closed
+  stamp).
+
+The rewrite re-authors these Tropes on the Step substrate as
+`@literate/trope-session-start` and `@literate/trope-session-end`
+at `packages/trope-session-start/` and `packages/trope-session-end/`
+(see the MVP arc Planned sessions).
 
 The imperatives below inline the *decision points* a fresh agent
 needs before opening any file; the trope prose is the authority on
@@ -223,6 +231,21 @@ If this session's work warrants a deliberate multi-session arc:
 - Never bypass the Goal gate, even for "trivial" work. The gate
   exists to make intent visible; trivial work skipped past the
   gate becomes invisible work.
+- Never edit a file inside the frozen `legacy/` tree (legacy
+  `packages/`, `site/`, `LITERATE.md`, and pre-rewrite root
+  tooling, all now under `legacy/` per
+  [ADR-020](./decisions/ADR-020-unify-monorepo-layout.md); freeze
+  rule from
+  [ADR-018](./decisions/ADR-018-legacy-code-frozen-corpus-global.md))
+  without an explicit Person-authorised freeze lift recorded in
+  the active session's `## Decisions Made`. Reading `legacy/`
+  for historical context is encouraged; editing is not.
+- Never import from `legacy/packages/*` into active `packages/*`.
+  The rewrite is structurally isolated from the legacy by the
+  ADR-020 layout (separate subtrees; the root workspace only
+  enumerates `packages/*`, not `legacy/packages/*`) in addition
+  to the ADR-018 §4 rule. Both trees share the `@literate/`
+  scope per ADR-019; isolation is by subtree, not by namespace.
 
 ### Goal shape
 
@@ -342,21 +365,39 @@ See **IMP-6** above for the canonical NEVER list. The previously
 duplicated bullets here have been consolidated into the
 imperatives.
 
-## Working with `packages/`
+## Working with `packages/` and `legacy/`
 
-`corpus/` governs decisions about LF-the-project (tooling, releases,
-layout, CI). `packages/` *is* LF-the-product — each Concept, each
-Trope, the starter template, the core library, and the CLI ship as
-a workspace package (`@literate/concept-*`, `@literate/trope-*`,
-`@literate/template-minimal`, `@literate/core`, `@literate/cli`).
-When a corpus decision lands that affects what LF ships, implement
-it in the relevant package as a code-after-prose step.
+`corpus/` is the **global living corpus**: every new session log
+and every new ADR land here regardless of whether the work
+touches the active tree or references the legacy tree. The
+rewrite's ADRs (ADR-011 onwards) continue the same numbering as
+the legacy's.
 
-Do not edit `packages/concept-*/src/concept.mdx` or
-`packages/trope-*/src/prose.mdx` prose bodies without a gated
-Protocol-scope decision. Those files are part of LF's ship
-surface and are governed by the framework Protocol in
-[`LITERATE.md`](../LITERATE.md), not by this file.
+The repository has one active code area and one frozen reference
+area (see [ADR-020](./decisions/ADR-020-unify-monorepo-layout.md)):
+
+- `packages/*` — **active**. New code ships as `@literate/*` per
+  [ADR-019](./decisions/ADR-019-reinstate-literate-namespace.md)
+  and lives at repo-root `packages/` per
+  [ADR-020](./decisions/ADR-020-unify-monorepo-layout.md). When a
+  corpus decision affects what LF ships, implement it here as a
+  code-after-prose step. New Concept and Trope packages use the
+  Step substrate from ADR-011 through ADR-014 and compose via
+  TypeScript + sibling `.md` per ADR-015.
+- `legacy/*` — **frozen** (ADR-018, scope relocated by ADR-020).
+  Contains the former `packages/*` (legacy `@literate/*`
+  Concepts, Tropes, CLI, template, core), the legacy `site/`
+  scaffold, `LITERATE.md`, and pre-rewrite root tooling. No
+  edits, additions, or deletions. Never publishes. Reading
+  `legacy/*` for historical context is encouraged.
+
+Do not edit `legacy/packages/concept-*/src/concept.mdx` or
+`legacy/packages/trope-*/src/prose.mdx` prose bodies. Those
+files are the frozen legacy ship surface and are governed by the
+legacy framework Protocol at `legacy/LITERATE.md`, not by this
+file. Any edit to a file under `legacy/` requires an explicit
+Person-authorised freeze lift recorded in the active session's
+`## Decisions Made`.
 
 ## Tag vocabulary
 
