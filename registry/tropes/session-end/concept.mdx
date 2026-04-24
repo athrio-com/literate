@@ -1,0 +1,135 @@
+# Session-End Procedure
+
+The `session-end` **Concept** declares the typed contract for
+closing an LF session: validations performed, errors raised on
+incompleteness, the stamp applied on success, and the index
+update that follows. The realising Trope (see `prose.md`)
+describes the composition of Steps that fulfils the contract.
+
+## Modality
+
+`Protocol`. Session-end is LF machinery: the Protocol dispatches
+it when the Person signals the session is done (via explicit
+request or via a workflow that composes session-end after a
+terminal Goal stamp). It is never reached for authorially.
+
+## Input
+
+```typescript
+interface SessionEndInput {
+  readonly sessionPath: string   // 'corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md'
+}
+```
+
+The Trope reads the log at `sessionPath`, validates, and
+closes. It does *not* author the `## Summary` — Summary
+synthesis is a separate concern (a future
+`trope-session-summary` or caller-supplied synthesis). Calling
+`session-end` before Summary is written raises
+`SessionEndIncomplete` with `missing: ['## Summary']`.
+
+## Output
+
+```typescript
+interface SessionClosure {
+  readonly sessionPath: string
+  readonly closedAt: string   // 'YYYY-MM-DDTHH:MM', matching corpus convention
+}
+```
+
+Successful realisation returns the path and the stamped
+closing timestamp. The on-disk header's `Status:` is rewritten
+to `Closed (<closedAt>)`, the `corpus/sessions/sessions.md`
+row is updated, and every `## Plan` entry carries one of the
+terminal markers (`Realised by …`, `Planned`, `Abandoned`).
+
+## Errors
+
+- `SessionEndIncomplete { missing: readonly string[] }` — one
+  or more validations failed. Each missing item is a path-like
+  string describing what the validator expected (e.g.,
+  `'## Summary'`, `'Goals[2].Status=terminal'`,
+  `'Plan[0].terminal-marker'`). The session stays `Open`
+  until the caller addresses every item and re-runs
+  `session-end`. This error is recoverable by re-running the
+  Trope after authoring.
+- `SessionMalformed { path: string, reason: string }` — the
+  log at `sessionPath` is not well-formed (unparseable
+  header, missing required sections, etc.). Raised by the
+  underlying `SessionStore.read` before validation runs.
+
+## Preconditions
+
+- A log exists at `sessionPath` with `Status: Open`.
+- Every Goal carries either a terminal `Status:`
+  (`Completed`, `Superseded by Goal N`, `Abandoned`) or is
+  still `Active` (the validator will then raise
+  `SessionEndIncomplete`).
+
+Calling `session-end` on a `Status: Closed (…)` or
+`Status: Planned` or `Status: Abandoned` log raises
+`SessionMalformed` (the status transition is illegal per
+`corpus/categories/session-status.md`).
+
+## Postconditions
+
+- Header `Status: Open` → `Status: Closed (YYYY-MM-DDTHH:MM)`.
+- `corpus/sessions/sessions.md` row for `sessionPath` shows
+  the Closed status and stamp.
+- Every `## Plan` entry (if any) carries a terminal marker.
+
+## Invariants preserved
+
+- **Goal-terminal invariant.** No Goal remains `Active` at
+  Closed (IMP-5.1).
+- **Plan-terminal invariant.** No Plan entry remains in an
+  indeterminate state at Closed (IMP-5.2).
+- **Summary-present invariant.** `## Summary` is populated at
+  Closed (IMP-5.3).
+- **Mutability invariant.** The stamp is atomic — either the
+  header and index both carry the Closed state, or neither
+  does. On partial failure the Trope rolls back.
+
+## Validations
+
+Each validation is a named Step in the composition; a
+failure contributes a `missing` entry without short-circuiting
+(so the caller sees the full list on one cycle).
+
+1. `goals-exist` — the `## Goals` section is present and
+   non-empty.
+2. `goals-terminal` — every Goal carries a terminal
+   `Status:`.
+3. `decisions-section-present` — `## Decisions Made` exists.
+4. `work-done-populated` — `## Work Done` exists and has at
+   least one bullet.
+5. `summary-present` — `## Summary` exists and is
+   non-empty.
+6. `deferred-section-present` — `## Deferred / Discovered`
+   exists (empty list is allowed).
+7. `plan-entries-terminal` — if `## Plan` exists, every
+   entry carries `Realised by …`, `Planned` (with
+   carry-forward to `## Deferred / Discovered`), or
+   `Abandoned` (with a one-line rationale below the entry).
+
+## Services required
+
+- `SessionStore` — read the log, parse sections, write the
+  header and index row.
+- `ExecutionLog` — implicit via `memo()` around each
+  composed Step.
+
+## Relationships
+
+- Realised by the `@literate/trope-session-end` Trope
+  (`prose.md` in this package).
+- Composed by `Protocol.continue` (ADR-014) as the
+  Protocol-mode Trope invoked at the end-of-session
+  transition.
+
+## Versioning
+
+- `version: '0.0.1'` at introduction.
+- Validation additions (a new required section, a tightened
+  check) are breaking changes to the contract — they advance
+  LF's Protocol major. Relaxations are minor.

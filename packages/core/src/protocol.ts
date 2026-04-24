@@ -3,9 +3,10 @@
  *
  * V0.1 ships a skeleton. Full path-detection (spontaneous / planned /
  * orphan) and root-Step dispatch are authored as workflow Tropes in
- * follow-up sessions (`@literate/trope-session-start`, etc.). The shape of
- * the outcome union and the error channel land here so that consumers
- * can type against the public surface.
+ * `registry/tropes/session-start/` and `registry/tropes/session-end/`
+ * (per ADR-025/026 — Tropes are git-registry seeds, not npm
+ * packages). The shape of the outcome union and the error channel
+ * land here so that consumers can type against the public surface.
  */
 import { Data, Effect } from 'effect'
 import type { AIPending, ExternalPending, GatePending } from './suspend.ts'

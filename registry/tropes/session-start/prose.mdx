@@ -1,0 +1,242 @@
+# Session-Start Trope
+
+The workflow Trope that realises the `session-start` Concept
+(see `concept.md`). Begins every LF session by detecting the
+start path from repo state, handling any orphan, opening the
+log with a stamped header, surfacing prior context into a
+`## Pre-work` block, and re-gating provisional Goals on the
+planned path.
+
+The procedure below decomposes into ten atomic Steps, each
+bound to a section of this file via ProseRef + `section:`
+slicing (ADR-015). The composition is a `workflowStep` whose
+`run` is `Effect.gen` sequencing the atomic Steps under
+`memo()` for replay-determinism (ADR-013).
+
+The imperative version of this procedure is inlined in
+`corpus/CLAUDE.md#IMP-1`; the prose here is the authoritative
+decomposition the Step composition implements.
+
+## Detect start path
+
+Read `corpus/sessions/` and classify the state into one of
+three disjoint cases:
+
+- `Spontaneous` — no `Status: Planned` log has satisfied
+  dependencies *and* no non-`Planned` log shows
+  `Status: Open`.
+- `Planned { candidates: ReadonlyArray<PlannedSession> }` —
+  one or more `Status: Planned` logs have their `Depends on:`
+  chain Closed. When `candidates.length > 1`, the caller is
+  expected to gate on which to open; when it is exactly one,
+  the Trope still gates (the Person may prefer a spontaneous
+  start even with a ready Planned).
+- `OpenOrphan { path: string }` — a non-`Planned` log shows
+  `Status: Open` from a prior thread. The Trope halts and
+  surfaces the orphan (see "Handle open orphan").
+
+Step: `effect`. Input: `SessionStartInput`. Output: the tagged
+union above. No Person interaction yet.
+
+## Handle open orphan
+
+Triggered only when path detection returns `OpenOrphan`. The
+Step presents a draft decision to the Person:
+
+```
+An orphan session is Open from a prior thread:
+  corpus/sessions/<path>
+
+Choose one:
+  - Resume — continue work in that session (the Trope returns
+    SessionRef pointing at it).
+  - Close  — run the session-end procedure against the orphan
+    (this Trope does not; the caller must invoke
+    session-end separately if Close is chosen — the gate
+    decision records intent, not action).
+  - Revert — stamp the orphan back to its prior Status
+    (Planned if it came from a Plan, otherwise Abandoned)
+    and proceed to a fresh start.
+```
+
+The Person's decision (Accept / Correct / Clarify / Reject)
+encodes the chosen option: `Accept { orphanAction: 'resume' |
+'close' | 'revert' }`; `Reject` aborts with `OrphanConflict`.
+
+Step: `gate`. Input: orphan-path draft. Output: `GateDecision`.
+
+## Open the log
+
+The filesystem action that makes a session `Open`. Branches
+on the start path:
+
+- **Spontaneous.** Derive a filename from the Trope's
+  timestamp service and a caller-or-Person-provided slug
+  (future: gated Concept-driven slug suggestion; for v0.1 a
+  sensible default is adequate). Create
+  `corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md` with a header
+  populated by `{Date, Started, Status: Open, Agent}`,
+  `Chapter: —`, and no body yet.
+- **Planned.** Read the chosen `Planned` log; rewrite its
+  header to replace `Status: Planned` → `Status: Open` and
+  fill `Started:` and `Agent:`. If the filename's encoded
+  timestamp differs from the actual start time by more than
+  the same calendar day, the Trope gates a rename
+  (Accept / Reject only — no Correct or Clarify).
+
+Step: `io`. Input: `StartPathDecision`. Output: `SessionRef`.
+Services: `SessionStore`.
+
+## Surface prior context
+
+Read the most recent non-`Planned` log with
+`Status: Closed (…)` and extract its `## Summary` and
+`## Deferred / Discovered` sections. The content is held for
+the pre-work block; it is *not* printed to the Person inside
+this Step — the CLI's frame rendering handles surfacing via
+the composed Trope's prose.
+
+When no prior Closed session exists (fresh repo or all logs
+Abandoned), the step returns empty sections and a note.
+
+Step: `effect`. Input: the opened `SessionRef`. Output:
+`{ summary: string, deferred: string, sourcePath?: string }`.
+
+## Read ADR index
+
+Read `corpus/decisions/decisions.md`. Parse the Accepted /
+Superseded table rows into a `ReadonlyArray<AdrIndexRow>`.
+The Trope uses this to:
+
+- Flag supersessions relevant to the current scope when
+  surfacing pre-work.
+- Validate that the Goals about to be re-gated reference
+  upstream ADRs that exist (soft check — missing references
+  surface as warnings in the pre-work block, not errors).
+
+Step: `effect`. Input: the opened `SessionRef`. Output:
+`ReadonlyArray<AdrIndexRow>`.
+
+## Write pre-work block
+
+Compose the `## Pre-work` block content from the prior-
+summary Step output and the ADR-index output, plus any
+planned-start specifics (parent reference, `Depends on:`
+chain, provisional Goal count). Append the block to the
+opened log body.
+
+Step: `io`. Input:
+`{sessionRef: SessionRef, summary: ..., adrIndex: ...}`.
+Output: `void` (logically; the Step returns the
+`SessionRef` unchanged for chaining). Services:
+`SessionStore`.
+
+## Freeze parent plan entry
+
+Triggered only on the planned path. The parent session
+referenced by the opened log's `Planned by:` field has its
+matching `## Plan` entry's `Realised by:` field set to the
+opened log's path. The entry is thereafter frozen (ADR-011 /
+Session Concept mutability).
+
+When the parent's Plan entry already carries a matching
+`Realised by:` (pre-stamped), the Step is a no-op; when it
+carries a mismatched path (e.g., the opened log was renamed
+at this transition), the Step overwrites to the current
+path.
+
+Step: `io`. Input: the opened `SessionRef` and its
+`plannedBy` field (from `SessionStore.read`). Output:
+`void`. Services: `SessionStore`.
+
+## Re-gate goals
+
+Triggered only on the planned path. For each provisional
+Goal in the opened log's `## Goals` section:
+
+1. Present the Goal draft to the Person for
+   Accept / Correct / Clarify / Reject.
+2. On Accept: stamp `Status: Active` and a `Category:` drawn
+   from `corpus/categories/goal-category.md`. If the draft
+   did not carry a `Category:`, the Person's Accept message
+   must carry one (enforced by `GateDecision<Goal>`).
+3. On Correct: apply the Person's edit to the draft and
+   re-present (recursion; `memo` keys on invocation key so
+   each iteration is a fresh record).
+4. On Clarify: surface the Person's question to the CLI
+   layer and suspend; resume on the next turn with the
+   clarification appended to context.
+5. On Reject: stamp `Status: Abandoned` and a one-line
+   rationale from the Person's `reason`.
+
+The Step loops; each iteration is its own invocation key
+derived from the Goal draft content.
+
+On the spontaneous path this Step is a no-op: no provisional
+Goals exist. Goal drafting for spontaneous sessions is the
+caller's responsibility (or a later `trope-goal-flow` Trope).
+
+Step: `gate` (looped). Input: provisional Goals array.
+Output: accepted Goals array with Status + Category.
+Services: `GateService`, `SessionStore` (to write the stamps).
+
+## Stamp accepted goals
+
+After re-gating, the opened log's `## Goals` entries are
+rewritten with the Accepted Status and Category values in
+place of the provisional markers. Rejected Goals are stamped
+`Abandoned`.
+
+Step: `io`. Input: accepted Goals array. Output: `void`.
+Services: `SessionStore`.
+
+## Return session reference
+
+The final Step returns the `SessionRef` for the opened log.
+The composing `workflowStep` emits this as its output.
+
+Step: `effect`. Input: the opened `SessionRef`. Output:
+`SessionRef` (identity; included as a named Step so the
+composition graph has an explicit terminal node and the
+prose carries a closing section).
+
+## Composition
+
+The Trope's `realise` is a `workflowStep` whose `run` is:
+
+```typescript
+Effect.gen(function* () {
+  const decision = yield* memo(detectStartPath)(input)
+
+  if (decision._tag === 'OpenOrphan') {
+    const orphanChoice = yield* memo(handleOrphan)({
+      orphanPath: decision.path,
+    })
+    // orphanChoice is a GateDecision; tagged-dispatch to
+    // resume / close / revert semantics; see the Step.
+  }
+
+  const ref = yield* memo(openLog)(decision)
+  const prior = yield* memo(surfacePriorContext)(ref)
+  const adrs = yield* memo(readAdrIndex)(ref)
+  yield* memo(writePreWorkBlock)({
+    sessionRef: ref,
+    summary: prior.summary,
+    deferred: prior.deferred,
+    adrIndex: adrs,
+  })
+
+  if (decision._tag === 'Planned') {
+    yield* memo(freezeParentPlanEntry)(ref)
+    const accepted = yield* memo(reGateGoals)({ ref })
+    yield* memo(stampAcceptedGoals)({ ref, goals: accepted })
+  }
+
+  return yield* memo(returnSessionRef)(ref)
+})
+```
+
+The ten atomic Steps each have their own `ProseRef` with
+`section: 'detect-start-path' | 'handle-open-orphan' | ...`.
+Rendering the Trope's prose pulls this whole file; rendering
+any atomic Step pulls just its section.

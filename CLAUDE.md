@@ -46,11 +46,21 @@ for the layout decision; previous split at `framework/` vs. root
 
 Living:
 
-- **`packages/`** — the active `@literate/*` workspace packages.
-  V0.1 ships `@literate/core` (the Step substrate from ADR-011
-  through ADR-014). Every new Concept, Trope, template, and the
-  CLI lands here as an independently shippable npm package
-  (ADR-009, preserved).
+- **`packages/`** — the active `@literate/*` workspace packages
+  (`cli`, `core`, `template-minimal`). Per
+  [ADR-025](./corpus/decisions/ADR-025-shadcn-shaped-distribution.md)
+  + [ADR-026](./corpus/decisions/ADR-026-registry-mechanics-and-extensions-surface.md)
+  the **only** npm-published artefact is `@literate/cli`;
+  `@literate/core` is internal to the CLI bundle. ADR-009
+  (Tropes-as-packages) is superseded for distribution: Tropes
+  and Concepts now ship as registry seeds (see `registry/`).
+- **`registry/`** — Trope and Concept seeds as authored
+  TS+MDX (`registry/tropes/<id>/{index.ts, prose.mdx, README.md}`,
+  `registry/concepts/<id>/{index.ts, concept.mdx, README.md}`).
+  The CLI fetches from here on `tangle`/`update` and bundles
+  these sources at build time for `continue`/`close` (ADR-026 §4).
+  This is the canonical Trope/Concept authoring location in LF's
+  own repo.
 - **`corpus/`** — the **global living corpus**. ADRs, sessions,
   categories, concepts, specs, chapters tracking LF as a project.
   Legacy decisions (ADR-001…ADR-010) and rewrite decisions
@@ -85,10 +95,11 @@ Frozen (read-only per ADR-018 + ADR-020):
    no `framework/` folder).
 3. `legacy/LITERATE.md` is the legacy Protocol (frozen per
    ADR-018). Read it for historical context; do not edit it. New
-   Protocol prose ships inside `packages/*` as `@literate/concept-*`
-   or `@literate/trope-*` packages, with prose in sibling `.md`
-   files referenced by `.ts` via `prose(import.meta.url, …)`
-   per [ADR-015](./corpus/decisions/ADR-015-typescript-composition-md-siblings.md).
+   Protocol prose ships as registry seeds under
+   `registry/tropes/<id>/` and `registry/concepts/<id>/`
+   (ADR-025/026), with prose in sibling `.mdx` files referenced
+   by `index.ts` via `prose(import.meta.url, …)` per
+   [ADR-015](./corpus/decisions/ADR-015-typescript-composition-md-siblings.md).
 
 ## The two protocols
 

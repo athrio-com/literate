@@ -34,11 +34,21 @@ export {
   ExecutionLog,
   ExecutionRecord,
   ExecutionStatus,
+  fileBackedExecutionLogLayer,
   InMemoryExecutionLogLayer,
   LogWriteError,
+  makeFileBackedExecutionLog,
   makeInMemoryExecutionLog,
+  persistExecutionRecords,
+  rewriteExecutionLogSection,
   type ExecutionLogService,
 } from './execution.ts'
+
+// fs-backed SessionStore binding
+export {
+  fileSystemSessionStoreLayer,
+  makeFileSystemSessionStore,
+} from './session-store-fs.ts'
 
 // Suspension (ADR-013 §4)
 export {
@@ -58,17 +68,33 @@ export {
   DefaultStubLayers,
   GateService,
   GateUnresolved,
+  inMemorySessionStoreLayer,
   LiveProseInvokeLayer,
+  makeInMemorySessionStore,
   makeProseInvoke,
+  makeScriptedGateService,
+  makeScriptedTerminalIO,
+  makeTerminalGateService,
   ProseInput,
   ProseInvoke,
   ProseOutput,
+  scriptedGateServiceLayer,
+  SessionStore,
+  SessionStoreError,
   StubAIInvokeLayer,
   StubGateServiceLayer,
+  StubSessionStoreLayer,
+  terminalGateServiceLayer,
+  Timestamp,
   type AIInvokeService,
   type GateServiceImpl,
   type ProseInvokeService,
+  type SessionStoreService,
+  type TerminalIO,
 } from './services.ts'
+
+// Terminal (node:readline-backed TerminalIO for CLI binding)
+export { makeNodeTerminalIO, type NodeTerminal } from './terminal.ts'
 
 // Gate decisions (ADR-017)
 export { GateDecisionSchema, type GateDecision } from './gate.ts'
@@ -102,14 +128,17 @@ export {
   type SessionRef,
 } from './protocol.ts'
 
-// Metalanguage: Concept / Trope / Variant (ADR-001, ADR-009, ADR-010,
-// extended with the Step substrate from ADR-011). Variant is the FP
-// ADT-case name for what legacy ADR-001 called "Subkind".
+// Metalanguage: Concept / Trope / Variant / Modality (ADR-001, ADR-009,
+// ADR-010, extended with the Step substrate from ADR-011; Modality ADT
+// added by ADR-021). Variant is the FP ADT-case name for what legacy
+// ADR-001 called "Subkind".
 export {
   concept,
   isConcept,
   isTrope,
   isVariant,
+  Modality,
+  ModalitySchema,
   trope,
   variant,
   type AnyConcept,

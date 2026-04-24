@@ -1,7 +1,7 @@
 # ADR-019 — Reinstate `@literate/*` namespace for rewrite packages
 
 **Date:** 2026-04-23
-**Status:** Accepted
+**Status:** Accepted (npm-scope clause narrowed by ADR-025: `@literate/*` applies to `@literate/cli` only; Trope/Concept identifiers are registry-path conventions)
 **Tags:** `#release` `#tooling` `#migration`
 
 **Context:**

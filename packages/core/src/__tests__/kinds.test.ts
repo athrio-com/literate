@@ -11,6 +11,8 @@ import {
   isConcept,
   isTrope,
   isVariant,
+  Modality,
+  ModalitySchema,
   prose,
   StepId,
   trope,
@@ -56,6 +58,7 @@ const NoteLifecycleTrope: Trope<typeof NoteConcept> = trope({
   prose: prose(import.meta.url, './kinds.md'),
   realise: NoteLifecycleStep,
   variants: [StickyNoteVariant],
+  modality: Modality.Weave,
 })
 
 describe('@literate/core kinds', () => {
@@ -86,6 +89,7 @@ describe('@literate/core kinds', () => {
     expect(NoteLifecycleTrope.realise.id).toBe(StepId('note.lifecycle'))
     expect(NoteLifecycleTrope.dependencies).toEqual([])
     expect(NoteLifecycleTrope.variants).toEqual([StickyNoteVariant])
+    expect(NoteLifecycleTrope.modality).toEqual({ _tag: 'Weave' })
     expect(isTrope(NoteLifecycleTrope)).toBe(true)
     expect(isConcept(NoteLifecycleTrope)).toBe(false)
   })
@@ -96,5 +100,59 @@ describe('@literate/core kinds', () => {
       NoteLifecycleTrope.realise.realise(input) as Effect.Effect<Note>,
     )
     expect(output).toEqual(input)
+  })
+})
+
+describe('@literate/core Modality', () => {
+  test('Modality exposes six constructor values with stable _tag', () => {
+    expect(Modality.Protocol).toEqual({ _tag: 'Protocol' })
+    expect(Modality.Weave).toEqual({ _tag: 'Weave' })
+    expect(Modality.Tangle).toEqual({ _tag: 'Tangle' })
+    expect(Modality.Unweave).toEqual({ _tag: 'Unweave' })
+    expect(Modality.Untangle).toEqual({ _tag: 'Untangle' })
+    expect(Modality.Attest).toEqual({ _tag: 'Attest' })
+  })
+
+  test('ModalitySchema decodes each variant and rejects unknowns', () => {
+    const decode = Schema.decodeUnknownSync(ModalitySchema)
+    expect(decode({ _tag: 'Protocol' })).toEqual({ _tag: 'Protocol' })
+    expect(decode({ _tag: 'Weave' })).toEqual({ _tag: 'Weave' })
+    expect(decode({ _tag: 'Tangle' })).toEqual({ _tag: 'Tangle' })
+    expect(decode({ _tag: 'Unweave' })).toEqual({ _tag: 'Unweave' })
+    expect(decode({ _tag: 'Untangle' })).toEqual({ _tag: 'Untangle' })
+    expect(decode({ _tag: 'Attest' })).toEqual({ _tag: 'Attest' })
+    expect(() => decode({ _tag: 'Bogus' })).toThrow()
+  })
+
+  test('Modality is pattern-matchable via switch on _tag', () => {
+    const explain = (m: typeof Modality.Protocol | typeof Modality.Weave): string => {
+      switch (m._tag) {
+        case 'Protocol':
+          return 'lifecycle'
+        case 'Weave':
+          return 'corpus authoring'
+      }
+    }
+    expect(explain(Modality.Protocol)).toBe('lifecycle')
+    expect(explain(Modality.Weave)).toBe('corpus authoring')
+  })
+
+  test('Concept accepts an optional modality; Trope requires one', () => {
+    const unmoded: Concept<Note> = concept({
+      id: 'note.unmoded',
+      description: 'A Concept that does not carry a modality (data shape only).',
+      instanceSchema: NoteSchema,
+      prose: prose(import.meta.url, './kinds.md'),
+    })
+    expect(unmoded.modality).toBeUndefined()
+
+    const moded: Concept<Note> = concept({
+      id: 'note.moded',
+      description: 'A Concept electing a default modality.',
+      instanceSchema: NoteSchema,
+      prose: prose(import.meta.url, './kinds.md'),
+      modality: Modality.Weave,
+    })
+    expect(moded.modality).toEqual({ _tag: 'Weave' })
   })
 })

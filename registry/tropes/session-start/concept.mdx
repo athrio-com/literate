@@ -1,0 +1,139 @@
+# Session-Start Procedure
+
+The `session-start` **Concept** declares the typed contract for
+beginning an LF session: the information it takes in, the
+observable effects it produces, the artefact it returns, and the
+invariants it preserves. The realising Trope (see `prose.md`)
+describes *how* the contract is fulfilled as a composition of
+Steps; this file describes *what* the contract is.
+
+## Modality
+
+`Protocol`. Session-start is LF machinery: the Protocol
+dispatches it unconditionally when `Protocol.continue` detects
+that no session is currently `Open` (or that the Person has
+asked to open one). It is never reached for authorially.
+
+## Input
+
+```typescript
+interface SessionStartInput {
+  readonly repoRoot: string   // absolute path to the repo root containing corpus/
+  readonly agent: string      // model identifier, e.g. 'Claude Opus 4.7 (1M context)'
+}
+```
+
+Start-path selection is *internal* — the Trope detects path
+from repo state and Person gates rather than taking a
+`mode: 'spontaneous' | 'planned'` input. The caller surrenders
+control of the decision; the Trope is authoritative per
+IMP-1.2.
+
+## Output
+
+```typescript
+interface SessionRef {           // defined in @literate/core protocol.ts
+  readonly _tag: 'SessionRef'
+  readonly path: string          // 'corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md'
+  readonly slug: string
+}
+```
+
+Successful realisation returns a `SessionRef` pointing at a log
+whose header carries `Status: Open`, a populated `Started:`
+stamp, and the bound `Agent:`. Provisional Goals copied from a
+parent's Plan entry (planned path) are re-gated and stamped
+with `Status: Active` + `Category:` before the Trope returns.
+
+## Errors
+
+- `OrphanConflict { openSessions: readonly string[] }` — a non-
+  `Planned` log already shows `Status: Open` from a prior thread
+  and the Person did not authorise resuming, closing, or
+  reverting it. Raised when the Person's gate decision on the
+  orphan is `Reject`.
+- `SessionMalformed { path: string, reason: string }` — a
+  session log the Trope needed to read (the chosen `Planned`
+  log, or the parent referenced by `Planned by:`) is not
+  well-formed (missing required header fields, unparseable
+  Status, etc.).
+
+Both error classes are re-exported from `@literate/core`
+(`protocol.ts`); the Trope adds no new error types.
+
+## Preconditions
+
+- `repoRoot` exists and contains `corpus/sessions/`.
+- `corpus/sessions/sessions.md` exists (may be unpopulated).
+- `corpus/decisions/decisions.md` exists.
+
+These are assumed, not validated. A fresh consumer repo
+satisfies them if it was scaffolded by
+`@literate/template-minimal` (a later session). Violations
+surface as `SessionMalformed` errors from the underlying
+`SessionStore` service.
+
+## Postconditions
+
+- Exactly one session log in `corpus/sessions/` carries
+  `Status: Open`, and it is the one referenced by the returned
+  `SessionRef`.
+- The opened log's `## Pre-work` block records the prior
+  `Closed` session's Summary / Deferred surfacing, the ADR
+  index review, and the planned-session queue state (IMP-1
+  steps 3 and 4).
+- For a planned start, the parent session referenced by
+  `Planned by:` has its matching `## Plan` entry's
+  `Realised by:` field set to the opened log's path.
+- For a planned start, every provisional Goal has been
+  re-gated; accepted Goals carry `Status: Active` + a
+  `Category:` value drawn from
+  `corpus/categories/goal-category.md`.
+- The `corpus/sessions/sessions.md` index row for the opened
+  log shows `Open`.
+
+## Invariants preserved
+
+- **Gate invariant.** No Goal transitions past provisional
+  without an Accept decision (IMP-1.6).
+- **Orphan invariant.** A fresh `Status: Open` is never
+  stamped while another non-`Planned` log shows
+  `Status: Open` from a prior thread without explicit Person
+  consent (IMP-1.2.c, IMP-6).
+- **Plan-freeze invariant.** A parent's `## Plan` entry is
+  frozen (via `Realised by:` set) at the moment its successor
+  transitions to `Open` (ADR-011 / session Concept
+  mutability table).
+
+## Services required
+
+- `SessionStore` — read/write/list session logs; read the
+  corpus ADR index; timestamps. Introduced in
+  `@literate/core` at this session.
+- `GateService` — present the Goal re-gates and the
+  orphan-handling decision.
+- `ExecutionLog` — implicit via `memo()` around each composed
+  Step.
+- `ProseInvoke` — implicit via the Steps' ProseRef renders
+  when the CLI surfaces prose (not read inside the Trope
+  body).
+
+## Relationships
+
+- Realised by the `@literate/trope-session-start` Trope
+  (`prose.md` in this package is that Trope's procedural
+  description).
+- Depends on the Session Concept (`corpus/concepts/`,
+  future): data-shape-only; session-start reads and mutates
+  Session instances without owning their schema.
+- Composed by `Protocol.continue` (ADR-014) as one of the
+  Protocol-mode Tropes the runtime dispatches at the
+  start-of-turn transition.
+
+## Versioning
+
+- `version: '0.0.1'` at introduction.
+- A Protocol-mode Trope: breaking contract changes (input,
+  output, error channel, or postconditions) advance LF's
+  Protocol major version. Purely additive changes (a new
+  optional input field, a refined error reason) are minor.

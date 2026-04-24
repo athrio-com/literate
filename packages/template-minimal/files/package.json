@@ -1,0 +1,7 @@
+{
+  "name": "literate-consumer-minimal",
+  "version": "0.0.1",
+  "description": "A minimal Literate Framework consumer scaffold.",
+  "private": true,
+  "type": "module"
+}

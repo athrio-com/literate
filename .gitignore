@@ -34,3 +34,6 @@ out/
 # Local scratch
 .scratch/
 temp/
+
+# Packed tarballs (created by `bun pm pack` / `npm pack`)
+*.tgz

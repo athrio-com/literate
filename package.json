@@ -10,5 +10,12 @@
   "license": "(MIT OR Apache-2.0)",
   "engines": {
     "bun": ">=1.1.0"
+  },
+  "scripts": {
+    "build": "bun run --filter @literate/cli build",
+    "test": "bun test",
+    "typecheck": "bun run --filter '*' typecheck",
+    "smoke:install": "packages/cli/scripts/smoke-install.sh",
+    "literate": "node packages/cli/dist/literate.js"
   }
 }

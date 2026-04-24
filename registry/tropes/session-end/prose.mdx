@@ -1,0 +1,122 @@
+# Session-End Trope
+
+The workflow Trope that realises the `session-end` Concept
+(see `concept.md`). Closes an LF session by reading the log,
+running a battery of validations, returning
+`SessionEndIncomplete` on any failure, and — on full pass —
+stamping `Status: Closed (…)` atomically and updating the
+sessions index.
+
+The procedure decomposes into five atomic Steps, each bound
+to a section of this file via ProseRef + `section:` slicing
+(ADR-015). The composition is a `workflowStep` whose `run` is
+`Effect.gen` sequencing the atomic Steps under `memo()`.
+
+The imperative version of this procedure is inlined in
+`corpus/CLAUDE.md#IMP-5`; the prose here is the authoritative
+decomposition the Step composition implements.
+
+## Read current log
+
+Read the log at `sessionPath` via `SessionStore.read`,
+producing a `RawLog` (header fields + body). The header is
+parsed into a typed record including `status`, `started`,
+`agent`, `plannedBy`. If the status is not `Open`, raise
+`SessionMalformed` with a reason citing the transition
+violation (per `corpus/categories/session-status.md`, only
+`Open → Closed` is legal through this Trope).
+
+Step: `effect`. Input: `SessionEndInput`. Output:
+`ParsedLog` (the RawLog plus a structured body index —
+positions of each `##` section start).
+
+## Validate
+
+Run the seven validators listed in `concept.md#validations`
+against the `ParsedLog`. Each validator is a pure function
+returning either `ok` or a `missing` string. Failures are
+collected (no short-circuiting) and returned as
+`ValidationReport`.
+
+If `ValidationReport.missing.length > 0`, the Trope raises
+`SessionEndIncomplete { missing }`. The session stays
+`Open`; the caller addresses the gaps and re-runs.
+
+Step: `effect`. Input: `ParsedLog`. Output: `ValidationReport`
+(or raises on failure). No services — pure.
+
+## Stamp closed
+
+Atomically rewrite the header's `Status:` line from
+`Status: Open` to `Status: Closed (<logStamp>)` where
+`logStamp` comes from `SessionStore.now().logStamp`. Preserve
+every other header field verbatim.
+
+The "atomic" requirement is satisfied by `SessionStore.write`
+being a single-file overwrite. If the index update
+(next Step) fails after this Step succeeds, the header
+shows Closed while the index shows Open — a partial-failure
+that the caller recovers by re-running `session-end` (which
+becomes a no-op on the header and fixes the index; idempotent
+under `memo`).
+
+Step: `io`. Input:
+`{ sessionPath: string, logStamp: string }`. Output:
+`SessionClosure`. Services: `SessionStore`.
+
+## Update sessions index
+
+Read `corpus/sessions/sessions.md`, find the row matching
+`sessionPath`, rewrite its `Status` cell from `Open` to
+`Closed (<logStamp>)`. Write back.
+
+When the row is missing (a malformed or out-of-index log),
+raise a warning in the `ValidationReport`'s
+`discoveredDivergences` field but do not fail. An index row
+can be restored manually or by a future
+`trope-index-repair`.
+
+Step: `io`. Input: `SessionClosure`. Output: `void` (returns
+the `SessionClosure` for chaining). Services: `SessionStore`.
+
+## Return closure record
+
+Emit the `SessionClosure` (`{sessionPath, closedAt}`) from the
+composing `workflowStep`. A named terminal Step so the
+composition graph has an explicit end node.
+
+Step: `effect`. Input: `SessionClosure`. Output:
+`SessionClosure` (identity).
+
+## Composition
+
+The Trope's `realise` is a `workflowStep` whose `run` is:
+
+```typescript
+Effect.gen(function* () {
+  const parsed = yield* memo(readCurrentLog)(input)
+  const report = yield* memo(validate)(parsed)
+
+  if (report.missing.length > 0) {
+    return yield* Effect.fail(
+      new SessionEndIncomplete({ missing: report.missing }),
+    )
+  }
+
+  const now = yield* SessionStore.pipe(
+    Effect.flatMap((s) => s.now()),
+  )
+  const closure = yield* memo(stampClosed)({
+    sessionPath: input.sessionPath,
+    logStamp: now.logStamp,
+  })
+  yield* memo(updateSessionsIndex)(closure)
+
+  return yield* memo(returnClosureRecord)(closure)
+})
+```
+
+The five atomic Steps each have their own `ProseRef` with
+`section: 'read-current-log' | 'validate' | ...`. Rendering
+the Trope's prose pulls this whole file; rendering any
+atomic Step pulls just its section.

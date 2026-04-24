@@ -27,9 +27,10 @@ the ADR-020 freeze) are:
   stamp).
 
 The rewrite re-authors these Tropes on the Step substrate as
-`@literate/trope-session-start` and `@literate/trope-session-end`
-at `packages/trope-session-start/` and `packages/trope-session-end/`
-(see the MVP arc Planned sessions).
+registry seeds at `registry/tropes/session-start/` and
+`registry/tropes/session-end/` per ADR-025/026 (the
+`@literate/trope-*` workspace packages from S2/S3 were collapsed
+into registry seeds during P2).
 
 The imperatives below inline the *decision points* a fresh agent
 needs before opening any file; the trope prose is the authority on

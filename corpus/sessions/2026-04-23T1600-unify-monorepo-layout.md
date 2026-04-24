@@ -201,7 +201,7 @@ the freeze-scope shift (the freeze now targets `legacy/`, not
 
 **Slug:** workflow-tropes-session-lifecycle
 **Depends on:** Planned Session 1
-**Realised by:** corpus/sessions/2026-04-25T0900-workflow-tropes-session-lifecycle.md
+**Realised by:** corpus/sessions/2026-04-23T1649-workflow-tropes-session-lifecycle.md
 **Goals (provisional; re-gated on open):**
 
 - `@literate/trope-session-start` implementing IMP-1 as a
@@ -213,7 +213,7 @@ the freeze-scope shift (the freeze now targets `legacy/`, not
 
 **Slug:** live-services-and-file-execution-log
 **Depends on:** Planned Session 2
-**Realised by:** corpus/sessions/2026-04-26T0900-live-services-and-file-execution-log.md
+**Realised by:** corpus/sessions/2026-04-23T1800-live-services-and-file-execution-log.md
 **Goals (provisional; re-gated on open):**
 
 - Interactive `GateService` (CLI stdin/stdout) replacing the
@@ -225,7 +225,7 @@ the freeze-scope shift (the freeze now targets `legacy/`, not
 
 **Slug:** cli-template-and-e2e-smoke
 **Depends on:** Planned Session 3
-**Realised by:** corpus/sessions/2026-04-27T0900-cli-template-and-e2e-smoke.md
+**Realised by:** corpus/sessions/2026-04-23T1920-cli-template-and-e2e-smoke.md
 **Goals (provisional; re-gated on open):**
 
 - `@literate/cli` with `literate continue` as the

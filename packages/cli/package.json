@@ -1,0 +1,34 @@
+{
+  "name": "@literate/cli",
+  "version": "0.0.1",
+  "description": "Literate Framework CLI — the harness binding for Protocol.continue (ADR-014). Sole npm artefact under ADR-025; bundles its Trope logic and seed files from registry/ at build time per ADR-026.",
+  "license": "(MIT OR Apache-2.0)",
+  "type": "module",
+  "main": "./dist/literate.js",
+  "bin": {
+    "literate": "./dist/literate.js"
+  },
+  "exports": {
+    ".": "./dist/literate.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "prepack": "bun run build"
+  },
+  "devDependencies": {
+    "@literate/core": "workspace:*",
+    "@literate/template-minimal": "workspace:*",
+    "effect": "^3.21.0",
+    "typescript": "^5.6.0",
+    "@types/bun": "latest",
+    "@types/node": "latest"
+  }
+}

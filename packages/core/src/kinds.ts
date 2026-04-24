@@ -1,18 +1,52 @@
 /**
- * Concept, Trope, Variant — the algebraic metalanguage.
+ * Concept, Trope, Variant, Modality — the algebraic metalanguage.
  *
  * A Concept is the *what* (a schema-backed prose declaration);
  * a Trope is the *how* (a Concept realisation bound to a Step);
  * a Variant is an ADT case of a Concept — a refinement with its
  * own schema and prose, emitted under the same Concept tag.
+ * A Modality is the *mode of work* (protocol / weave / tangle /
+ * unweave / untangle / attest), a general six-case ADT applied
+ * to Tropes (required) and Concepts (optional).
  *
  * See ADR-001 (three-level algebra), ADR-009 (Tropes as packages),
  * ADR-010 (unify Terms into Concepts), ADR-011 (Step substrate),
- * ADR-015 (TypeScript composition + .md siblings) in
- * `../../../corpus/decisions/`.
+ * ADR-015 (TypeScript composition + .md siblings), ADR-021
+ * (Modality ADT) in `../../../corpus/decisions/`.
  */
-import type { Schema } from 'effect'
+import { Schema } from 'effect'
 import type { AnyStep, ProseRef } from './step.ts'
+
+// ---------------------------------------------------------------------------
+// Modality — general six-case ADT (ADR-021).
+//
+// A tagged union of six unit variants. Each variant is a `{_tag: '...'}`
+// struct — pattern-matchable via `switch (m._tag)` or `Match.type<Modality>()`
+// from `effect/Match`. Payloads are deferred; adding a payload to a variant
+// in a later revision is non-breaking as long as existing `_tag` values are
+// preserved and the new fields are additive.
+
+export const ModalitySchema = Schema.Union(
+  Schema.Struct({ _tag: Schema.Literal('Protocol') }),
+  Schema.Struct({ _tag: Schema.Literal('Weave') }),
+  Schema.Struct({ _tag: Schema.Literal('Tangle') }),
+  Schema.Struct({ _tag: Schema.Literal('Unweave') }),
+  Schema.Struct({ _tag: Schema.Literal('Untangle') }),
+  Schema.Struct({ _tag: Schema.Literal('Attest') }),
+)
+
+export type Modality = Schema.Schema.Type<typeof ModalitySchema>
+
+// Ergonomic constructors. Grouped on a namespace-like const so call-sites
+// read `Modality.Protocol` rather than assembling object literals.
+export const Modality = {
+  Protocol: { _tag: 'Protocol' } as const,
+  Weave: { _tag: 'Weave' } as const,
+  Tangle: { _tag: 'Tangle' } as const,
+  Unweave: { _tag: 'Unweave' } as const,
+  Untangle: { _tag: 'Untangle' } as const,
+  Attest: { _tag: 'Attest' } as const,
+} satisfies Record<string, Modality>
 
 // ---------------------------------------------------------------------------
 // Concept<D> — the "what": a schema-backed prose declaration.
@@ -25,6 +59,7 @@ export interface Concept<D = unknown> {
   readonly instanceSchema: Schema.Schema<D, any, never>
   readonly prose: ProseRef
   readonly dependencies: ReadonlyArray<AnyConcept>
+  readonly modality?: Modality
 }
 
 export type AnyConcept = Concept<any>
@@ -38,6 +73,7 @@ export interface ConceptDefinition<D> {
   readonly instanceSchema: Schema.Schema<D, any, never>
   readonly prose: ProseRef
   readonly dependencies?: ReadonlyArray<AnyConcept> | undefined
+  readonly modality?: Modality | undefined
 }
 
 export const concept = <D>(def: ConceptDefinition<D>): Concept<D> => ({
@@ -48,6 +84,7 @@ export const concept = <D>(def: ConceptDefinition<D>): Concept<D> => ({
   instanceSchema: def.instanceSchema,
   prose: def.prose,
   dependencies: def.dependencies ?? [],
+  ...(def.modality !== undefined ? { modality: def.modality } : {}),
 })
 
 // ---------------------------------------------------------------------------
@@ -100,6 +137,7 @@ export interface Trope<C extends AnyConcept = AnyConcept> {
   readonly realise: AnyStep
   readonly dependencies: ReadonlyArray<AnyTrope>
   readonly variants: ReadonlyArray<AnyVariant>
+  readonly modality: Modality
 }
 
 export type AnyTrope = Trope<any>
@@ -112,6 +150,7 @@ export interface TropeDefinition<C extends AnyConcept> {
   readonly realise: AnyStep
   readonly dependencies?: ReadonlyArray<AnyTrope> | undefined
   readonly variants?: ReadonlyArray<AnyVariant> | undefined
+  readonly modality: Modality
 }
 
 export const trope = <C extends AnyConcept>(
@@ -125,6 +164,7 @@ export const trope = <C extends AnyConcept>(
   realise: def.realise,
   dependencies: def.dependencies ?? [],
   variants: def.variants ?? [],
+  modality: def.modality,
 })
 
 // ---------------------------------------------------------------------------

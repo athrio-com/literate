@@ -5,9 +5,17 @@ entries are gated, the rest is ungated journal material.
 
 | File | Topic | Status |
 |---|---|---|
-| [2026-04-27T0900-cli-template-and-e2e-smoke.md](./2026-04-27T0900-cli-template-and-e2e-smoke.md) | CLI, `template-minimal`, end-to-end smoke (MVP capstone) | Planned |
-| [2026-04-26T0900-live-services-and-file-execution-log.md](./2026-04-26T0900-live-services-and-file-execution-log.md) | Interactive `GateService` + file-backed `ExecutionLog` (ADR-013) | Planned |
-| [2026-04-25T0900-workflow-tropes-session-lifecycle.md](./2026-04-25T0900-workflow-tropes-session-lifecycle.md) | `@literate/trope-session-start` + `@literate/trope-session-end` | Planned |
+| [2026-04-24T2000-cli-bundling-and-install.md](./2026-04-24T2000-cli-bundling-and-install.md) | CLI bundling pipeline (ADR-026 Q1 discharge) + local install smoke | Closed (2026-04-24T20:45) |
+| [2026-04-27T1400-template-finalisation.md](./2026-04-27T1400-template-finalisation.md) | P8 — `template-minimal` shadcn shape; registry trust; MVP-2 end-to-end smoke | Planned |
+| [2026-04-27T0900-implication-concept.md](./2026-04-27T0900-implication-concept.md) | P7 — `@literate/concept-implication` (typed); `trope-implication-flow`; session-end validation | Planned |
+| [2026-04-26T1400-mode-concept-and-imperative.md](./2026-04-26T1400-mode-concept-and-imperative.md) | P6 — `@literate/concept-mode` (typed, enactor axis); IMP-N Mode-discipline imperative; memos formalised | Planned |
+| [2026-04-26T0900-disposition-concept.md](./2026-04-26T0900-disposition-concept.md) | P5 — `@literate/concept-disposition` (parametrised struct, supersedes ADR-021's Modality) | Planned |
+| [2026-04-25T1400-prose-schema.md](./2026-04-25T1400-prose-schema.md) | P3 — `proseSchema` on `Trope<C>`; mdast validation during weave | Planned |
+| [2026-04-25T0900-registry-and-cli-surface.md](./2026-04-25T0900-registry-and-cli-surface.md) | P2 — `literate tangle` + `weave` + `update` + `init`; registry fetcher (file://+github:); ADR-026; trope migration to `registry/`; CLI verb refactor | Closed (2026-04-24T19:00) |
+| [2026-04-23T2100-ship-surface.md](./2026-04-23T2100-ship-surface.md) | LF's ship surface — `.literate/` framing (ADR-024) + shadcn distribution pivot (ADR-025); P2–P8 arc planned | Closed (2026-04-24T17:00) |
+| [2026-04-23T1920-cli-template-and-e2e-smoke.md](./2026-04-23T1920-cli-template-and-e2e-smoke.md) | CLI, `template-minimal`, end-to-end smoke (MVP capstone) | Closed (2026-04-23T20:30) |
+| [2026-04-23T1800-live-services-and-file-execution-log.md](./2026-04-23T1800-live-services-and-file-execution-log.md) | Interactive `GateService` + file-backed `ExecutionLog` (ADR-013) | Closed (2026-04-23T19:10) |
+| [2026-04-23T1649-workflow-tropes-session-lifecycle.md](./2026-04-23T1649-workflow-tropes-session-lifecycle.md) | `@literate/trope-session-start` + `@literate/trope-session-end` + ADR-021 `Modality` ADT | Closed (2026-04-23T17:43) |
 | [2026-04-23T1311-core-metalanguage.md](./2026-04-23T1311-core-metalanguage.md) | `Concept<D>` + `Trope<C>` + `Variant<C, D>` types in `@literate/core` | Closed (2026-04-23T13:38) |
 | [2026-04-28T0900-bootstrap-literate-docs.md](./2026-04-28T0900-bootstrap-literate-docs.md) | Bootstrap `@literate/docs` via CLI | Abandoned (2026-04-23T16:30 — superseded by MVP arc) |
 | [2026-04-27T0900-cli-multi-template.md](./2026-04-27T0900-cli-multi-template.md) | CLI multi-template support | Abandoned (2026-04-23T16:30 — superseded by MVP arc) |

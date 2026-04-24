@@ -1,7 +1,7 @@
 # ADR-002 — Corpus → src → .literate invariant relation
 
 **Date:** 2026-04-22
-**Status:** Accepted
+**Status:** Accepted (.literate/ clause superseded by ADR-024; src/ clause preserved)
 **Tags:** `#corpus` `#protocol`
 
 **Context:**
