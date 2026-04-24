@@ -128,6 +128,17 @@ export {
   type SessionRef,
 } from './protocol.ts'
 
+// MDX prose-schema surface (ADR-015, P3 — proseSchema as Trope contract).
+export {
+  headingsOfDepth,
+  ParsedMdxSchema,
+  requireMdxStructure,
+  slugify,
+  type MdastNode,
+  type ParsedMdx,
+  type RequireMdxStructureParams,
+} from './mdx.ts'
+
 // Metalanguage: Concept / Trope / Variant / Modality (ADR-001, ADR-009,
 // ADR-010, extended with the Step substrate from ADR-011; Modality ADT
 // added by ADR-021). Variant is the FP ADT-case name for what legacy

@@ -1,5 +1,6 @@
 /**
- * `literate close <sessionPath>` (ADR-014).
+ * `literate close <sessionPath> [repoRoot]` (ADR-014; argv surface
+ * from ADR-030).
  *
  * Dispatches the bundled `session-end` Trope (per ADR-026 §4).
  * Validates the log (Goals terminal, Summary present, Plan
@@ -7,7 +8,8 @@
  * Closed (YYYY-MM-DDTHH:MM)` in the log header and the sessions
  * index. Failures surface as `SessionEndIncomplete`.
  */
-import { Effect, Layer } from 'effect'
+import { Args, Command } from '@effect/cli'
+import { Console, Effect, Layer, Option } from 'effect'
 
 import {
   fileSystemSessionStoreLayer,
@@ -18,7 +20,6 @@ import {
   type TerminalIO,
 } from '@literate/core'
 import { sessionEndStep, type SessionClosure } from '../trope-bindings.ts'
-import { usageError, type Verb, type VerbContext } from './verb.ts'
 
 export interface RunCloseOptions {
   readonly repoRoot: string
@@ -41,25 +42,37 @@ export const runClose = (
     .pipe(Effect.provide(layer)) as Effect.Effect<SessionClosure, unknown>
 }
 
-const closeVerb: Verb = {
-  name: 'close',
-  summary: 'Close an Open LF session (Protocol-mode session-end).',
-  usage: 'Usage: literate close <sessionPath> [repoRoot]',
+const sessionPathArg = Args.text({ name: 'sessionPath' }).pipe(
+  Args.withDescription(
+    'Path (relative to repo root) of the session log to close.',
+  ),
+)
 
-  async run(argv, ctx: VerbContext): Promise<number> {
-    if (argv.length < 1) {
-      throw usageError(closeVerb, '<sessionPath> required')
-    }
-    const sessionPath = argv[0]!
-    const repoRoot = argv[1] ?? ctx.cwd
-    const closure = await Effect.runPromise(
-      runClose({ repoRoot, sessionPath }),
-    )
-    ctx.stdout.write(
-      `\nSession closed: ${closure.sessionPath}\n  closedAt: ${closure.closedAt}\n`,
-    )
-    return 0
-  },
-}
+const repoRootArg = Args.text({ name: 'repoRoot' }).pipe(
+  Args.withDescription(
+    'Repo root (defaults to the current working directory).',
+  ),
+  Args.optional,
+)
 
-export default closeVerb
+const closeCommand = Command.make(
+  'close',
+  { sessionPath: sessionPathArg, repoRoot: repoRootArg },
+  ({ sessionPath, repoRoot }) =>
+    Effect.gen(function* () {
+      const resolvedRoot = Option.getOrElse(repoRoot, () => process.cwd())
+      const closure = yield* runClose({
+        repoRoot: resolvedRoot,
+        sessionPath,
+      })
+      yield* Console.log(
+        `\nSession closed: ${closure.sessionPath}\n  closedAt: ${closure.closedAt}`,
+      )
+    }),
+).pipe(
+  Command.withDescription(
+    'Close an Open LF session (Protocol-mode session-end).',
+  ),
+)
+
+export default closeCommand

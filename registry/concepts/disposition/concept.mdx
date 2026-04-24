@@ -1,0 +1,125 @@
+# Disposition
+
+A **Disposition** names the *referential domain* a Trope, an
+authored instance, or a session belongs to. It answers the
+question: *which subject matter is this work about?*
+
+Disposition is **parametrised**, not closed. The `base` is a
+closed set of three values; everything below it is open and
+accretes from use without registration.
+
+## Shape
+
+```typescript
+interface Disposition {
+  readonly base: 'Product' | 'Protocol' | 'Infrastructure'
+  readonly scope?: string  // open, freeform; sub-domain inside the base
+  readonly prompt?: string // open, first-class — the agent reads this first
+  readonly prose?: string  // open, authored declaration in long form
+}
+```
+
+The Schema shape (Effect Schema):
+
+```typescript
+Schema.Struct({
+  base: Schema.Literal('Product', 'Protocol', 'Infrastructure'),
+  scope:  Schema.optional(Schema.String),
+  prompt: Schema.optional(Schema.String),
+  prose:  Schema.optional(Schema.String),
+})
+```
+
+## The three bases
+
+- **`Product`** — work about *what this repository builds*. For
+  a consumer of LF, this is their application: features,
+  business rules, domain model, customer-facing behaviour. For
+  LF itself, "Product" is reserved for the framework's own
+  customer-facing surface (the CLI verbs consumers run, the
+  template seeds they receive).
+- **`Protocol`** — work about *how the framework operates*.
+  The Concept algebra, the Trope substrate, the session
+  lifecycle, gating rules, mutability profiles, executable
+  monadic prose, the Step substrate. LF's `corpus/decisions/`
+  is overwhelmingly Protocol-disposition. The Tropes shipped in
+  `registry/tropes/` are Protocol enactments (`Modality:
+  Protocol` in the legacy ADT vocabulary, ADR-021).
+- **`Infrastructure`** — work about *the operational substrate
+  underneath both Product and Protocol*. Build tooling, package
+  management, CI, deployment, runtime constraints, monorepo
+  layout, the choice of bundler or test framework. Often the
+  Disposition of an ADR like "we use library X" — see
+  ADR-004 (`#tooling`), ADR-029 (Bun-only runtime), ADR-030
+  (`@effect/cli`).
+
+The triple is exhaustive at v0.1. New bases would be a gated
+algebraic addition (ADR + Concept revision), not an ad-hoc
+expansion.
+
+## The three optional fields
+
+- **`scope`** — a freeform sub-domain inside the chosen base.
+  Examples for Disposition `Protocol`: `'session-lifecycle'`,
+  `'algebra'`, `'execution'`, `'gating'`. Examples for
+  Disposition `Infrastructure`: `'monorepo-layout'`, `'cli-build'`,
+  `'install-flow'`. No registry; scopes accrete from use.
+  Renames or consolidations happen via an ADR when a scope's
+  weight warrants it.
+- **`prompt`** — a short, first-person framing the *agent*
+  reads first. The convention is one or two sentences naming
+  what the work is about and what stance the agent should take.
+  This is the field an `Exploring` agent uses to anchor the
+  conversation when no concrete intent has crystallised yet
+  (see Mode + IMP-N).
+- **`prose`** — a long-form authored declaration. Where the
+  work warrants more than a `prompt` line — for instance, when
+  a Disposition shifts mid-session and needs explicit framing —
+  this field carries the prose. For most Tropes and sessions,
+  `prose` is empty.
+
+## Disposition vs Mode
+
+Disposition is *what the work is about* (referential domain).
+Mode is *how the work is being done* (operational stance —
+Exploring / Weaving / Tangling). The two axes are orthogonal.
+A session can be `{ base: 'Protocol', mode: 'Exploring' }` (a
+deliberation about the framework) or `{ base: 'Protocol',
+mode: 'Weaving' }` (drafting Protocol prose under the gate)
+or `{ base: 'Infrastructure', mode: 'Tangling' }` (mechanical
+CLI work changing the build). Disposition × Mode is the 2D
+product space pattern-matched at every authoritative branching
+site.
+
+## Where Disposition shows up
+
+- **Sessions** carry `disposition` (optional at v0.1; mandatory
+  forward of this Concept's adoption — see `concept-session`).
+  Default for sessions authoring LF itself: `{ base: 'Protocol' }`.
+- **Tropes** carry `disposition` (replaces ADR-021's `modality`;
+  see ADR-031 for the supersession rationale).
+- **ADRs** carry an implicit Disposition through their `Tags:`
+  vocabulary (e.g. `#tooling` ↔ `Infrastructure`,
+  `#protocol` ↔ `Protocol`). v0.1 keeps tags as the on-disk
+  surface; an explicit `Disposition:` line on ADRs is a
+  forward question.
+
+## Why "Disposition" and not "Modality"
+
+ADR-021 used "Modality" for the same axis. The term carries
+linguistic baggage from formal logic and natural-language
+philosophy: **modal logic** is about epistemic / deontic /
+alethic stances ("possibly", "necessarily", "obligatorily"),
+which is not the referential-frame meaning the algebra needs.
+"Disposition" carries the right shape in everyday usage —
+"the disposition of a piece of work" reads as "what it is
+about / how it is positioned" cleanly. ADR-031 records the
+supersession; ADR-021's body stays frozen per IMP-6 and its
+`Status:` line records the retirement.
+
+The closed-set `base` is a refinement of ADR-021's six-value
+ADT: ADR-021 had `{ Protocol, Weave, Tangle, Unweave, Untangle,
+Attest }`. Three of those (`Weave / Tangle / Unweave / Untangle
+/ Attest`) were operational-stance values — they belong to
+**Mode**, not Disposition. Splitting the axes is the deeper
+correction ADR-031 records.

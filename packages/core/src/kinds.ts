@@ -15,6 +15,7 @@
  * (Modality ADT) in `../../../corpus/decisions/`.
  */
 import { Schema } from 'effect'
+import type { ParsedMdx } from './mdx.ts'
 import type { AnyStep, ProseRef } from './step.ts'
 
 // ---------------------------------------------------------------------------
@@ -134,6 +135,7 @@ export interface Trope<C extends AnyConcept = AnyConcept> {
   readonly version: string
   readonly realises: C
   readonly prose: ProseRef
+  readonly proseSchema: Schema.Schema<ParsedMdx, any, never>
   readonly realise: AnyStep
   readonly dependencies: ReadonlyArray<AnyTrope>
   readonly variants: ReadonlyArray<AnyVariant>
@@ -147,6 +149,7 @@ export interface TropeDefinition<C extends AnyConcept> {
   readonly version?: string | undefined
   readonly realises: C
   readonly prose: ProseRef
+  readonly proseSchema: Schema.Schema<ParsedMdx, any, never>
   readonly realise: AnyStep
   readonly dependencies?: ReadonlyArray<AnyTrope> | undefined
   readonly variants?: ReadonlyArray<AnyVariant> | undefined
@@ -161,6 +164,7 @@ export const trope = <C extends AnyConcept>(
   version: def.version ?? '0.0.1',
   realises: def.realises,
   prose: def.prose,
+  proseSchema: def.proseSchema,
   realise: def.realise,
   dependencies: def.dependencies ?? [],
   variants: def.variants ?? [],

@@ -1,0 +1,69 @@
+# Step (declaration)
+
+A **Step** is the executable unit of *how* — the third tier of
+the algebra (Concept → Trope → Step → Authored Instance,
+extended by ADR-011). This Concept declares the typed
+*contract* a Step author commits to before tangling code: id,
+kind, description, optional version. The runtime
+implementation surface (the `Step<I, O, E, R>` interface with
+`Effect.Effect` machinery, `InvocationKey`, `ProseRef`, and
+the six combinators) lives in `@literate/core`'s `step.ts`.
+
+This Concept is the *what* a Step says about itself. The
+runtime is the *how* it executes. Both are needed; this
+Concept declares only the former.
+
+## Shape
+
+```typescript
+interface StepDeclaration {
+  readonly _tag: 'StepDeclaration'
+  readonly id: string
+  readonly kind: StepKind             // from concepts/step-kind
+  readonly description: string
+  readonly version?: string
+}
+```
+
+`StepKind` is imported from the sibling
+[`step-kind`](../step-kind/concept.mdx) Concept.
+
+## The six kinds
+
+See [`step-kind/concept.mdx`](../step-kind/concept.mdx) for
+the closed vocabulary (`prose`, `workflow`, `effect`, `ai`,
+`gate`, `io`) and per-kind semantics. `prose` is the base
+kind; the other five specialise it by binding to a service.
+
+## Runtime vs declaration
+
+A Step's runtime interface declared in `@literate/core` is
+roughly:
+
+```typescript
+interface Step<I, O, E, R> {
+  readonly id: StepId
+  readonly kind: StepKind
+  readonly inputSchema: Schema.Schema<I>
+  readonly outputSchema: Schema.Schema<O>
+  readonly run: (input: I) => Effect.Effect<O, E, R>
+  readonly prose?: ProseRef
+}
+```
+
+The Concept's `StepDeclaration` Schema captures the
+*declarative* part (id, kind, description) — what a Step
+*says about itself* before you look at its runtime. Tropes
+compose Steps; Step authors implement the runtime.
+
+## References
+
+- ADR-011 declares the Step substrate (executable monadic
+  prose).
+- ADR-012 declares `prose` as the base kind.
+- ADR-013 records each invocation in the Execution Log.
+- ADR-017 specialises `gate` into the Accept / Correct /
+  Clarify / Reject flow.
+- Composes [`step-kind`](../step-kind/concept.mdx).
+- The runtime `Step<I, O, E, R>` interface lives in
+  `packages/core/src/step.ts`.

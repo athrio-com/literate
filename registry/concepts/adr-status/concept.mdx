@@ -1,0 +1,67 @@
+# ADR Status
+
+The closed vocabulary of `Status:` values an Architecture
+Decision Record can carry. The `Status:` line is the **sole
+mutable part** of an Accepted ADR (see IMP-6); all transitions
+are restricted to the diagram below.
+
+A freshly drafted ADR carries `Open`. On Accept it transitions
+to `Accepted`. A later ADR may supersede it, changing the line
+to `Superseded by ADR-NNN[ — note]`. Deferral is reserved for
+decisions deliberately postponed with their context preserved
+in the ADR body.
+
+## Members
+
+- **`Open`** — drafted, presented for review, not yet decided.
+- **`Accepted`** — in force. Code and downstream prose may
+  derive from it. Body is frozen (IMP-6).
+- **`Deferred`** — deliberately postponed. Decision postponed,
+  context preserved in the ADR body.
+- **`Superseded by ADR-NNN[ — note]`** — replaced by a later
+  ADR. Marked atomically when the superseding ADR is accepted.
+  The optional `— note` records what specifically was
+  superseded (e.g., `Superseded by ADR-031 (terminology + shape)`).
+
+## Schema shape
+
+```typescript
+ADRStatus =
+  | 'Open' | 'Accepted' | 'Deferred'
+  | `Superseded by ADR-${number}` (open string family)
+```
+
+The Effect Schema definition is a `Schema.Union` of the three
+closed literals and a `Schema.String` constrained by
+`Schema.pattern(/^Superseded by ADR-\d+/)`. Decoding accepts
+either a base literal or any string that matches the
+supersession pattern.
+
+## Transitions
+
+```
+Open      → Accepted              (review gate Accept)
+Open      → Deferred              (review gate Defer)
+Open      → (deleted)             (review gate Reject; number returns to pool)
+Accepted  → Superseded by ADR-NNN
+Deferred  → Accepted              (rare; requires re-presentation)
+```
+
+Terminal states (`Superseded`, `Deferred` in practice) do not
+transition further.
+
+Transitions are documented here in prose, not enforced at the
+Schema level. Schema-level transition enforcement (e.g. via
+`Schema.filter` over a `(prev, next)` pair) is a future
+material revision.
+
+## References
+
+- Used in every ADR header in `corpus/decisions/`.
+- The (forward) `adr-flow` Trope writes `Open` at draft time
+  and transitions to `Accepted` on review-gate Accept.
+- Supersession transitions are applied atomically on Accept of
+  the superseding ADR.
+- `isTerminalADRStatus(raw)` from this Concept's `index.ts`
+  predicates the terminal-state check used by future
+  `adr-flow` validation.

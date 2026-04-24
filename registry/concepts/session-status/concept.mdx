@@ -1,0 +1,73 @@
+# Session Status
+
+The closed vocabulary of `Status:` values a session log can
+carry. The default spontaneous lifecycle is `Open → Closed`.
+The optional planned lifecycle is `Planned → Open → Closed`.
+Either lifecycle may end at `Abandoned` under explicit Person
+disposition.
+
+## Members
+
+- **`Planned`** — pre-scoped under a parent session's
+  `## Plan`. The log file exists with provisional Goals copied
+  from the parent Plan entry. `Started` is `—` and no work has
+  occurred. The session may be revised (gated) while in this
+  state.
+- **`Open`** — work in progress. The log carries
+  `Started: YYYY-MM-DDTHH:MM` and an authoritative Goals list.
+- **`Closed`** — terminal, validated by `session-end`. The
+  on-disk header line carries a parenthetical timestamp
+  (`Closed (YYYY-MM-DDTHH:MM)`); the timestamp lives separately
+  on the `Session` Concept's `closedAt` field. The Summary is
+  written, every Goal carries a terminal status, every Plan
+  entry (if any) is realised or carried forward.
+- **`Abandoned`** — terminal, retired without completion.
+  Gated. Reachable from `Planned` (the Person decided not to
+  execute) or from `Open` (in-flight retirement). The on-disk
+  line may carry a parenthetical rationale.
+
+## Schema shape
+
+```typescript
+SessionStatus = 'Planned' | 'Open' | 'Closed' | 'Abandoned'
+```
+
+The Effect Schema definition is a `Schema.Literal(...)` over
+the four base values. The on-disk header line may carry a
+parenthetical suffix; `parseSessionStatusBase(raw)` from this
+Concept's `index.ts` strips the suffix and returns the base
+literal (or `null` if the value is not in the closed set).
+
+## Transitions
+
+```
+Planned → Open                          (via session-start, planned path)
+Planned → Abandoned                     (gated)
+Planned → Planned                       (revisions; gated each time)
+Open    → Closed (YYYY-MM-DDTHH:MM)     (via session-end, validated)
+Open    → Abandoned                     (gated)
+```
+
+Terminal states (`Closed`, `Abandoned`) do not transition
+further.
+
+## Mutability of the field
+
+The `Status:` line is mutable but transitions are restricted
+to the diagram above. `Planned → Open` and `Open → Closed`
+are performed atomically by `session-start` and `session-end`
+respectively. `Abandoned` requires Person Accept of an explicit
+disposition note in the session log body.
+
+## References
+
+- Used in every session log header in `corpus/sessions/`.
+- The `session-start` Trope writes `Open` (spontaneous) or
+  transitions `Planned → Open` (planned).
+- The `session-end` Trope writes `Closed (timestamp)` after
+  validation.
+- The `session` parent Concept references this vocabulary via
+  the `status: SessionStatus` field on `SessionSchema`.
+- `isTerminalSessionStatus(raw)` from this Concept's
+  `index.ts` is the predicate used by future session-index
+  validation.

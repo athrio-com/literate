@@ -1,10 +1,10 @@
 # Session: 2026-04-26 — Mode Concept + IMP-N (Mode-discipline imperative)
 
 **Date:** 2026-04-26 (provisional; rename on open per IMP-1.5 if drift)
-**Status:** Planned
+**Status:** Abandoned (2026-04-24T17:07 — superseded by `corpus/sessions/2026-04-24T1712-typed-concepts-disposition-mode-implication.md` which collapses P5/P6/P7 into one fast-mode session sharing structure across the three Concept authoring goals)
 **Chapter:** — (no chapter yet)
-**Agent:** (to be filled on open)
-**Started:** (to be filled on open)
+**Agent:** —
+**Started:** —
 **Planned by:** corpus/sessions/2026-04-23T2100-ship-surface.md
 **Depends on:** corpus/sessions/2026-04-25T0900-registry-and-cli-surface.md, corpus/sessions/2026-04-26T0900-disposition-concept.md
 

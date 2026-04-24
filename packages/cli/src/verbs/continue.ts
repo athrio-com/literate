@@ -1,5 +1,6 @@
 /**
- * `literate continue [repoRoot]` (ADR-014).
+ * `literate continue [repoRoot] [--slug <slug>]` (ADR-014; argv
+ * surface from ADR-030).
  *
  * Dispatches the bundled `session-start` Trope (per ADR-026 §4 the
  * Trope is bundled-from-source from `registry/tropes/session-start/`,
@@ -7,7 +8,8 @@
  * Persists execution records into the opened session log's
  * `## Execution Log` fence.
  */
-import { Effect, Layer } from 'effect'
+import { Args, Command, Options } from '@effect/cli'
+import { Console, Effect, Layer, Option } from 'effect'
 
 import {
   ExecutionLog,
@@ -22,7 +24,6 @@ import {
   type TerminalIO,
 } from '@literate/core'
 import { sessionStartStep } from '../trope-bindings.ts'
-import { usageError, type Verb, type VerbContext } from './verb.ts'
 
 export interface RunContinueOptions {
   readonly repoRoot: string
@@ -58,47 +59,41 @@ export const runContinue = (
   >
 }
 
-const continueVerb: Verb = {
-  name: 'continue',
-  summary: 'Open or resume an LF session (Protocol-mode session-start).',
-  usage:
-    'Usage: literate continue [repoRoot] [--slug <slug>]\n' +
-    '\n' +
-    '  repoRoot defaults to the current working directory.\n' +
-    '  Agent identifier comes from $LITERATE_AGENT_ID (default: unknown-agent).\n',
+const repoRootArg = Args.text({ name: 'repoRoot' }).pipe(
+  Args.withDescription(
+    'Path to the LF-consuming repo (defaults to the current working directory).',
+  ),
+  Args.optional,
+)
 
-  async run(argv, ctx: VerbContext): Promise<number> {
-    let slug: string | undefined
-    const positional: string[] = []
-    for (let i = 0; i < argv.length; i++) {
-      const a = argv[i]!
-      if (a === '--slug') {
-        slug = argv[++i]
-        if (!slug) throw usageError(continueVerb, '--slug needs a value')
-      } else {
-        positional.push(a)
-      }
-    }
-    const repoRoot = positional[0] ?? ctx.cwd
-    const agent = ctx.env['LITERATE_AGENT_ID'] ?? 'unknown-agent'
-    const terminal = makeNodeTerminalIO()
-    try {
-      const ref = await Effect.runPromise(
-        runContinue({
-          repoRoot,
-          agent,
-          io: terminal.io,
-          ...(slug !== undefined ? { slug } : {}),
-        }),
-      )
-      ctx.stdout.write(
-        `\nSession open: ${ref.path}\n  slug: ${ref.slug}\n`,
-      )
-      return 0
-    } finally {
-      terminal.close()
-    }
-  },
-}
+const slugOpt = Options.text('slug').pipe(
+  Options.withDescription(
+    'Optional slug to disambiguate when multiple Planned sessions are ready.',
+  ),
+  Options.optional,
+)
 
-export default continueVerb
+const continueCommand = Command.make(
+  'continue',
+  { repoRoot: repoRootArg, slug: slugOpt },
+  ({ repoRoot, slug }) =>
+    Effect.gen(function* () {
+      const env = process.env
+      const resolvedRoot = Option.getOrElse(repoRoot, () => process.cwd())
+      const agent = env['LITERATE_AGENT_ID'] ?? 'unknown-agent'
+      const terminal = makeNodeTerminalIO()
+      const ref = yield* runContinue({
+        repoRoot: resolvedRoot,
+        agent,
+        io: terminal.io,
+        ...(Option.isSome(slug) ? { slug: slug.value } : {}),
+      }).pipe(Effect.ensuring(Effect.sync(() => terminal.close())))
+      yield* Console.log(`\nSession open: ${ref.path}\n  slug: ${ref.slug}`)
+    }),
+).pipe(
+  Command.withDescription(
+    'Open or resume an LF session (Protocol-mode session-start). Agent identifier comes from $LITERATE_AGENT_ID (default: unknown-agent).',
+  ),
+)
+
+export default continueCommand

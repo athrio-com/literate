@@ -27,6 +27,7 @@ import {
   memo,
   Modality,
   prose,
+  requireMdxStructure,
   SessionStore,
   StepId,
   trope,
@@ -34,6 +35,8 @@ import {
   type Concept,
   type Trope,
 } from '@literate/core'
+
+import { isTerminalGoalStatus } from '../../concepts/goal-status/index.ts'
 
 // ---------------------------------------------------------------------------
 // Prose refs
@@ -174,17 +177,6 @@ const rewriteHeaderField = (
 const GOAL_HEADING = /^###\s+Goal\s+(\d+)\s*—\s*(.+)$/
 const STATUS_LINE = /^\*\*Status:\*\*\s*(.*)$/
 
-const TERMINAL_GOAL_STATUSES = new Set([
-  'Completed',
-  'Abandoned',
-])
-const isTerminalGoalStatus = (raw: string): boolean => {
-  const v = raw.trim()
-  if (TERMINAL_GOAL_STATUSES.has(v)) return true
-  if (/^Superseded by Goal \d+/.test(v)) return true
-  return false
-}
-
 interface GoalBlock {
   readonly number: number
   readonly title: string
@@ -243,6 +235,70 @@ const planEntryIsTerminal = (entry: string): boolean => {
   if (/\bAbandoned\b/.test(entry)) return true
   if (/^\*\*Status:\*\*\s*Planned\b/m.test(entry)) return true
   return false
+}
+
+// Implication parsing (ADR-033). The session-end validator refuses to
+// close a session with any `Surfaced` Implication. Older session logs
+// predate the `## Implications` section and remain valid (no section ⇒
+// zero Implications). Each entry mirrors the Goal-block shape:
+//
+//   ### Implication <id> — title
+//
+//   **Status:** Surfaced | Promoted | Filed | Dismissed
+//   **Rationale:** ... (Schema-required when Status: Dismissed)
+//
+
+const IMPLICATION_HEADING = /^###\s+Implication\s+([^\s—-]+)\s*[—-]\s*(.+)$/
+const TERMINAL_IMPLICATION_STATUSES: ReadonlySet<string> = new Set([
+  'Promoted',
+  'Filed',
+  'Dismissed',
+])
+
+interface ImplicationBlock {
+  readonly id: string
+  readonly title: string
+  readonly status: string | null
+  readonly rationale: string | null
+}
+
+const parseImplications = (
+  implicationsSection: string,
+): ReadonlyArray<ImplicationBlock> => {
+  const lines = implicationsSection.split('\n')
+  const blocks: ImplicationBlock[] = []
+  let current: {
+    id: string
+    title: string
+    status: string | null
+    rationale: string | null
+  } | null = null
+  for (const line of lines) {
+    const h = line.match(IMPLICATION_HEADING)
+    if (h) {
+      if (current) blocks.push(current)
+      current = {
+        id: h[1]!.trim(),
+        title: h[2]!.trim(),
+        status: null,
+        rationale: null,
+      }
+      continue
+    }
+    if (current) {
+      const s = line.match(STATUS_LINE)
+      if (s && current.status === null) {
+        current.status = s[1]!.trim()
+        continue
+      }
+      const r = line.match(/^\*\*Rationale:\*\*\s*(.*)$/)
+      if (r && current.rationale === null) {
+        current.rationale = r[1]!.trim()
+      }
+    }
+  }
+  if (current) blocks.push(current)
+  return blocks
 }
 
 // ---------------------------------------------------------------------------
@@ -348,6 +404,28 @@ export const validateStep = effectStep({
             missing.push(`Plan[${i}].terminal-marker`)
           }
         })
+      }
+
+      // Implication validation (ADR-033). The `## Implications` section
+      // is optional at v0.1; absent ⇒ valid (backward compat with logs
+      // predating the Concept). Present ⇒ every entry must carry a
+      // terminal Status (`Promoted | Filed | Dismissed`); a Dismissed
+      // entry must additionally carry a non-empty Rationale (the
+      // schema-level invariant from `concept-implication`).
+      const implications = parsed.sections['implications']
+      if (implications && implications.trim() !== '') {
+        const blocks = parseImplications(implications)
+        for (const b of blocks) {
+          if (!b.status || !TERMINAL_IMPLICATION_STATUSES.has(b.status)) {
+            missing.push(
+              `Implication[${b.id}].terminal-status (got: ${b.status ?? '(missing)'})`,
+            )
+            continue
+          }
+          if (b.status === 'Dismissed' && (b.rationale ?? '').trim() === '') {
+            missing.push(`Implication[${b.id}].rationale-required-on-Dismissed`)
+          }
+        }
       }
 
       return { missing, discoveredDivergences: divergences }
@@ -477,11 +555,25 @@ export const sessionEndStep = workflowStep({
 // ---------------------------------------------------------------------------
 // Trope
 
+// Structural contract the authored prose must satisfy (P3 — Goal 1).
+export const sessionEndProseSchema = requireMdxStructure({
+  h1: 'Session-End Trope',
+  h2Slugs: [
+    'read-current-log',
+    'validate',
+    'stamp-closed',
+    'update-sessions-index',
+    'return-closure-record',
+    'composition',
+  ],
+})
+
 export const sessionEndTrope: Trope<typeof SessionEndConcept> = trope({
   id: 'session-end',
   version: '0.0.1',
   realises: SessionEndConcept,
   prose: TropeProse,
+  proseSchema: sessionEndProseSchema,
   realise: sessionEndStep,
   modality: Modality.Protocol,
 })

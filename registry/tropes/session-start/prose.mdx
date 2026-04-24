@@ -157,9 +157,11 @@ Goal in the opened log's `## Goals` section:
 1. Present the Goal draft to the Person for
    Accept / Correct / Clarify / Reject.
 2. On Accept: stamp `Status: Active` and a `Category:` drawn
-   from `corpus/categories/goal-category.md`. If the draft
-   did not carry a `Category:`, the Person's Accept message
-   must carry one (enforced by `GateDecision<Goal>`).
+   from the
+   [`goal-category`](../../concepts/goal-category/concept.mdx)
+   Concept. If the draft did not carry a `Category:`, the
+   Person's Accept message must carry one (enforced by
+   `GateDecision<Goal>`).
 3. On Correct: apply the Person's edit to the draft and
    re-present (recursion; `memo` keys on invocation key so
    each iteration is a fresh record).

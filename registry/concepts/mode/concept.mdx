@@ -1,0 +1,130 @@
+# Mode
+
+A **Mode** names the *operational stance* of a session, a
+Trope, or a single Step. It answers the question: *how is this
+work being done?* — independent of *what it is about*
+(Disposition).
+
+Mode is a closed three-case ADT.
+
+## Shape
+
+```typescript
+type Mode = 'Exploring' | 'Weaving' | 'Tangling'
+```
+
+The Schema shape (Effect Schema):
+
+```typescript
+Schema.Union(
+  Schema.Literal('Exploring'),
+  Schema.Literal('Weaving'),
+  Schema.Literal('Tangling'),
+)
+```
+
+## The three modes
+
+- **`Exploring`** — deliberation, discovery, discussion.
+  Non-authoritative. Output lands in the session's
+  `## Exploration` block or in a memo under `corpus/memos/`.
+  No prose is committed to the gated authorial surface
+  (ADRs, Concept files, specs); no code is derived. The
+  agent surfaces framings, asks clarifying questions, and
+  resists proposing specific actions until the work
+  crystallises into an intent.
+- **`Weaving`** — prose authoring under the gate. The agent
+  drafts; the Person Accepts / Corrects / Clarifies / Rejects;
+  on Accept the prose lands in `corpus/decisions/`,
+  `corpus/specs/`, `registry/concepts/<id>/concept.mdx`,
+  `registry/tropes/<id>/prose.mdx`, etc. No code is derived
+  in this Mode — the prose has to be Accepted before its
+  derivation can begin (ADR-005, prose-before-code).
+- **`Tangling`** — derivation of code (or other downstream
+  artefacts) from already-Accepted prose. Code traces back
+  to upstream prose by ADR / spec / Concept reference. No
+  new prose is authored in this Mode. The mechanical CLI
+  (`literate tangle`, `literate weave`) is a Tangling
+  enactment by definition; an agent in Tangling Mode is
+  realising what already-accepted prose has decided.
+
+## The enactor axis
+
+A Mode is enacted by one of two enactor classes:
+
+- **Agent-in-session** — gated, AI-assisted, conversational.
+  The Person and the agent are co-present; gating happens
+  at decision points; the agent's output is reviewed and
+  accepted (or corrected) before it lands.
+- **Mechanical CLI** — deterministic, non-AI, batch.
+  `literate tangle` / `literate weave` / `literate update`
+  are mechanical enactments of `Tangling` (and `Weaving`
+  for the prose-output verbs) under whatever Disposition
+  the consumer's repo carries. No gating; the input is the
+  consumer's manifest and the registry, the output is the
+  vendored seed tree and the materialised `LITERATE.md`.
+
+The same Mode Concept covers both enactors. The discipline
+expectations differ (an agent in Exploring Mode resists tool
+calls; the CLI never enters Exploring at all because it has no
+deliberative surface). IMP-N (Mode-discipline imperative,
+authored alongside this Concept) binds the agent-side
+discipline.
+
+## Mode vs Disposition
+
+Mode is *how the work is being done*. Disposition is *what the
+work is about*. The two axes are orthogonal:
+
+| Mode \ Disposition | Product | Protocol | Infrastructure |
+|---|---|---|---|
+| Exploring | feature ideation | algebra deliberation | tooling deliberation |
+| Weaving | spec authoring | ADR drafting | infra ADR drafting |
+| Tangling | code from spec | Trope realisation | build-script changes |
+
+Every authoritative branching site exhaustively pattern-
+matches over `(mode, disposition.base)`. v0.1 keeps the
+discipline at the prose level (IMP-N for agents); typed
+exhaustive matching at `Step.realise` boundaries is a forward
+question.
+
+## Mode setting and transitions
+
+Mode is set at session-start (per the `session-start` Trope's
+forthcoming Mode-setting Step). The default heuristic at v0.1
+is loose:
+
+- Person prompt is under-shaped or open-ended → `Exploring`.
+- Person prompt names a concrete intent (a Goal, an ADR
+  draft, a feature) → `Weaving`.
+- Person prompt is mechanical (a CLI invocation, a
+  derivation request from already-Accepted prose) → `Tangling`.
+
+When the heuristic is ambiguous, the Step gates the choice
+through the standard `Accept / Correct / Clarify / Reject`
+gate.
+
+In-session Mode shifts are explicit and gated. Each shift
+stamps a timestamp + the gate decision in the session log
+(forward: `session-end` validator confirms transitions were
+gated).
+
+Mode shifts are common: an `Exploring` session that
+crystallises a concrete intent shifts to `Weaving`; a
+`Weaving` session that finishes drafting an ADR and starts
+realising it in code shifts to `Tangling`. The session log
+journals each shift; the Mode Concept itself does not
+constrain the order — any → any is permitted, the discipline
+is enforced through gating, not the type.
+
+## IMP-N and the agent-training default
+
+Agentic IDEs (Cursor, Zed, Claude Code) are tuned for action:
+they default to running tools, drafting code, proposing
+changes. LF Modes override this default. IMP-N (the
+Mode-discipline imperative in `corpus/CLAUDE.md` and in the
+template's `CLAUDE.md`) is the prose-level soft override that
+binds agent behaviour to the active Mode. Without IMP-N an
+agent in `Exploring` Mode collapses exploration into premature
+implementation; the imperative is load-bearing precisely
+because the action-bias is the IDE's default.

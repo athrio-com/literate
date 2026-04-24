@@ -1,7 +1,7 @@
 # Session: 2026-04-27 — Template finalisation + registry trust
 
 **Date:** 2026-04-27 (provisional; rename on open per IMP-1.5 if drift)
-**Status:** Planned
+**Status:** Abandoned (2026-04-24T18:18 — superseded by chain `2026-04-24T1818-dissolve-categories-and-ship-scaffold` + `2026-04-24T2030-publish-and-install-scripts`; this log's three Goals expanded into S3-G2/S3-G3/S3-G4 with a new S3-G1 covering category dissolution + the S4 publish/install-scripts arc)
 **Chapter:** — (no chapter yet)
 **Agent:** (to be filled on open)
 **Started:** (to be filled on open)

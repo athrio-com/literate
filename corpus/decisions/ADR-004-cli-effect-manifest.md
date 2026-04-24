@@ -1,7 +1,7 @@
 # ADR-004 — CLI in Effect; Bun/Deno/Node compatible; manifest via package.json "literate" key
 
 **Date:** 2026-04-22
-**Status:** Accepted (manifest clause unresolved post-ADR-024; runtime matrix trivially satisfied under ADR-025/ADR-026)
+**Status:** Accepted (manifest clause unresolved post-ADR-024; runtime matrix narrowed to Bun-only by ADR-029; Effect-depth clause settled by ADR-028; argv-framework completion by ADR-030)
 **Tags:** `#tooling` `#release`
 
 **Context:**

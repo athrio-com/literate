@@ -1,0 +1,114 @@
+# Session
+
+A **Session** is a bounded unit of LF work — a span between
+*opening* a session log (`Status: Open`) and *closing* it
+(`Status: Closed (timestamp)`). The session log journals
+intent (Goals), authoritative decisions (Decisions Made), the
+work that landed (Work Done), and what carries forward
+(Deferred / Discovered).
+
+This Concept declares the typed contract for the *session
+instance* — the data the framework reasons about when opening,
+running, or closing a session. It is distinct from the
+session-start and session-end **procedure** Concepts (which
+declare the typed contracts for the *operations* that open
+and close a session).
+
+## Shape
+
+```typescript
+interface Session {
+  readonly _tag: 'Session'
+  readonly path: string                          // 'corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md'
+  readonly slug: string
+  readonly date: string                          // 'YYYY-MM-DD'
+  readonly status: SessionStatus                 // 'Planned' | 'Open' | 'Closed' | 'Abandoned'
+  readonly agent?: string
+  readonly startedAt?: string                    // 'YYYY-MM-DDTHH:MM' UTC
+  readonly closedAt?: string                     // 'YYYY-MM-DDTHH:MM' UTC; set on close
+  readonly disposition?: Disposition             // optional at v0.1; default Protocol for LF-self sessions
+  readonly mode?: Mode                           // optional at v0.1; default by heuristic
+  readonly implications?: ReadonlyArray<Implication>
+}
+```
+
+The Schema (Effect Schema; see `index.ts` for the binding):
+
+```typescript
+Schema.Struct({
+  _tag: Schema.Literal('Session'),
+  path: Schema.String,
+  slug: Schema.String,
+  date: Schema.String,
+  status: SessionStatusSchema,
+  agent: Schema.optional(Schema.String),
+  startedAt: Schema.optional(Schema.String),
+  closedAt: Schema.optional(Schema.String),
+  disposition: Schema.optional(DispositionSchema),
+  mode: Schema.optional(ModeSchema),
+  implications: Schema.optional(Schema.Array(ImplicationSchema)),
+})
+```
+
+## The four statuses
+
+`Planned`, `Open`, `Closed`, `Abandoned`. Closed vocabulary
+typed by [`session-status`](../session-status/concept.mdx)
+(promoted out of the legacy `corpus/categories/session-status.md`
+during the category-dissolution refactor). Transitions are
+gated by the session lifecycle Tropes:
+
+- `Planned → Open` — by `session-start` Trope (planned path).
+- `Open → Closed` — by `session-end` Trope.
+- `Planned → Abandoned` — by mechanical metadata edit at
+  session-start time (when a Planned log is collapsed,
+  superseded, or no longer warranted) or by close-time
+  archival.
+- `Open → Abandoned` — exceptional; requires Person directive.
+
+## The three optional cross-axis fields
+
+`disposition`, `mode`, and `implications` are optional at
+v0.1 to preserve backward compatibility with existing session
+logs (older logs do not carry these fields and remain valid
+under this Schema). Forward of v0.1 these become mandatory:
+
+- **`disposition`** — the referential domain (see
+  `concept-disposition`). Default for sessions authoring LF
+  itself: `{ base: 'Protocol' }`. Set at session-start
+  (forthcoming Step in the `session-start` Trope; deferred
+  past v0.1).
+- **`mode`** — the operational stance (see `concept-mode`).
+  Default by heuristic (under-shaped → `Exploring`; concrete
+  intent → `Weaving`; mechanical → `Tangling`). Set at
+  session-start (forthcoming Step). In-session shifts are
+  gated and journaled; `session-end` validates that
+  transitions were gated (deferred past v0.1).
+- **`implications`** — the append-only journal of soft Goals
+  (see `concept-implication`). Surfaces as a `## Implications`
+  section in the session log when present. `session-end`'s
+  `validateStep` refuses to close a session with a non-terminal
+  Implication (active in this Concept's authoring session).
+
+## Backward compatibility
+
+Existing session logs that predate this Concept (every log in
+`corpus/sessions/` at the time of authoring) do not carry
+`disposition`, `mode`, or `implications` fields. They remain
+**valid** under this Schema because the three fields are
+optional. The forthcoming Steps that *set* these fields at
+session-start operate additively — they do not require
+existing logs to be rewritten.
+
+## Where the Session shape lives
+
+The session log markdown header is the canonical persistent
+form (the `**Date:** … **Status:** … **Agent:** …` block). The
+TypeScript `Session` value is a parsed projection used by the
+session-lifecycle Tropes; the legacy `SessionRef` shape (in
+`registry/tropes/session-start/index.ts`) is a thin
+runtime-pointer subset (`_tag`, `path`, `slug` only) the
+Trope's `realise` boundary returns. Forward of v0.1 a
+parsing helper in this Concept's `index.ts` may decode a log
+into a full `Session`; v0.1 keeps the persisted form
+authoritative.

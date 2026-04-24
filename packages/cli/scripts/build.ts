@@ -1,11 +1,13 @@
 /**
- * Build script for `@literate/cli`. Produces a Node-runnable bundle
+ * Build script for `@literate/cli`. Produces a Bun-runnable bundle
  * at `packages/cli/dist/literate.js` plus an embedded asset tree at
  * `packages/cli/dist/assets/{template-minimal,registry}/` (per
  * ADR-026 §4 extended — seed files the `tangle`/`init` verbs read
  * ship inside the CLI package for offline use).
  *
- * Invoked via `bun run build` from the CLI package or
+ * Per ADR-029 the CLI is Bun-only: build target is `bun`, shebang
+ * is `#!/usr/bin/env bun`, `engines.bun` is the sole declared
+ * runtime. Invoked via `bun run build` from the CLI package or
  * `bun run -F @literate/cli build` from repo root.
  */
 import * as fs from 'node:fs/promises'
@@ -20,7 +22,7 @@ const dist = path.join(cliRoot, 'dist')
 const entry = path.join(cliRoot, 'src', 'bin', 'literate.ts')
 const outfile = path.join(dist, 'literate.js')
 
-const NODE_SHEBANG = '#!/usr/bin/env node\n'
+const BUN_SHEBANG = '#!/usr/bin/env bun\n'
 
 const clean = async (): Promise<void> => {
   await fs.rm(dist, { recursive: true, force: true })
@@ -32,7 +34,7 @@ const bundle = async (): Promise<void> => {
     entrypoints: [entry],
     outdir: dist,
     naming: 'literate.js',
-    target: 'node',
+    target: 'bun',
     format: 'esm',
     splitting: false,
     sourcemap: 'none',
@@ -51,7 +53,7 @@ const ensureShebang = async (): Promise<void> => {
   const body = raw.startsWith('#!')
     ? raw.slice(raw.indexOf('\n') + 1)
     : raw
-  await fs.writeFile(outfile, NODE_SHEBANG + body, 'utf8')
+  await fs.writeFile(outfile, BUN_SHEBANG + body, 'utf8')
   await fs.chmod(outfile, 0o755)
 }
 

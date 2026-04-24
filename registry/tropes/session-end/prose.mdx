@@ -23,8 +23,9 @@ producing a `RawLog` (header fields + body). The header is
 parsed into a typed record including `status`, `started`,
 `agent`, `plannedBy`. If the status is not `Open`, raise
 `SessionMalformed` with a reason citing the transition
-violation (per `corpus/categories/session-status.md`, only
-`Open → Closed` is legal through this Trope).
+violation (per the
+[`session-status`](../../concepts/session-status/concept.mdx)
+Concept, only `Open → Closed` is legal through this Trope).
 
 Step: `effect`. Input: `SessionEndInput`. Output:
 `ParsedLog` (the RawLog plus a structured body index —

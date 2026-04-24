@@ -30,6 +30,7 @@ import {
   memo,
   Modality,
   prose,
+  requireMdxStructure,
   SessionStore,
   StepId,
   trope,
@@ -445,7 +446,14 @@ export const readAdrIndexStep = effectStep({
   run: (_ref) =>
     Effect.gen(function* () {
       const store = yield* SessionStore
-      const content = yield* store.read(DECISIONS_INDEX)
+      // Fresh consumers may not have authored any ADRs yet — the
+      // `corpus/decisions/decisions.md` index materialises only on
+      // first ADR authorship. Treat absence as "0 ADRs indexed" and
+      // proceed; the Pre-work block records the empty state.
+      const content = yield* Effect.catchAll(
+        store.read(DECISIONS_INDEX),
+        () => Effect.succeed(''),
+      )
       return { content }
     }),
 })
@@ -750,11 +758,33 @@ export const sessionStartStep = workflowStep({
 // ---------------------------------------------------------------------------
 // Trope
 
+// The structural contract the authored prose must satisfy. The weaver
+// parses `prose.mdx` via remark + remark-mdx and validates the resulting
+// mdast tree against this Schema — failures surface as typed
+// `ProseSchemaViolation`s (see the weaver's error channel).
+export const sessionStartProseSchema = requireMdxStructure({
+  h1: 'Session-Start Trope',
+  h2Slugs: [
+    'detect-start-path',
+    'handle-open-orphan',
+    'open-the-log',
+    'surface-prior-context',
+    'read-adr-index',
+    'write-pre-work-block',
+    'freeze-parent-plan-entry',
+    're-gate-goals',
+    'stamp-accepted-goals',
+    'return-session-reference',
+    'composition',
+  ],
+})
+
 export const sessionStartTrope: Trope<typeof SessionStartConcept> = trope({
   id: 'session-start',
   version: '0.0.1',
   realises: SessionStartConcept,
   prose: TropeProse,
+  proseSchema: sessionStartProseSchema,
   realise: sessionStartStep,
   modality: Modality.Protocol,
 })

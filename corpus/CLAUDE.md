@@ -131,9 +131,10 @@ Procedure (apply the matching path):
 
 1. Determine the next ADR number:
    `ls corpus/decisions/ADR-*.md | sort | tail -1`, increment.
-2. Identify tags from `corpus/categories/tags.md`. If no existing
-   tag fits, add one to `tags.md` first (gated as a category
-   change).
+2. Identify tags from `corpus/tags.md` (LF's authored tag-set
+   instances; the `Tag` Concept type lives at
+   `registry/concepts/tag/`). If no existing tag fits, add one
+   to `corpus/tags.md` first (gated authorial change).
 3. Check for conflicts: for each tag, grep
    `corpus/decisions/ADR-*.md` for prior ADRs with overlapping
    tags. If the new ADR overrides a prior one, prepare to set the
@@ -206,6 +207,48 @@ If this session's work warrants a deliberate multi-session arc:
 9. (Optional, only when the Person asks for a commit:) Stage and
    commit per repo style. Never push.
 
+### IMP-N — Mode discipline overrides agent training defaults
+
+Agentic IDEs (Cursor, Zed, Claude Code) are tuned for action:
+their default behaviour is to run tools, draft code, propose
+changes. LF **Modes** (see `registry/concepts/mode/concept.mdx`,
+ADR-032) override this default. The active session Mode binds
+agent behaviour for the duration of that Mode; in-session Mode
+shifts are explicit and gated.
+
+When the active Mode is **`Exploring`**, the agent resists tool
+calls beyond what is needed to ground the discussion. A single
+targeted file read for context is fine; running tests, drafting
+code that lands in a file, or modifying files is not. The agent
+asks clarifying questions, offers competing framings, surfaces
+unexamined assumptions, resists proposing specific actions.
+Output lands in the session's `## Exploration` block or in a
+memo under `corpus/memos/<slug>.md` — not in `corpus/decisions/`,
+not in `corpus/specs/`, not in `registry/`. Crystallisation
+into a Goal (or a Filed/Promoted/Dismissed Implication, see
+ADR-033) is the explicit transition out of Exploring.
+
+When the active Mode is **`Weaving`**, the agent drafts prose
+for the gate (ADR / spec / Concept / Trope prose) and does
+not derive code from that prose in the same gate cycle. Code
+derivation is a separate Mode shift to Tangling, which lands
+after the prose has been Accepted.
+
+When the active Mode is **`Tangling`**, the agent derives code
+from already-Accepted prose and does not author new prose.
+Every code change traces back to upstream prose by ADR / spec
+/ Concept reference; if no upstream prose exists, the work is
+not Tangling — shift Mode to Weaving and gate the missing
+prose first (see ADR-005, prose-before-code).
+
+Mode is set at session-start (per the `session-start` Trope's
+Mode-setting Step — pending v0.1 wiring, defaults applied
+in the meantime per the heuristic in `concepts/mode/concept.mdx`)
+and is itself gated. The mechanical CLI enactor
+(`literate weave` / `literate tangle` / `literate update`) is
+exempt from this imperative — it has no deliberative surface.
+This imperative binds the **agent enactor**.
+
 ### IMP-6 — NEVER
 
 - Never write code before the prose motivating it is authored and
@@ -226,9 +269,10 @@ If this session's work warrants a deliberate multi-session arc:
 - Never spend tool calls on repo investigation when a `Status:
   Planned` session ready to start would answer the Person's
   prompt — surface it instead and ask.
-- Never add a value to a closed vocabulary without first updating
-  the matching `corpus/categories/*.md` file (gated authorial
-  change).
+- Never add a value to a closed vocabulary without first
+  updating the matching Concept under `registry/concepts/`
+  (gated material revision: edit `concept.mdx` + the
+  `Schema.Literal(...)` in `index.ts`).
 - Never bypass the Goal gate, even for "trivial" work. The gate
   exists to make intent visible; trivial work skipped past the
   gate becomes invisible work.
@@ -274,8 +318,9 @@ is to draft the missing prose.
 ## Session lifecycle
 
 A session is `Planned`, `Open`, `Closed (timestamp)`, or
-`Abandoned` (closed vocabulary in
-`corpus/categories/session-status.md`). Two entry paths exist:
+`Abandoned` (closed vocabulary typed by the `session-status`
+Concept at `registry/concepts/session-status/`). Two entry
+paths exist:
 *spontaneous* (the default — open, gate, work, close) and
 *planned* (a parent session pre-scoped this one in its `## Plan`).
 
@@ -325,12 +370,16 @@ The authored prose covered by the gate in this repo:
 - Session `## Goals` entries in `corpus/sessions/`
 - Concept files in `corpus/concepts/` (corpus-level Concepts —
   the unified Term/Concept primitive per ADR-010)
-- Category member additions and removals in `corpus/categories/`
+- Concept files in `registry/concepts/` (shipped Protocol
+  Concepts — material revisions to closed-vocab `Schema.Literal`
+  member sets are gated)
+- LF's authored tag-set instances in `corpus/tags.md`
 
 The gate does **not** apply to: journal bodies of session logs, index
 and navigation files, `Status:` transitions that flow atomically from
-accepted ADRs, editorial revisions of Concepts and Categories, code
-and config changes derived from accepted prose.
+accepted ADRs, editorial revisions of Concepts (prose around the
+member set, examples, *Used in* references), code and config
+changes derived from accepted prose.
 
 ## Mutability
 
@@ -341,24 +390,36 @@ and config changes derived from accepted prose.
 | Chapter | Fully mutable living plan; material revisions gated |
 | Session log | Append-once body; `## Goals` and `## Plan` entries gated; `Summary` written once at end; `## Plan` entries freeze when their successor transitions to `Open` |
 | Memo | Ephemeral input; creation and material reduction gated |
-| Category file | Fully mutable body; member additions/removals gated; editorial ungated |
 | Concept file (corpus level) | Fully mutable body; new files and material revisions gated; editorial ungated |
+| Concept file (`registry/concepts/`) | Fully mutable body; new Concept seeds and material `Schema.Literal` member-set changes gated; editorial ungated |
 | Index files | Fully mutable; mechanical reflections of the folder |
 
 ## Closed vocabularies
 
-All enumerated types used in LF-project prose live in
-`corpus/categories/`. At v0.1 the folder seeds four category files:
+All enumerated types used in LF-project prose live as typed
+Concepts under `registry/concepts/<id>/` (each with
+`concept.mdx`, `index.ts` carrying the `Schema.Literal(...)`,
+and `README.md`). The Session-3 dissolution of the legacy
+`corpus/categories/` folder promoted each member set to a
+sibling Concept and added composing parents (`Goal`, `ADR`,
+`Step`):
 
-- `tags.md` — tag set for ADR conflict detection and cross-cut search
-- `adr-status.md` — ADR `Status:` values and transitions
-- `goal-status.md` — session-Goal `Status:` values and transitions
-- `goal-category.md` — session-Goal `Category:` values
+- `adr-status` — ADR `Status:` values + transitions
+- `goal-status` — session-Goal `Status:` values + transitions
+- `goal-category` — session-Goal `Category:` values
+- `session-status` — session `Status:` values + transitions
+- `step-kind` — the six Step kinds (ADR-012)
+- `tag` — Tag *type* (the brand-typed slug shape)
 
-New vocabularies land as new files plus an index row in
-`categories/categories.md`. Editing a member list is a gated authorial
-change. Editing the prose around the list (clearer phrasing, examples,
-*Used in* references) is ungated.
+LF's authored tag *set* (its specific `#process`,
+`#algebra`, … slugs) lives at `corpus/tags.md` as authored
+content, separate from the shipping `Tag` Concept type.
+
+New vocabularies land as new Concept seeds under
+`registry/concepts/<id>/`. Editing a `Schema.Literal(...)`
+member set is a gated material revision. Editing the prose
+around the set (clearer phrasing, examples, *Used in*
+references) is ungated.
 
 ## NEVER
 
@@ -402,5 +463,8 @@ Person-authorised freeze lift recorded in the active session's
 
 ## Tag vocabulary
 
-See `corpus/categories/tags.md` for the current tag set. Every ADR
-must carry at least one tag drawn from the closed set.
+See `corpus/tags.md` for LF's authored tag set (the closed
+set of slug instances LF uses on its own ADRs). The `Tag`
+Concept *type* (the brand-typed slug shape) lives at
+`registry/concepts/tag/`. Every ADR must carry at least one
+tag drawn from `corpus/tags.md`.

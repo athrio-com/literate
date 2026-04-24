@@ -1,0 +1,53 @@
+# Goal Category
+
+The closed vocabulary of `Category:` values a session-Goal can
+carry. Categories shape expectations for what "done" looks
+like and how tight the upstream prose requirement is.
+
+## Members
+
+- **`exploration`** — open-ended investigation. Lighter
+  gating; may produce memos or draft ADRs rather than accepted
+  prose. Often sits under `Mode: Exploring` (ADR-032).
+- **`feature`** — new user-visible behaviour. Requires
+  upstream spec or Concept revision.
+- **`bugfix`** — spec drift correction. The spec is updated as
+  part of the fix.
+- **`refactor`** — internal restructuring with no observable
+  change. Contracts stable.
+- **`prose`** — authored work (spec, chapter, story, ADR)
+  with no code.
+- **`process`** — Literate-workflow change. Protocol edits,
+  vocabulary decisions, tooling additions.
+- **`migration`** — vendor / implementation change. Tight
+  scope; creep triggers a new Goal.
+- **`decision-only`** — the Goal's Acceptance is a single ADR
+  (or short cluster) with no code change. Added in S3 of the
+  0.1.0-alpha chain to name the shape of trust-mechanics
+  Goals (ADR-034) and similar.
+
+## Schema shape
+
+```typescript
+GoalCategory =
+  | 'exploration' | 'feature' | 'bugfix' | 'refactor'
+  | 'prose' | 'process' | 'migration' | 'decision-only'
+```
+
+The Effect Schema definition is a `Schema.Literal(...)` with
+all eight members. Adding a new category requires a gated
+Concept revision (this file plus `index.ts`).
+
+## Morphisms
+
+Categories are disjoint at the Goal level: a single Goal
+carries exactly one Category. A session may contain multiple
+Goals of different Categories.
+
+## References
+
+- Used in every session-Goal's `Category:` field in
+  `corpus/sessions/`.
+- Field is added on Accept of the Goal; not present in the
+  draft presented for gating (per the Goal shape in
+  `corpus/CLAUDE.md`).

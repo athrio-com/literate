@@ -16,6 +16,7 @@
     "test": "bun test",
     "typecheck": "bun run --filter '*' typecheck",
     "smoke:install": "packages/cli/scripts/smoke-install.sh",
-    "literate": "node packages/cli/dist/literate.js"
+    "smoke:e2e": "scripts/smoke-e2e.sh",
+    "literate": "bun packages/cli/dist/literate.js"
   }
 }

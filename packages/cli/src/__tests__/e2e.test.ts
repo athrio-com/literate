@@ -24,11 +24,30 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import * as fs from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
-import { Effect } from 'effect'
+import { Effect, Layer } from 'effect'
 
 import { makeScriptedTerminalIO } from '@literate/core'
 
-import { runClose, runContinue, runInit, runUpdate } from '../index.ts'
+import {
+  ConfigServiceLive,
+  FetcherServiceLive,
+  ManifestServiceLive,
+  runClose,
+  runContinue,
+  runInit,
+  runUpdate,
+  WeaverServiceLive,
+} from '../index.ts'
+
+const RegistryLayers = Layer.mergeAll(
+  ConfigServiceLive,
+  ManifestServiceLive,
+  FetcherServiceLive,
+)
+const CliServicesLive = Layer.merge(
+  RegistryLayers,
+  WeaverServiceLive.pipe(Layer.provide(ManifestServiceLive)),
+)
 
 // Resolve the LF repo root (this test file lives at
 // packages/cli/src/__tests__/) so we can use it as a `file://`
@@ -73,16 +92,18 @@ describe('@literate/cli e2e — init + continue + close + update', () => {
   })
 
   test('init scaffolds, tangles registry seeds, weaves LITERATE.md', async () => {
-    const initResult = await runInit({
-      target: tmp,
-      template: 'minimal',
-      registryUrl: `file://${LF_REPO_ROOT}`,
-      registryRef: 'main',
-      seeds: [
-        { kind: 'tropes', id: 'session-start' },
-        { kind: 'tropes', id: 'session-end' },
-      ],
-    })
+    const initResult = await Effect.runPromise(
+      runInit({
+        target: tmp,
+        template: 'minimal',
+        registryUrl: `file://${LF_REPO_ROOT}`,
+        registryRef: 'main',
+        seeds: [
+          { kind: 'tropes', id: 'session-start' },
+          { kind: 'tropes', id: 'session-end' },
+        ],
+      }).pipe(Effect.provide(CliServicesLive)),
+    )
 
     expect(initResult.target).toBe(tmp)
     expect(initResult.tangled).toEqual([
@@ -214,11 +235,13 @@ describe('@literate/cli e2e — init + continue + close + update', () => {
     // Add a tiny artificial delay so the fetchedAt changes.
     await new Promise((r) => setTimeout(r, 10))
 
-    const result = await runUpdate({
-      repoRoot: tmp,
-      kind: 'tropes',
-      id: 'session-start',
-    })
+    const result = await Effect.runPromise(
+      runUpdate({
+        repoRoot: tmp,
+        kind: 'tropes',
+        id: 'session-start',
+      }).pipe(Effect.provide(CliServicesLive)),
+    )
     expect(result.entry.id).toBe('session-start')
     expect(result.entry.fetchedAt).not.toBe(beforeFetched)
     expect(result.overwritten).toContain(

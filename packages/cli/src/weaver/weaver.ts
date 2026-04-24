@@ -5,19 +5,66 @@
  * Mechanical and deterministic per ADR-025 §2: no AI reasoning,
  * inputs-only, idempotent. Reads the manifest to know what's
  * vendored; reads `.literate/extensions/` for consumer additions;
- * writes `.literate/LITERATE.md` atomically with the sigil from
- * ADR-024 §3.
+ * validates each vendored Trope's authored prose against the
+ * Trope's `proseSchema` (P3); writes `.literate/LITERATE.md`
+ * atomically with the sigil from ADR-024 §3.
+ *
+ * Per ADR-028 the weave program composes via `Effect.gen`,
+ * requires `ManifestService`, and surfaces errors on a tagged
+ * channel (`ProseSchemaViolations`, `WeaveIOError`,
+ * `ManifestReadError`). Prose-schema validation is collected
+ * across all Tropes (no short-circuit) and raised as a single
+ * `ProseSchemaViolations` *before* any file write.
  */
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
+import { Context, Data, Effect, Either, Layer, Schema } from 'effect'
+import remarkMdx from 'remark-mdx'
+import remarkParse from 'remark-parse'
+import { unified } from 'unified'
 
-import { readManifest, type ManifestEntry, type SeedKind } from '../registry/manifest.ts'
+import { type AnyTrope } from '@literate/core'
+
+import {
+  sessionEndTrope,
+  sessionStartTrope,
+} from '../trope-bindings.ts'
+import {
+  ManifestService,
+  type ManifestEntry,
+  type SeedKind,
+} from '../registry/manifest.ts'
+import {
+  ManifestReadError,
+  WeaveIOError,
+} from '../errors.ts'
 
 export interface WeaveResult {
   readonly literateMdPath: string
   readonly tropesIncluded: ReadonlyArray<string>
   readonly conceptsIncluded: ReadonlyArray<string>
   readonly extensionsIncluded: ReadonlyArray<string>
+}
+
+export interface ProseSchemaViolation {
+  readonly _tag: 'ProseSchemaViolation'
+  readonly tropeId: string
+  readonly path: string
+  readonly expected: string
+  readonly got: string
+}
+
+export class ProseSchemaViolations extends Data.TaggedError(
+  'ProseSchemaViolations',
+)<{
+  readonly violations: ReadonlyArray<ProseSchemaViolation>
+}> {
+  override get message(): string {
+    const body = this.violations
+      .map((v) => `  - ${v.tropeId} (${v.path}): ${v.got}`)
+      .join('\n')
+    return `weave: prose-schema validation failed for ${this.violations.length} Trope(s):\n${body}`
+  }
 }
 
 const SIGIL =
@@ -45,6 +92,13 @@ building, specs, sessions, etc.) lives in \`corpus/\`. This file
 covers the **Protocol** register only.
 `
 
+// The bundled Trope registry (ADR-026 §4). Adding a bundled Trope
+// means one entry here plus one re-export in `trope-bindings.ts`.
+const TROPE_REGISTRY: Readonly<Record<string, AnyTrope>> = {
+  'session-start': sessionStartTrope,
+  'session-end': sessionEndTrope,
+}
+
 interface SeedFiles {
   readonly id: string
   readonly prose?: string
@@ -52,47 +106,48 @@ interface SeedFiles {
   readonly source: 'vendored' | 'extension'
 }
 
-const readMaybe = async (p: string): Promise<string | undefined> => {
-  try {
-    return await fs.readFile(p, 'utf8')
-  } catch {
-    return undefined
-  }
-}
+const readMaybe = (
+  p: string,
+): Effect.Effect<string | undefined, never> =>
+  Effect.tryPromise({
+    try: () => fs.readFile(p, 'utf8'),
+    catch: () => undefined,
+  }).pipe(Effect.catchAll(() => Effect.succeed(undefined)))
 
 const seedProseFile = (kind: SeedKind): string =>
   kind === 'tropes' ? 'prose.mdx' : 'concept.mdx'
 
-const readSeed = async (
+const readSeed = (
   repoRoot: string,
   base: string,
   kind: SeedKind,
   id: string,
   source: 'vendored' | 'extension',
-): Promise<SeedFiles> => {
-  const dir = path.join(repoRoot, base, kind, id)
-  const prose = await readMaybe(path.join(dir, seedProseFile(kind)))
-  const readme = await readMaybe(path.join(dir, 'README.md'))
-  return {
-    id,
-    ...(prose !== undefined ? { prose } : {}),
-    ...(readme !== undefined ? { readme } : {}),
-    source,
-  }
-}
+): Effect.Effect<SeedFiles, never> =>
+  Effect.gen(function* () {
+    const dir = path.join(repoRoot, base, kind, id)
+    const prose = yield* readMaybe(path.join(dir, seedProseFile(kind)))
+    const readme = yield* readMaybe(path.join(dir, 'README.md'))
+    return {
+      id,
+      ...(prose !== undefined ? { prose } : {}),
+      ...(readme !== undefined ? { readme } : {}),
+      source,
+    }
+  })
 
-const listExtensionIds = async (
+const listExtensionIds = (
   repoRoot: string,
   kind: SeedKind,
-): Promise<ReadonlyArray<string>> => {
-  const dir = path.join(repoRoot, '.literate', 'extensions', kind)
-  try {
-    const entries = await fs.readdir(dir, { withFileTypes: true })
-    return entries.filter((e) => e.isDirectory()).map((e) => e.name)
-  } catch {
-    return []
-  }
-}
+): Effect.Effect<ReadonlyArray<string>, never> =>
+  Effect.tryPromise({
+    try: async () => {
+      const dir = path.join(repoRoot, '.literate', 'extensions', kind)
+      const entries = await fs.readdir(dir, { withFileTypes: true })
+      return entries.filter((e) => e.isDirectory()).map((e) => e.name)
+    },
+    catch: () => [] as ReadonlyArray<string>,
+  }).pipe(Effect.catchAll(() => Effect.succeed([] as ReadonlyArray<string>)))
 
 const sectionFromSeed = (kind: SeedKind, seed: SeedFiles): string => {
   const heading = `### \`${seed.id}\``
@@ -108,118 +163,245 @@ const sectionFromSeed = (kind: SeedKind, seed: SeedFiles): string => {
   return `${heading}\n\n${introBlock}${body}\n`
 }
 
-export const weave = async (repoRoot: string): Promise<WeaveResult> => {
-  const manifest = await readManifest(repoRoot)
-  const tropeEntries = manifest.vendored.filter((e) => e.kind === 'tropes')
-  const conceptEntries = manifest.vendored.filter(
-    (e) => e.kind === 'concepts',
-  )
+// Defensive strip of the ADR-024 §3 generated-file sigil before
+// parsing authored prose. Authored seeds never carry it; this lets
+// consumers paste a sigilled file without a false-positive schema
+// failure.
+const SIGIL_PREFIX_RE = /^\s*<!--\s*GENERATED by LF[\s\S]*?-->\s*/
 
-  // Vendored Tropes/Concepts.
-  const vendoredTropes: SeedFiles[] = []
-  for (const e of tropeEntries) {
-    vendoredTropes.push(
-      await readSeed(repoRoot, '.literate', 'tropes', e.id, 'vendored'),
-    )
+const stripSigil = (source: string): string =>
+  source.replace(SIGIL_PREFIX_RE, '')
+
+const mdxProcessor = unified().use(remarkParse).use(remarkMdx)
+
+const formatParseIssue = (issue: unknown): string => {
+  if (issue instanceof Error) return issue.message
+  if (typeof issue === 'string') return issue
+  try {
+    return JSON.stringify(issue)
+  } catch {
+    return String(issue)
   }
-  const vendoredConcepts: SeedFiles[] = []
-  for (const e of conceptEntries) {
-    vendoredConcepts.push(
-      await readSeed(repoRoot, '.literate', 'concepts', e.id, 'vendored'),
-    )
+}
+
+const validateTropeProse = (
+  trope: AnyTrope,
+  relPath: string,
+  proseSource: string,
+): ProseSchemaViolation | null => {
+  const tree = mdxProcessor.parse(stripSigil(proseSource))
+  const result = Schema.decodeUnknownEither(trope.proseSchema)(tree)
+  if (Either.isRight(result)) return null
+  return {
+    _tag: 'ProseSchemaViolation',
+    tropeId: trope.id,
+    path: relPath,
+    expected: `prose conforming to ${trope.id}.proseSchema`,
+    got: formatParseIssue(result.left),
   }
+}
 
-  // Consumer extensions.
-  const extTropeIds = await listExtensionIds(repoRoot, 'tropes')
-  const extConceptIds = await listExtensionIds(repoRoot, 'concepts')
-  const extensionTropes: SeedFiles[] = []
-  for (const id of extTropeIds) {
-    extensionTropes.push(
-      await readSeed(repoRoot, '.literate/extensions', 'tropes', id, 'extension'),
+export interface WeaverServiceShape {
+  readonly weave: (
+    repoRoot: string,
+  ) => Effect.Effect<
+    WeaveResult,
+    WeaveIOError | ProseSchemaViolations | ManifestReadError
+  >
+}
+
+export class WeaverService extends Context.Tag(
+  '@literate/cli/WeaverService',
+)<WeaverService, WeaverServiceShape>() {}
+
+// Pure program that requires ManifestService. WeaverServiceLive
+// provides itself (the service method body IS this program); kept
+// as a standalone export so verbs can compose without resolving the
+// service if they already hold the dependency graph.
+export const weaveProgram = (
+  repoRoot: string,
+): Effect.Effect<
+  WeaveResult,
+  WeaveIOError | ProseSchemaViolations | ManifestReadError,
+  ManifestService
+> =>
+  Effect.gen(function* () {
+    const manifestSvc = yield* ManifestService
+    const manifest = yield* manifestSvc.read(repoRoot)
+    const tropeEntries = manifest.vendored.filter((e) => e.kind === 'tropes')
+    const conceptEntries = manifest.vendored.filter(
+      (e) => e.kind === 'concepts',
     )
-  }
-  const extensionConcepts: SeedFiles[] = []
-  for (const id of extConceptIds) {
-    extensionConcepts.push(
-      await readSeed(repoRoot, '.literate/extensions', 'concepts', id, 'extension'),
-    )
-  }
 
-  const extImperatives = await readMaybe(
-    path.join(repoRoot, '.literate', 'extensions', 'imperatives.md'),
-  )
-
-  const lines: string[] = [SIGIL, '', PREAMBLE]
-
-  if (vendoredConcepts.length > 0) {
-    lines.push('## Concepts', '')
-    for (const seed of vendoredConcepts) {
-      lines.push(sectionFromSeed('concepts', seed))
+    // Vendored Tropes/Concepts.
+    const vendoredTropes: SeedFiles[] = []
+    for (const e of tropeEntries) {
+      vendoredTropes.push(
+        yield* readSeed(repoRoot, '.literate', 'tropes', e.id, 'vendored'),
+      )
     }
-  }
+    const vendoredConcepts: SeedFiles[] = []
+    for (const e of conceptEntries) {
+      vendoredConcepts.push(
+        yield* readSeed(repoRoot, '.literate', 'concepts', e.id, 'vendored'),
+      )
+    }
 
-  if (vendoredTropes.length > 0) {
-    lines.push('## Tropes', '')
+    // Prose-schema validation pass — vendored Tropes only (consumer
+    // extensions are outside LF's bundled schema registry). Collect
+    // all violations; raise together; block any write on failure.
+    const violations: ProseSchemaViolation[] = []
     for (const seed of vendoredTropes) {
-      lines.push(sectionFromSeed('tropes', seed))
+      const trope = TROPE_REGISTRY[seed.id]
+      if (!trope) continue
+      if (seed.prose === undefined) {
+        violations.push({
+          _tag: 'ProseSchemaViolation',
+          tropeId: seed.id,
+          path: `.literate/tropes/${seed.id}/prose.mdx`,
+          expected: 'prose.mdx file present',
+          got: 'missing',
+        })
+        continue
+      }
+      const violation = validateTropeProse(
+        trope,
+        `.literate/tropes/${seed.id}/prose.mdx`,
+        seed.prose,
+      )
+      if (violation) violations.push(violation)
     }
-  }
 
-  const hasExtensions =
-    extensionTropes.length > 0 ||
-    extensionConcepts.length > 0 ||
-    extImperatives !== undefined
-  if (hasExtensions) {
-    lines.push('## Consumer Extensions', '')
-    if (extImperatives !== undefined) {
-      lines.push('### Additional Mandatory Agent Instructions', '')
-      lines.push(extImperatives.trim(), '')
+    if (violations.length > 0) {
+      return yield* new ProseSchemaViolations({ violations })
     }
-    if (extensionConcepts.length > 0) {
-      lines.push('### Concepts', '')
-      for (const seed of extensionConcepts) {
+
+    // Consumer extensions.
+    const extTropeIds = yield* listExtensionIds(repoRoot, 'tropes')
+    const extConceptIds = yield* listExtensionIds(repoRoot, 'concepts')
+    const extensionTropes: SeedFiles[] = []
+    for (const id of extTropeIds) {
+      extensionTropes.push(
+        yield* readSeed(
+          repoRoot,
+          '.literate/extensions',
+          'tropes',
+          id,
+          'extension',
+        ),
+      )
+    }
+    const extensionConcepts: SeedFiles[] = []
+    for (const id of extConceptIds) {
+      extensionConcepts.push(
+        yield* readSeed(
+          repoRoot,
+          '.literate/extensions',
+          'concepts',
+          id,
+          'extension',
+        ),
+      )
+    }
+
+    const extImperatives = yield* readMaybe(
+      path.join(repoRoot, '.literate', 'extensions', 'imperatives.md'),
+    )
+
+    const lines: string[] = [SIGIL, '', PREAMBLE]
+
+    if (vendoredConcepts.length > 0) {
+      lines.push('## Concepts', '')
+      for (const seed of vendoredConcepts) {
         lines.push(sectionFromSeed('concepts', seed))
       }
     }
-    if (extensionTropes.length > 0) {
-      lines.push('### Tropes', '')
-      for (const seed of extensionTropes) {
+
+    if (vendoredTropes.length > 0) {
+      lines.push('## Tropes', '')
+      for (const seed of vendoredTropes) {
         lines.push(sectionFromSeed('tropes', seed))
       }
     }
-  }
 
-  if (
-    vendoredConcepts.length === 0 &&
-    vendoredTropes.length === 0 &&
-    !hasExtensions
-  ) {
-    lines.push(
-      '## (No Tropes or Concepts vendored)',
-      '',
-      'Run `literate tangle tropes session-start` (and similar) to ' +
-        'vendor seeds from a registry, or place consumer-authored ' +
-        'seeds under `.literate/extensions/`.',
-      '',
-    )
-  }
+    const hasExtensions =
+      extensionTropes.length > 0 ||
+      extensionConcepts.length > 0 ||
+      extImperatives !== undefined
+    if (hasExtensions) {
+      lines.push('## Consumer Extensions', '')
+      if (extImperatives !== undefined) {
+        lines.push('### Additional Mandatory Agent Instructions', '')
+        lines.push(extImperatives.trim(), '')
+      }
+      if (extensionConcepts.length > 0) {
+        lines.push('### Concepts', '')
+        for (const seed of extensionConcepts) {
+          lines.push(sectionFromSeed('concepts', seed))
+        }
+      }
+      if (extensionTropes.length > 0) {
+        lines.push('### Tropes', '')
+        for (const seed of extensionTropes) {
+          lines.push(sectionFromSeed('tropes', seed))
+        }
+      }
+    }
 
-  const literateMdPath = path.join(repoRoot, '.literate', 'LITERATE.md')
-  await fs.mkdir(path.dirname(literateMdPath), { recursive: true })
-  await fs.writeFile(literateMdPath, lines.join('\n'), 'utf8')
+    if (
+      vendoredConcepts.length === 0 &&
+      vendoredTropes.length === 0 &&
+      !hasExtensions
+    ) {
+      lines.push(
+        '## (No Tropes or Concepts vendored)',
+        '',
+        'Run `literate tangle tropes session-start` (and similar) to ' +
+          'vendor seeds from a registry, or place consumer-authored ' +
+          'seeds under `.literate/extensions/`.',
+        '',
+      )
+    }
 
-  return {
-    literateMdPath,
-    tropesIncluded: [
-      ...vendoredTropes.map((s) => `vendored:${s.id}`),
-      ...extensionTropes.map((s) => `extension:${s.id}`),
-    ],
-    conceptsIncluded: [
-      ...vendoredConcepts.map((s) => `vendored:${s.id}`),
-      ...extensionConcepts.map((s) => `extension:${s.id}`),
-    ],
-    extensionsIncluded: extImperatives !== undefined ? ['imperatives.md'] : [],
-  }
-}
+    const literateMdPath = path.join(repoRoot, '.literate', 'LITERATE.md')
+    yield* Effect.tryPromise({
+      try: async () => {
+        await fs.mkdir(path.dirname(literateMdPath), { recursive: true })
+        await fs.writeFile(literateMdPath, lines.join('\n'), 'utf8')
+      },
+      catch: (e) =>
+        new WeaveIOError({
+          path: literateMdPath,
+          reason: e instanceof Error ? e.message : String(e),
+        }),
+    })
+
+    return {
+      literateMdPath,
+      tropesIncluded: [
+        ...vendoredTropes.map((s) => `vendored:${s.id}`),
+        ...extensionTropes.map((s) => `extension:${s.id}`),
+      ],
+      conceptsIncluded: [
+        ...vendoredConcepts.map((s) => `vendored:${s.id}`),
+        ...extensionConcepts.map((s) => `extension:${s.id}`),
+      ],
+      extensionsIncluded:
+        extImperatives !== undefined ? ['imperatives.md'] : [],
+    }
+  })
+
+export const WeaverServiceLive = Layer.effect(
+  WeaverService,
+  Effect.gen(function* () {
+    const manifestSvc = yield* ManifestService
+    return {
+      weave: (repoRoot) =>
+        weaveProgram(repoRoot).pipe(
+          Effect.provideService(ManifestService, manifestSvc),
+        ),
+    }
+  }),
+)
 
 export type { ManifestEntry }

@@ -1,0 +1,68 @@
+name: publish
+
+# Trigger on `v*` tags. Publishes `@literate/cli` to npm via
+# Trusted Publishing (OIDC trust between this GitHub repo and
+# the npm `@literate` org). No npm token in repo secrets — the
+# `id-token: write` permission below is the only credential the
+# job needs once OIDC is configured on npm's side.
+#
+# **Manual setup required (one-time, npm web UI):**
+#   1. https://www.npmjs.com/settings/literate/packages — create
+#      the `@literate` org if it doesn't exist.
+#   2. https://www.npmjs.com/settings/literate/trusted-publishing —
+#      add a Trusted Publisher: Provider = GitHub Actions,
+#      Owner = athrio-com, Repository = literate, Workflow filename
+#      = publish.yml, Environment = (leave blank).
+#   3. Once that lands, push a `v0.1.0-alpha.1` tag from main; this
+#      workflow runs and publishes.
+#
+# Per ADR-029 the runtime is Bun-only; the build is `bun run build`
+# (which delegates to `bun run --filter @literate/cli build`).
+# Per ADR-034 registry trust is TLS-only; the workflow does not
+# verify content hashes or signatures beyond what npm itself
+# enforces.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Required for npm Trusted Publishing (OIDC token issuance).
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '>=1.1.0'
+
+      - name: Setup Node (npm CLI for `npm publish`)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun test
+
+      - name: Build CLI bundle
+        run: bun run build
+
+      - name: Publish @literate/cli
+        working-directory: packages/cli
+        run: npm publish --provenance --access public

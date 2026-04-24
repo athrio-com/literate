@@ -61,25 +61,70 @@ at [`./corpus/`](./corpus/).
 - [`./legacy/`](./legacy/) — the frozen legacy scaffold,
   preserved verbatim as historical reference (ADR-018 + ADR-020).
 
-## Install and build
+## Install
 
-Developing LF itself:
+The canonical install path bootstraps Bun (per
+[ADR-029](./corpus/decisions/ADR-029-bun-is-cli-required-runtime.md))
+and installs `@literate/cli` globally. Per
+[ADR-035](./corpus/decisions/ADR-035-distribution-install-script-plus-npm.md)
+the dual install scripts below are the supported surface;
+direct `bun add -g @literate/cli` works for users who already
+have Bun.
+
+**macOS / Linux:**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/athrio-com/literate/main/install.sh | sh
+```
+
+To pin a version:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/athrio-com/literate/main/install.sh \
+  | sh -s -- @0.1.0-alpha.1
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/athrio-com/literate/main/install.ps1 | iex
+```
+
+Windows-native Bun is treated as best-effort at 0.1.0-alpha;
+macOS / Linux are the verified targets.
+
+**Direct (any OS with Bun):**
+
+```sh
+bun add -g @literate/cli
+```
+
+After install:
+
+```sh
+literate --version
+literate init my-project        # scaffold a fresh LF repo
+```
+
+## Build (developing LF itself)
 
 ```sh
 bun install
 bun run typecheck
 bun test
 bun run build           # bundle @literate/cli to packages/cli/dist/
+bun run smoke:e2e       # init → validate → weave-idempotence
+bun run smoke:install   # hermetic local pack-and-install
 ```
 
 The CLI bundles its `@literate/core` dependency and seed files
 from `registry/` at build time (ADR-026 §4), producing a single
-Node-runnable artefact at `packages/cli/dist/literate.js`.
+Bun-runnable artefact at `packages/cli/dist/literate.js` (ADR-029).
 
-### Using the CLI
+### Using the CLI from this repo
 
-Three ways to invoke `literate`, in increasing order of distance
-from the repo:
+Three additional ways to invoke `literate` from inside this
+repo (useful when hacking on LF itself):
 
 **A. From the repo root (dev / hacking on LF):**
 
@@ -93,21 +138,21 @@ No install, no PATH change. Pass `-- <args>` after the script
 name; `bun run` forwards everything past `--` to the binary.
 
 **B. From a packed tarball (zero-install smoke — no global PATH
-setup needed, `npx`/`bunx` run it ephemerally):**
+setup needed, `bunx` runs it ephemerally):**
 
 ```sh
-cd packages/cli && bun pm pack            # → literate-cli-0.0.1.tgz
-TGZ="$(pwd)/literate-cli-0.0.1.tgz"
+cd packages/cli && bun pm pack            # → literate-cli-0.1.0-alpha.1.tgz
+TGZ="$(pwd)/literate-cli-0.1.0-alpha.1.tgz"
 
-# Either of these works — neither needs ~/.bun/bin on PATH:
-npx  -p "$TGZ" literate init ~/my-lf-project
+# Does not need ~/.bun/bin on PATH:
 bunx --package="$TGZ" literate init ~/my-lf-project
 ```
 
-**C. Global install (once `~/.bun/bin` is on PATH):**
+**C. Global install of the locally-packed tarball (once
+`~/.bun/bin` is on PATH):**
 
 ```sh
-bun install -g "$(pwd)/literate-cli-0.0.1.tgz"
+bun install -g "$(pwd)/literate-cli-0.1.0-alpha.1.tgz"
 literate --help
 ```
 

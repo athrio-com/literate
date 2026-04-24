@@ -1,5 +1,6 @@
 /**
- * `literate tangle <kind> <id> [--registry <name>]` (ADR-025 §2).
+ * `literate tangle <kind> <id> [--registry <name>]` (ADR-025 §2,
+ * argv surface from ADR-030).
  *
  * Fetch one seed from the configured registry, place its files at
  * `.literate/<kind>/<id>/...`, update `.literate/manifest.json`.
@@ -9,17 +10,18 @@
  */
 import * as fs from 'node:fs/promises'
 import * as path from 'node:path'
+import { Args, Command, Options } from '@effect/cli'
+import { Console, Effect, Option } from 'effect'
 
-import { findRegistry, readConfig } from '../registry/config.ts'
-import { selectFetcher, seedFiles } from '../registry/fetcher.ts'
+import { WeaveIOError, type VerbError } from '../errors.ts'
+import { ConfigService, findRegistry } from '../registry/config.ts'
+import { FetcherService, seedFiles } from '../registry/fetcher.ts'
 import {
   addEntry,
-  readManifest,
-  writeManifest,
+  ManifestService,
   type ManifestEntry,
   type SeedKind,
 } from '../registry/manifest.ts'
-import { usageError, type Verb, type VerbContext } from './verb.ts'
 
 export interface RunTangleOptions {
   readonly repoRoot: string
@@ -33,99 +35,100 @@ export interface RunTangleResult {
   readonly placed: ReadonlyArray<string>
 }
 
-const validKind = (s: string): s is SeedKind =>
-  s === 'tropes' || s === 'concepts'
-
-const normaliseKind = (raw: string): SeedKind => {
-  const k = raw === 'trope' ? 'tropes' : raw === 'concept' ? 'concepts' : raw
-  if (!validKind(k)) {
-    throw new Error(
-      `tangle: unknown kind '${raw}'; expected 'tropes' or 'concepts'`,
-    )
-  }
-  return k
-}
-
-export const runTangle = async (
+export const runTangle = (
   opts: RunTangleOptions,
-): Promise<RunTangleResult> => {
-  const config = await readConfig(opts.repoRoot)
-  const registry = findRegistry(config, opts.registryName)
-  const fetcher = selectFetcher(registry)
-  const files = seedFiles(opts.kind)
-  const fetched = await fetcher.fetch({
-    registry,
-    kind: opts.kind,
-    id: opts.id,
-    files,
+): Effect.Effect<
+  RunTangleResult,
+  VerbError,
+  ConfigService | FetcherService | ManifestService
+> =>
+  Effect.gen(function* () {
+    const configSvc = yield* ConfigService
+    const fetcherSvc = yield* FetcherService
+    const manifestSvc = yield* ManifestService
+
+    const config = yield* configSvc.read(opts.repoRoot)
+    const registry = yield* findRegistry(config, opts.registryName)
+    const files = seedFiles(opts.kind)
+    const fetched = yield* fetcherSvc.fetch({
+      registry,
+      kind: opts.kind,
+      id: opts.id,
+      files,
+    })
+
+    const placed = yield* Effect.tryPromise({
+      try: async () => {
+        const out: string[] = []
+        for (const { file, content } of fetched.contents) {
+          const rel = path.join('.literate', opts.kind, opts.id, file)
+          const abs = path.join(opts.repoRoot, rel)
+          await fs.mkdir(path.dirname(abs), { recursive: true })
+          await fs.writeFile(abs, content, 'utf8')
+          out.push(rel)
+        }
+        return out
+      },
+      catch: (e) =>
+        new WeaveIOError({
+          path: `.literate/${opts.kind}/${opts.id}/`,
+          reason: e instanceof Error ? e.message : String(e),
+        }),
+    })
+
+    const manifest = yield* manifestSvc.read(opts.repoRoot)
+    const entry: ManifestEntry = {
+      kind: opts.kind,
+      id: opts.id,
+      registry: registry.name,
+      ref: fetched.resolvedRef,
+      fetchedAt: new Date().toISOString(),
+      files: placed,
+    }
+    yield* manifestSvc.write(opts.repoRoot, addEntry(manifest, entry))
+
+    return { entry, placed }
   })
 
-  const placed: string[] = []
-  for (const { file, content } of fetched.contents) {
-    const rel = path.join('.literate', opts.kind, opts.id, file)
-    const abs = path.join(opts.repoRoot, rel)
-    await fs.mkdir(path.dirname(abs), { recursive: true })
-    await fs.writeFile(abs, content, 'utf8')
-    placed.push(rel)
-  }
+const kindArg = Args.choice<SeedKind>([
+  ['tropes', 'tropes'],
+  ['concepts', 'concepts'],
+  ['trope', 'tropes'],
+  ['concept', 'concepts'],
+], { name: 'kind' }).pipe(
+  Args.withDescription("Seed kind: 'tropes' or 'concepts' (singular forms accepted)."),
+)
 
-  const manifest = await readManifest(opts.repoRoot)
-  const entry: ManifestEntry = {
-    kind: opts.kind,
-    id: opts.id,
-    registry: registry.name,
-    ref: fetched.resolvedRef,
-    fetchedAt: new Date().toISOString(),
-    files: placed,
-  }
-  await writeManifest(opts.repoRoot, addEntry(manifest, entry))
+const idArg = Args.text({ name: 'id' }).pipe(
+  Args.withDescription('Seed id (e.g. session-start, disposition).'),
+)
 
-  return { entry, placed }
-}
+const registryOpt = Options.text('registry').pipe(
+  Options.withAlias('r'),
+  Options.withDescription('Registry name from literate.json (defaults to the sole entry).'),
+  Options.optional,
+)
 
-const tangleVerb: Verb = {
-  name: 'tangle',
-  summary: 'Fetch a Trope or Concept seed from a registry and vendor it.',
-  usage:
-    'Usage: literate tangle <tropes|concepts> <id> [--registry <name>]\n' +
-    '\n' +
-    'Examples:\n' +
-    '  literate tangle tropes session-start\n' +
-    '  literate tangle concepts disposition --registry literate\n',
-
-  async run(argv, ctx: VerbContext): Promise<number> {
-    let registryName: string | undefined
-    const positional: string[] = []
-    for (let i = 0; i < argv.length; i++) {
-      const a = argv[i]!
-      if (a === '--registry' || a === '-r') {
-        registryName = argv[++i]
-        if (!registryName) throw usageError(tangleVerb, '--registry needs a value')
-      } else {
-        positional.push(a)
-      }
-    }
-    if (positional.length !== 2) {
-      throw usageError(
-        tangleVerb,
-        `expected <kind> <id>, got ${positional.length} positional argument(s)`,
+const tangleCommand = Command.make(
+  'tangle',
+  { kind: kindArg, id: idArg, registry: registryOpt },
+  ({ kind, id, registry }) =>
+    Effect.gen(function* () {
+      const result = yield* runTangle({
+        repoRoot: process.cwd(),
+        kind,
+        id,
+        ...(Option.isSome(registry) ? { registryName: registry.value } : {}),
+      })
+      yield* Console.log(
+        `tangled ${kind}/${id} from ${result.entry.registry}@${result.entry.ref}`,
       )
-    }
-    const kind = normaliseKind(positional[0]!)
-    const id = positional[1]!
+      for (const f of result.placed) yield* Console.log(`  ${f}`)
+    }),
+).pipe(
+  Command.withDescription(
+    'Fetch a Trope or Concept seed from a registry and vendor it.',
+  ),
+)
 
-    const result = await runTangle({
-      repoRoot: ctx.cwd,
-      kind,
-      id,
-      ...(registryName !== undefined ? { registryName } : {}),
-    })
-    ctx.stdout.write(
-      `tangled ${kind}/${id} from ${result.entry.registry}@${result.entry.ref}\n`,
-    )
-    for (const f of result.placed) ctx.stdout.write(`  ${f}\n`)
-    return 0
-  },
-}
-
-export default tangleVerb
+export default tangleCommand

@@ -1,0 +1,78 @@
+# Goal
+
+A **Goal** is a session-scope specification that names the
+work and its upstream prose. Each session log carries one or
+more Goals in its `## Goals` section. Goals are gated at draft
+time (Accept / Correct / Clarify / Reject); on Accept their
+`Status` and `Category` fields are added.
+
+This Concept declares the typed shape of a Goal as a passive
+type surface at v0.1. The session-lifecycle Tropes
+(`session-start`, `session-end`) still operate over markdown
+directly; a future `goal-flow` Trope can use this Schema for
+typed parsing.
+
+## Shape
+
+```typescript
+interface Goal {
+  readonly _tag: 'Goal'
+  readonly number: number
+  readonly title: string
+  readonly status: GoalStatus       // from concepts/goal-status
+  readonly category: GoalCategory   // from concepts/goal-category
+  readonly topic: string
+  readonly upstream: string
+  readonly scope?: ReadonlyArray<string>
+  readonly outOfScope?: ReadonlyArray<string>
+  readonly acceptance?: ReadonlyArray<string>
+  readonly notes?: string
+}
+```
+
+`GoalStatus` and `GoalCategory` are imported from sibling
+Concepts. The composition is the point: types reference types.
+
+## On-disk shape
+
+A Goal block in a session log's `## Goals` section uses the
+shape declared in `corpus/CLAUDE.md` (Mandatory Agent
+Instructions, *Goal shape*):
+
+```markdown
+### Goal N — short title
+
+**Status:** Active
+**Category:** feature
+**Topic:** one paragraph of what the work is and why now.
+**Upstream:** the ADRs / Concepts / specs / sessions / files
+**Scope:** (optional bullets)
+**Out of scope:** (optional bullets)
+**Acceptance:** (optional bullets)
+**Notes:** (optional)
+```
+
+The `_tag: 'Goal'` discriminator is implicit on disk
+(distinguished by the `### Goal N — ...` heading shape) and
+materialised on parsing.
+
+## Lifecycle
+
+- **Draft** (no `Status:` / `Category:`) — presented at the
+  gate.
+- **Active** (post-Accept) — being worked on.
+- **Completed** / **Abandoned** / **Superseded by Goal N** —
+  terminal.
+
+The `session-end` Trope refuses close while any Goal remains
+non-terminal (per `goal-status`'s `isTerminalGoalStatus`
+predicate).
+
+## References
+
+- Used in every session log's `## Goals` section.
+- Composes [`goal-status`](../goal-status/concept.mdx) and
+  [`goal-category`](../goal-category/concept.mdx).
+- The `session` Concept does not (yet) carry a typed
+  `goals: Goal[]` field — that's a future extension once a
+  `goal-flow` Trope realises typed parsing.

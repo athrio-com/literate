@@ -1,7 +1,7 @@
 # ADR-021 — `Modality` as a general six-case ADT
 
 **Date:** 2026-04-23
-**Status:** Accepted
+**Status:** Superseded by ADR-031 (terminology + shape — referential-frame axis lifted into Disposition) + ADR-032 (operational-stance axis lifted into Mode). Body unchanged per IMP-6; metalanguage migration on `Trope<C>` (`modality: Modality` → `disposition: Disposition` + `mode?: Mode`) is a deferred refactor named in `2026-04-24T1712-typed-concepts-disposition-mode-implication.md` Deferred / Discovered.
 **Tags:** `#algebra` `#protocol`
 
 **Extends:** ADR-001, ADR-011

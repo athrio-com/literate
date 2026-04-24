@@ -1,9 +1,20 @@
 # Concepts — index
 
-Concepts authored at the corpus level for LF-the-project. Each
-file is an authored instance of the `concept` Concept (which LF
-itself ships at `packages/concept-concept`). Material revisions
-pass the review gate; editorial revisions are ungated.
+Concepts authored at the corpus level for LF-the-project.
+Each file is an authored instance of the `concept` Concept
+type. Material revisions pass the review gate; editorial
+revisions are ungated.
+
+This index covers the **corpus-level** Concepts (LF's own
+project-scope authoring). The **shipped** Protocol-mechanism
+Concepts live separately at
+[`registry/concepts/`](../../registry/concepts/) and are
+published to consumers via `literate tangle` /
+`literate init`. See
+[`registry/concepts/`](../../registry/concepts/) for the
+shipped set: `disposition`, `mode`, `implication`, `session`,
+`session-status`, `goal`, `goal-status`, `goal-category`,
+`adr`, `adr-status`, `tag`, `step`, `step-kind`.
 
 | Slug | Gloss | Origin |
 |---|---|---|

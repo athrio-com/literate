@@ -1,7 +1,16 @@
 #!/usr/bin/env bun
 /**
- * `literate` CLI entry point. Parses argv, dispatches to the
- * verb in `verbs/registry.ts`. Six verbs at v0.1:
+ * `literate` CLI entry point (ADR-028, ADR-029, ADR-030).
+ *
+ * Composes the verb subcommands as an `@effect/cli` `Command` tree
+ * and runs it against `process.argv`. Each verb file under
+ * `src/verbs/` exports a `Command.make`-built command alongside its
+ * programmatic `runX` helper; this dispatcher wires them together,
+ * provides the live service Layer (`ConfigService`, `ManifestService`,
+ * `FetcherService`, `WeaverService`), and lets `BunRuntime.runMain`
+ * map success/failure into exit codes and pretty-printed errors.
+ *
+ * Six verbs at v0.1:
  *
  *   continue   open or resume an LF session (Protocol-mode)
  *   close      close an Open LF session (Protocol-mode)
@@ -10,46 +19,53 @@
  *   weave      materialise `.literate/LITERATE.md`
  *   update     re-fetch a vendored seed at its registry ref
  *
- * Verbs ship as one-file modules under `src/verbs/`; the registry
- * at `src/verbs/registry.ts` enumerates them. Adding a verb is a
- * one-file change plus one entry in the registry.
+ * Adding a verb is a one-file change in `src/verbs/` plus one entry
+ * in the `subcommands` array below.
  */
-import { usageBanner, VERBS } from '../verbs/registry.ts'
-import type { VerbContext } from '../verbs/verb.ts'
+import { Command } from '@effect/cli'
+import { BunContext, BunRuntime } from '@effect/platform-bun'
+import { Effect, Layer } from 'effect'
 
-const ctx: VerbContext = {
-  cwd: process.cwd(),
-  env: process.env,
-  stdout: process.stdout,
-  stderr: process.stderr,
-}
+import { ConfigServiceLive } from '../registry/config.ts'
+import { FetcherServiceLive } from '../registry/fetcher.ts'
+import { ManifestServiceLive } from '../registry/manifest.ts'
+import { WeaverServiceLive } from '../weaver/weaver.ts'
+import closeCommand from '../verbs/close.ts'
+import continueCommand from '../verbs/continue.ts'
+import initCommand from '../verbs/init.ts'
+import tangleCommand from '../verbs/tangle.ts'
+import updateCommand from '../verbs/update.ts'
+import weaveCommand from '../verbs/weave.ts'
 
-const main = async (): Promise<number> => {
-  const [, , verb, ...rest] = process.argv
-  if (!verb || verb === '--help' || verb === '-h' || verb === 'help') {
-    process.stdout.write(usageBanner())
-    return verb ? 0 : 0
-  }
+const root = Command.make('literate').pipe(
+  Command.withDescription('Literate Framework CLI'),
+  Command.withSubcommands([
+    continueCommand,
+    closeCommand,
+    initCommand,
+    tangleCommand,
+    weaveCommand,
+    updateCommand,
+  ]),
+)
 
-  const handler = VERBS[verb]
-  if (!handler) {
-    process.stderr.write(`literate: unknown verb '${verb}'\n\n`)
-    process.stderr.write(usageBanner())
-    return 2
-  }
+const RegistryLayers = Layer.mergeAll(
+  ConfigServiceLive,
+  ManifestServiceLive,
+  FetcherServiceLive,
+)
+const CliServicesLive = Layer.merge(
+  RegistryLayers,
+  WeaverServiceLive.pipe(Layer.provide(ManifestServiceLive)),
+)
 
-  if (rest[0] === '--help' || rest[0] === '-h') {
-    process.stdout.write(handler.usage + '\n')
-    return 0
-  }
+const cli = Command.run(root, {
+  name: 'Literate Framework CLI',
+  version: '0.0.1',
+})
 
-  return handler.run(rest, ctx)
-}
-
-main()
-  .then((code) => process.exit(code))
-  .catch((err) => {
-    const exitCode = (err as { exitCode?: number }).exitCode ?? 1
-    process.stderr.write(`literate: ${(err as Error).message ?? String(err)}\n`)
-    process.exit(exitCode)
-  })
+cli(process.argv).pipe(
+  Effect.provide(CliServicesLive),
+  Effect.provide(BunContext.layer),
+  BunRuntime.runMain,
+)
