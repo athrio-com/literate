@@ -17,7 +17,7 @@
   "type": "module",
   "main": "./dist/literate.js",
   "bin": {
-    "literate": "./dist/literate.js"
+    "literate": "dist/literate.js"
   },
   "exports": {
     ".": "./dist/literate.js"
@@ -34,19 +34,17 @@
     "test": "bun test",
     "prepack": "bun run build"
   },
-  "dependencies": {
+  "devDependencies": {
     "@effect/cli": "^0.75.1",
     "@effect/platform": "^0.96.1",
     "@effect/platform-bun": "^0.89.0",
-    "remark-mdx": "^3.0.1",
-    "remark-parse": "^11.0.0",
-    "unified": "^11.0.5"
-  },
-  "devDependencies": {
     "@literate/core": "workspace:*",
     "@literate/template-minimal": "workspace:*",
+    "@types/bun": "latest",
     "effect": "^3.21.0",
+    "remark-mdx": "^3.0.1",
+    "remark-parse": "^11.0.0",
     "typescript": "^5.6.0",
-    "@types/bun": "latest"
+    "unified": "^11.0.5"
   }
 }

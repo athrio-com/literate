@@ -5,6 +5,8 @@ entries are gated, the rest is ungated journal material.
 
 | File | Topic | Status |
 |---|---|---|
+| [2026-04-29T0900-ci-oidc-publish-pipeline.md](./2026-04-29T0900-ci-oidc-publish-pipeline.md) | Verify `publish.yml` end-to-end against a live `workflow_run`; add post-publish install-smoke job (Linux + Windows); tag-to-version reconciliation; docs pass | Planned |
+| [2026-04-24T2004-publish-readiness-fixes.md](./2026-04-24T2004-publish-readiness-fixes.md) | Publish-readiness fixes for `@literate/cli@0.1.0-alpha.1`: `--version` from `package.json`, CLI README, drop redundant `dependencies`, dry-run verify, queue CI OIDC Planned session | Closed (2026-04-24T20:11) |
 | [2026-04-24T2030-publish-and-install-scripts.md](./2026-04-24T2030-publish-and-install-scripts.md) | Publish `@literate/cli@0.1.0-alpha.1` to npm + dual install scripts (`install.sh` + `install.ps1`) + ADR-035 | Closed (2026-04-24T19:02) |
 | [2026-04-24T1818-dissolve-categories-and-ship-scaffold.md](./2026-04-24T1818-dissolve-categories-and-ship-scaffold.md) | Dissolve `corpus/categories/` into typed Concepts; scrub template-minimal; init logs first session; ADR-034 registry trust; e2e smoke (P8 expanded) | Closed (2026-04-24T18:52) |
 | [2026-04-24T1712-typed-concepts-disposition-mode-implication.md](./2026-04-24T1712-typed-concepts-disposition-mode-implication.md) | Typed Concepts: Disposition + Mode + Implication (P5+P6+P7 collapsed) — ADR-031, ADR-032, ADR-033, ADR-021 annotation | Closed (2026-04-24T17:26) |

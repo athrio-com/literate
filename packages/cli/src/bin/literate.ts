@@ -26,6 +26,7 @@ import { Command } from '@effect/cli'
 import { BunContext, BunRuntime } from '@effect/platform-bun'
 import { Effect, Layer } from 'effect'
 
+import pkg from '../../package.json' with { type: 'json' }
 import { ConfigServiceLive } from '../registry/config.ts'
 import { FetcherServiceLive } from '../registry/fetcher.ts'
 import { ManifestServiceLive } from '../registry/manifest.ts'
@@ -61,7 +62,7 @@ const CliServicesLive = Layer.merge(
 
 const cli = Command.run(root, {
   name: 'Literate Framework CLI',
-  version: '0.0.1',
+  version: pkg.version,
 })
 
 cli(process.argv).pipe(
