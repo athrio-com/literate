@@ -5,6 +5,7 @@ entries are gated, the rest is ungated journal material.
 
 | File | Topic | Status |
 |---|---|---|
+| [2026-04-25T0607-mise-canonical-install-path.md](./2026-04-25T0607-mise-canonical-install-path.md) | Mise as canonical install path: ADR-036 (supersedes ADR-035); README rewrite; remove `install.sh` + `install.ps1`; Docker validation | Closed (2026-04-25T06:18) |
 | [2026-04-29T0900-ci-oidc-publish-pipeline.md](./2026-04-29T0900-ci-oidc-publish-pipeline.md) | Verify `publish.yml` end-to-end against a live `workflow_run`; add post-publish install-smoke job (Linux + Windows); tag-to-version reconciliation; docs pass | Planned |
 | [2026-04-24T2004-publish-readiness-fixes.md](./2026-04-24T2004-publish-readiness-fixes.md) | Publish-readiness fixes for `@literate/cli@0.1.0-alpha.1`: `--version` from `package.json`, CLI README, drop redundant `dependencies`, dry-run verify, queue CI OIDC Planned session | Closed (2026-04-24T20:11) |
 | [2026-04-24T2030-publish-and-install-scripts.md](./2026-04-24T2030-publish-and-install-scripts.md) | Publish `@literate/cli@0.1.0-alpha.1` to npm + dual install scripts (`install.sh` + `install.ps1`) + ADR-035 | Closed (2026-04-24T19:02) |

@@ -1,13 +1,13 @@
 # Literate Framework
 
 > **⚠️ Experimental · Pre-release.** This repository is an active
-> research experiment, not a shipping product. The code here has
-> never been published to npm, APIs turn over between sessions
-> without notice, and there are no stability, security, or support
-> guarantees. Do not depend on it in anything you cannot afford to
-> rewrite. If you are evaluating LF, read the corpus
-> (`corpus/decisions/` + `corpus/sessions/`) first — that is where
-> intent lives; the code follows.
+> research experiment, not a shipping product. `@literate/cli` is
+> published to npm at the `0.1.0-alpha.1` tag (`alpha` dist-tag);
+> APIs turn over between sessions without notice and there are no
+> stability, security, or support guarantees. Do not depend on it
+> in anything you cannot afford to rewrite. If you are evaluating
+> LF, read the corpus (`corpus/decisions/` + `corpus/sessions/`)
+> first — that is where intent lives; the code follows.
 
 > **Status:** Post-S5/P2 stage. Distribution is shadcn-shaped per
 > [ADR-025](./corpus/decisions/ADR-025-shadcn-shaped-distribution.md)
@@ -63,48 +63,53 @@ at [`./corpus/`](./corpus/).
 
 ## Install
 
-The canonical install path bootstraps Bun (per
-[ADR-029](./corpus/decisions/ADR-029-bun-is-cli-required-runtime.md))
-and installs `@literate/cli` globally. Per
-[ADR-035](./corpus/decisions/ADR-035-distribution-install-script-plus-npm.md)
-the dual install scripts below are the supported surface;
-direct `bun add -g @literate/cli` works for users who already
-have Bun.
+Literate is distributed via [mise](https://mise.jdx.dev) (per
+[ADR-036](./corpus/decisions/ADR-036-mise-canonical-install-path.md))
+for consistent installation across shells and platforms (macOS,
+Linux, Windows including WSL). Bun stays the runtime per
+[ADR-029](./corpus/decisions/ADR-029-bun-is-cli-required-runtime.md);
+mise manages the install layer above it.
 
-**macOS / Linux:**
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/athrio-com/literate/main/install.sh | sh
-```
-
-To pin a version:
+If you don't already have mise:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/athrio-com/literate/main/install.sh \
-  | sh -s -- @0.1.0-alpha.1
+curl https://mise.run | sh
 ```
 
-**Windows (PowerShell):**
-
-```powershell
-irm https://raw.githubusercontent.com/athrio-com/literate/main/install.ps1 | iex
-```
-
-Windows-native Bun is treated as best-effort at 0.1.0-alpha;
-macOS / Linux are the verified targets.
-
-**Direct (any OS with Bun):**
+Then activate it for the current shell (mise's installer also
+appends an activation line to your shell rc for future shells):
 
 ```sh
-bun add -g @literate/cli
+eval "$(~/.local/bin/mise activate bash)"   # or zsh / fish / pwsh
 ```
 
-After install:
+Then install Literate together with its required runtime:
+
+```sh
+mise use -g node@latest bun@latest npm:@literate/cli
+```
+
+`node` is required so mise can query npm metadata; `bun` is
+required because `literate`'s shebang executes under Bun; both
+are managed by mise's shim chain so their installation here is
+purely declarative. Verify:
 
 ```sh
 literate --version
 literate init my-project        # scaffold a fresh LF repo
 ```
+
+### Per-project pinning
+
+In a Literate-using repository, pin the CLI version (and Bun)
+via `.mise.toml` at the repo root:
+
+```sh
+mise use bun@latest npm:@literate/[email protected]
+```
+
+Collaborators with mise installed get the same versions
+automatically when they `cd` into the repo.
 
 ## Build (developing LF itself)
 

@@ -1,10 +1,10 @@
 # ADR-035 — Distribution: install scripts + npm
 
-**Status:** Accepted
+**Status:** Superseded by ADR-036 (install-surface clauses; npm-publish clauses remain in force)
 **Date:** 2026-04-24
 **Tags:** `#release` `#tooling` `#self-hosting`
 **Supersedes:** —
-**Superseded by:** —
+**Superseded by:** ADR-036
 
 ## Context
 

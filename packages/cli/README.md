@@ -4,23 +4,25 @@ Literate Framework CLI — the harness binding for `Protocol.continue`.
 
 ## Install
 
-**macOS / Linux:**
+Distributed via [mise](https://mise.jdx.dev) for consistent
+installation across shells and platforms (macOS, Linux, Windows
+including WSL).
+
+If you don't already have mise:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/athrio-com/literate/main/install.sh | sh
+curl https://mise.run | sh
+eval "$(~/.local/bin/mise activate bash)"   # or zsh / fish / pwsh
 ```
 
-**Windows (PowerShell):**
-
-```powershell
-irm https://raw.githubusercontent.com/athrio-com/literate/main/install.ps1 | iex
-```
-
-**Direct (any OS with [Bun](https://bun.sh)):**
+Then install Literate together with its required runtime:
 
 ```sh
-bun add -g @literate/cli
+mise use -g node@latest bun@latest npm:@literate/cli
 ```
+
+`node` is needed so mise can query npm metadata; `bun` is the
+runtime `literate`'s shebang executes under.
 
 ## Quick start
 
