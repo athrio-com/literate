@@ -1,10 +1,10 @@
 # ADR-036 — Mise as canonical install path
 
-**Status:** Accepted
+**Status:** Superseded by ADR-038
 **Date:** 2026-04-25
 **Tags:** `#release` `#tooling` `#self-hosting` `#migration`
 **Supersedes:** ADR-035
-**Superseded by:** —
+**Superseded by:** ADR-038
 
 ## Context
 

@@ -63,53 +63,52 @@ at [`./corpus/`](./corpus/).
 
 ## Install
 
-Literate is distributed via [mise](https://mise.jdx.dev) (per
-[ADR-036](./corpus/decisions/ADR-036-mise-canonical-install-path.md))
-for consistent installation across shells and platforms (macOS,
-Linux, Windows including WSL). Bun stays the runtime per
-[ADR-029](./corpus/decisions/ADR-029-bun-is-cli-required-runtime.md);
-mise manages the install layer above it.
+Literate runs on Bun (per
+[ADR-029](./corpus/decisions/ADR-029-bun-is-cli-required-runtime.md)
+and [ADR-038](./corpus/decisions/ADR-038-bun-direct-install-path.md)).
+Installation is via Bun's package manager directly — no shell
+scripts, no tool-manager wrapper.
 
-If you don't already have mise:
-
-```sh
-curl https://mise.run | sh
-```
-
-Then activate it for the current shell (mise's installer also
-appends an activation line to your shell rc for future shells):
+**If you have Bun:**
 
 ```sh
-eval "$(~/.local/bin/mise activate bash)"   # or zsh / fish / pwsh
+bun install -g @literate/cli
+literate init my-project
 ```
 
-Then install Literate together with its required runtime:
+**If you don't:**
 
 ```sh
-mise use -g node@latest bun@latest npm:@literate/cli
+curl -fsSL https://bun.sh/install | bash
+bun install -g @literate/cli
+literate init my-project
 ```
 
-`node` is required so mise can query npm metadata; `bun` is
-required because `literate`'s shebang executes under Bun; both
-are managed by mise's shim chain so their installation here is
-purely declarative. Verify:
-
-```sh
-literate --version
-literate init my-project        # scaffold a fresh LF repo
-```
+Windows users: install Bun via the
+[Windows installer](https://bun.sh/docs/installation#windows)
+or use WSL, then run the same `bun install -g` command.
 
 ### Per-project pinning
 
-In a Literate-using repository, pin the CLI version (and Bun)
-via `.mise.toml` at the repo root:
+Collaborators on a Literate-using repo get the same CLI version
+by declaring `@literate/cli` as a dev dep in `package.json`:
 
 ```sh
-mise use bun@latest npm:@literate/[email protected]
+bun add --dev @literate/cli
 ```
 
-Collaborators with mise installed get the same versions
-automatically when they `cd` into the repo.
+Then `bun install` (run by collaborators on clone) resolves the
+pinned version. Invoke via `bun run literate` to use the
+project-pinned binary instead of any global one.
+
+### Asking an agent to install
+
+If you want a coding agent (Claude Code, etc.) to handle the
+install for you, paste the prompt from
+[INSTALL_PROMPT.md](./INSTALL_PROMPT.md). The prompt instructs
+the agent to follow the same manual steps documented above —
+the manual path is canonical, the agent prompt is a wrapper
+over it.
 
 ## Build (developing LF itself)
 

@@ -4,25 +4,36 @@ Literate Framework CLI — the harness binding for `Protocol.continue`.
 
 ## Install
 
-Distributed via [mise](https://mise.jdx.dev) for consistent
-installation across shells and platforms (macOS, Linux, Windows
-including WSL).
+Literate runs on [Bun](https://bun.sh). Installation is via
+Bun's package manager directly.
 
-If you don't already have mise:
-
-```sh
-curl https://mise.run | sh
-eval "$(~/.local/bin/mise activate bash)"   # or zsh / fish / pwsh
-```
-
-Then install Literate together with its required runtime:
+**If you have Bun:**
 
 ```sh
-mise use -g node@latest bun@latest npm:@literate/cli
+bun install -g @literate/cli
+literate init my-project
 ```
 
-`node` is needed so mise can query npm metadata; `bun` is the
-runtime `literate`'s shebang executes under.
+**If you don't:**
+
+```sh
+curl -fsSL https://bun.sh/install | bash
+bun install -g @literate/cli
+literate init my-project
+```
+
+Windows users: install Bun via the
+[Windows installer](https://bun.sh/docs/installation#windows)
+or use WSL, then run the same `bun install -g` command.
+
+### Per-project pinning
+
+```sh
+bun add --dev @literate/cli
+```
+
+Then `bun install` (run by collaborators on clone) resolves
+the pinned version; invoke via `bun run literate`.
 
 ## Quick start
 
@@ -36,6 +47,9 @@ literate continue .
 
 Full Protocol, ADRs, and session corpus live in the repo:
 <https://github.com/athrio-com/literate>.
+
+Distribution rationale:
+[ADR-038](https://github.com/athrio-com/literate/blob/main/corpus/decisions/ADR-038-bun-direct-install-path.md).
 
 ## License
 
