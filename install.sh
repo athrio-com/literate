@@ -12,15 +12,18 @@
 #
 # Per ADR-029 the CLI is Bun-only. This script bootstraps Bun via
 # Bun's official installer if absent, then installs `@literate/cli`
-# globally with `bun add -g`. Per ADR-035 this script + the sibling
-# `install.ps1` are the canonical install path; direct
-# `bun add -g @literate/cli` works too for users who already have
-# Bun.
+# globally with `bun add -g`. If ~/.bun/bin is not on PATH (common
+# when Bun is managed via mise/asdf/volta rather than Bun's own
+# installer), the script appends a PATH export to the user's shell
+# rc so the binary is accessible in new shell sessions. Per ADR-035
+# this script + the sibling `install.ps1` are the canonical install
+# path.
 
 set -eu
 
 VERSION="${1:-}"
 SPEC="@literate/cli${VERSION}"
+BUN_BIN_DIR="${HOME}/.bun/bin"
 
 # ---------------------------------------------------------------------------
 # Platform check
@@ -38,17 +41,81 @@ case "$OS" in
 esac
 
 # ---------------------------------------------------------------------------
+# PATH-setup helper — idempotent, shell-aware.
+
+ensure_bun_bin_on_path() {
+  # Already on PATH? No-op.
+  case ":${PATH}:" in
+    *":${BUN_BIN_DIR}:"*)
+      return 0
+      ;;
+  esac
+
+  # Export for the rest of this script so `literate --version`
+  # verification can find the binary.
+  PATH="${BUN_BIN_DIR}:${PATH}"
+  export PATH
+
+  # Persist to the user's shell rc. `$SHELL` is the login shell,
+  # which is what we want — this script itself runs under `sh`.
+  shell_name="$(basename "${SHELL:-}")"
+  case "$shell_name" in
+    zsh)
+      rc="${HOME}/.zshrc"
+      line='export PATH="$HOME/.bun/bin:$PATH"'
+      ;;
+    bash)
+      # macOS convention: .bash_profile. Linux: .bashrc.
+      if [ "$OS" = "Darwin" ] && [ -f "${HOME}/.bash_profile" ]; then
+        rc="${HOME}/.bash_profile"
+      else
+        rc="${HOME}/.bashrc"
+      fi
+      line='export PATH="$HOME/.bun/bin:$PATH"'
+      ;;
+    fish)
+      rc="${HOME}/.config/fish/config.fish"
+      line='fish_add_path "$HOME/.bun/bin"'
+      mkdir -p "$(dirname "$rc")"
+      ;;
+    *)
+      echo "install.sh: could not detect shell rc for SHELL='${SHELL:-}'." >&2
+      echo "  Add the following to your shell config manually:" >&2
+      echo "    export PATH=\"\$HOME/.bun/bin:\$PATH\"" >&2
+      return 0
+      ;;
+  esac
+
+  # Create rc if absent.
+  [ -f "$rc" ] || touch "$rc"
+
+  # Idempotence — skip if already referenced.
+  if grep -qF ".bun/bin" "$rc" 2>/dev/null; then
+    echo "==> ~/.bun/bin already referenced in $rc (not appending)"
+    return 0
+  fi
+
+  {
+    printf '\n%s\n' "# added by @literate/cli installer"
+    printf '%s\n' "$line"
+  } >> "$rc"
+
+  echo "==> appended to $rc:"
+  echo "      $line"
+  echo "    run \`source $rc\` or open a new shell to use 'literate'"
+}
+
+# ---------------------------------------------------------------------------
 # Bun bootstrap
 
 if ! command -v bun >/dev/null 2>&1; then
   echo "==> Bun not found; installing via https://bun.sh/install"
   curl -fsSL https://bun.sh/install | bash
 
-  # Bun's installer writes its env-loader to ~/.bun/_bun (or sources
-  # it into the shell rc). For this `sh` invocation, manually add
-  # ~/.bun/bin to PATH so the subsequent `bun add -g` resolves.
-  if [ -d "${HOME}/.bun/bin" ]; then
-    PATH="${HOME}/.bun/bin:${PATH}"
+  # Bun's installer writes its own PATH line to the user's rc. For
+  # this subshell, manually add ~/.bun/bin so `bun add -g` resolves.
+  if [ -d "$BUN_BIN_DIR" ]; then
+    PATH="${BUN_BIN_DIR}:${PATH}"
     export PATH
   fi
 
@@ -68,11 +135,14 @@ echo "==> installing ${SPEC}"
 bun add -g "${SPEC}"
 
 # ---------------------------------------------------------------------------
-# Verify
+# PATH setup + verify
+
+ensure_bun_bin_on_path
 
 if ! command -v literate >/dev/null 2>&1; then
-  echo "install.sh: 'literate' is not on PATH after install." >&2
-  echo "  Bun installs global bins to ~/.bun/bin; ensure that's on PATH." >&2
+  echo "install.sh: 'literate' is not on PATH after install and PATH fix." >&2
+  echo "  The binary should be at ~/.bun/bin/literate. Check with:" >&2
+  echo "    ls -la ~/.bun/bin/literate" >&2
   exit 1
 fi
 
