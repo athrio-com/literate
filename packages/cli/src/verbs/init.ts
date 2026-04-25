@@ -68,19 +68,27 @@ const TEMPLATE_DEFAULT_SEEDS: Record<
   string,
   ReadonlyArray<{ kind: SeedKind; id: string }>
 > = {
-  // Post-G1 (Session 2026-04-24T1818) the `minimal` template ships
-  // the canonical Trope set + the full typed Concept set: the
-  // Session-2 four (`disposition`, `mode`, `implication`, `session`),
-  // the six promoted-from-categories (`session-status`, `goal-status`,
-  // `goal-category`, `adr-status`, `step-kind`, `tag`), and the
-  // three composing parents (`goal`, `adr`, `step`). Total: 2
-  // tropes + 13 concepts = 15 seeds. The corpus-level `person`,
-  // `ai`, `protocol` Concepts (still prose-only at `corpus/concepts/`
-  // in LF) are deferred — they require a registry-seed-shape
-  // promotion to ship.
+  // The `minimal` template ships the canonical Trope set + the
+  // typed Concept set:
+  //
+  //   Tropes  (5): session-start, session-end, lfm, reconcile, index
+  //   Concepts (15):
+  //     - axes:        disposition, mode, implication, session
+  //     - status enums: session-status, goal-status, goal-category,
+  //                     lfm-status, step-kind
+  //     - composing parents: goal, step
+  //     - tag type:    tag
+  //     - LFM substrate: lfm, dispositional-domain, layer
+  //
+  // Total: 20 seeds. The ADR primitive was retired in the
+  // LFM-substrate rewrite — `adr` and `adr-status` no longer
+  // ship.
   minimal: [
     { kind: 'tropes', id: 'session-start' },
     { kind: 'tropes', id: 'session-end' },
+    { kind: 'tropes', id: 'lfm' },
+    { kind: 'tropes', id: 'reconcile' },
+    { kind: 'tropes', id: 'index' },
     { kind: 'concepts', id: 'disposition' },
     { kind: 'concepts', id: 'mode' },
     { kind: 'concepts', id: 'implication' },
@@ -89,11 +97,13 @@ const TEMPLATE_DEFAULT_SEEDS: Record<
     { kind: 'concepts', id: 'goal' },
     { kind: 'concepts', id: 'goal-status' },
     { kind: 'concepts', id: 'goal-category' },
-    { kind: 'concepts', id: 'adr' },
-    { kind: 'concepts', id: 'adr-status' },
     { kind: 'concepts', id: 'tag' },
     { kind: 'concepts', id: 'step' },
     { kind: 'concepts', id: 'step-kind' },
+    { kind: 'concepts', id: 'lfm' },
+    { kind: 'concepts', id: 'lfm-status' },
+    { kind: 'concepts', id: 'dispositional-domain' },
+    { kind: 'concepts', id: 'layer' },
   ],
 }
 

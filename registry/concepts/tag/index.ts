@@ -25,8 +25,9 @@
  * `registry/concepts/tag/index.ts`. Tangled via
  * `literate tangle concepts tag`.
  *
- * Upstream ADRs: ADR-001 (algebra), ADR-010 (Concepts unify Terms),
- * ADR-015 (TS + .md siblings), ADR-025/026 (registry seed shape).
+ * Upstream LFMs: see corpus/manifests/protocol/algebra.md and
+ *   sibling LFMs for the current-state declarations this seed
+ *   realises.
  */
 import { Schema } from 'effect'
 import { concept, prose, type Concept } from '@literate/core'

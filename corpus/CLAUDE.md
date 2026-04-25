@@ -16,25 +16,21 @@ descriptive lifecycle / mutability / vocabulary sections that follow
 are reference material the imperatives point at; do not skip the
 imperatives in favour of skimming the descriptive sections.
 
-The two **canonical procedure sources** (authoritative historical
-prose, authored on the legacy algebra; preserved verbatim under
-the ADR-020 freeze) are:
+The **canonical procedure sources** are the two workflow Tropes
+in the registry:
 
-- `legacy/packages/trope-session-start/src/prose.mdx` — the
-  start procedure (spontaneous + planned paths, pre-work steps).
-- `legacy/packages/trope-session-end/src/prose.mdx` — the end
-  procedure (validations including Plan-entry coverage, Closed
-  stamp).
-
-The rewrite re-authors these Tropes on the Step substrate as
-registry seeds at `registry/tropes/session-start/` and
-`registry/tropes/session-end/` per ADR-025/026 (the
-`@literate/trope-*` workspace packages from S2/S3 were collapsed
-into registry seeds during P2).
+- `registry/tropes/session-start/prose.mdx` — the start procedure
+  (spontaneous + planned + open-orphan paths, pre-work steps).
+- `registry/tropes/session-end/prose.mdx` — the end procedure
+  (validations including Plan-entry coverage, Closed stamp).
 
 The imperatives below inline the *decision points* a fresh agent
-needs before opening any file; the trope prose is the authority on
-the deep procedure if a step needs disambiguation.
+needs before opening any file; the Trope prose is the authority on
+the deep procedure if a step needs disambiguation. Frozen
+historical prose for the same procedures lives at
+`legacy/packages/trope-session-start/src/prose.mdx` and
+`legacy/packages/trope-session-end/src/prose.mdx`; read for
+context, not for current behaviour.
 
 ### IMP-1 — AT SESSION START (before any other tool call)
 
@@ -68,8 +64,11 @@ greps, or open exploratory tool calls before step 5.
    `Status: Closed` session log's `## Summary` and
    `## Deferred / Discovered` sections. Print a one-paragraph
    recap to the Person.
-4. **Read the ADR index** at `corpus/decisions/decisions.md`.
-   Note any `Superseded` rows that affect the current scope.
+4. **Walk the LFM tree** at `corpus/manifests/`. Skim every LFM's
+   first paragraph to ground the current-state declarations
+   relevant to this session's scope. Run `literate reconcile` if
+   any LFM shows a non-`Reconciled` status; a clean baseline
+   makes downstream edits diff cleanly.
 5. **Stamp the session log header** per the chosen path:
    - Spontaneous: create `corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md`
      with `Status: Open`, `Started: YYYY-MM-DDTHH:MM` (UTC),
@@ -97,54 +96,58 @@ greps, or open exploratory tool calls before step 5.
 
 ### IMP-2 — DURING the session, on every architectural decision
 
-LF distinguishes two architectural artefacts:
+LF has two architectural artefacts:
 
-- **Concept-level material revision** — the *higher-order* and
-  *flowing* canon. Use this for new architectural primitives, new
-  contracts, or refinements to existing Concepts. Concept files at
-  `packages/concept-*/src/concept.mdx` are fully mutable; material
-  revisions are gated. Per the Person's framing, **the Concept
-  update IS the architectural decision artefact** — no separate
-  ADR is required for changes that fit the Concept shape.
-- **ADR** — the *frozen* and *one-shot* artefact. Use this for
-  tooling commitments ("we use library X"), append-only amendments
-  to prior ADRs (because ADR bodies are immutable post-Accept), or
-  decisions that benefit from an unambiguous historical anchor.
+- **Concept-level material revision** — refinements to existing
+  typed primitives (the Concept seeds at
+  `registry/concepts/<id>/`). Use this for changes to a closed
+  vocabulary's member set, a Schema's shape, or a Concept's
+  prose body. Concept files are fully mutable; material
+  revisions are gated.
+- **LFM authoring or revision** — current-state declarations for
+  one Dispositional Domain. Use this for new tooling
+  commitments ("we use library X"), changes to existing
+  current-state, or any decision that benefits from a typed
+  declaration of "this is how it is now." LFMs are mutable;
+  bodies are append-anywhere; the `lfm` and `reconcile` Tropes
+  handle hash + reference maintenance.
 
 Procedure (apply the matching path):
 
 **Concept-level path:**
 
-1. Identify the Concept package whose prose changes
-   (`packages/concept-*/`).
+1. Identify the Concept seed whose prose changes
+   (`registry/concepts/<id>/`).
 2. Draft the revised `concept.mdx` and (if needed) `index.ts`
    Schema delta.
 3. Present the diff to the Person for **Accept / Correct /
    Clarify / Reject**.
 4. On Accept: write the revised files; cross-update any
-   downstream Trope prose / schema / category file affected;
+   downstream Trope prose / schema / sibling Concept affected;
    typecheck the affected packages.
 5. Append a bullet to the session log's `## Decisions Made`
    describing the revision and the files touched.
 
-**ADR path:**
+**LFM-authoring path:**
 
-1. Determine the next ADR number:
-   `ls corpus/decisions/ADR-*.md | sort | tail -1`, increment.
-2. Identify tags from `corpus/tags.md` (LF's authored tag-set
-   instances; the `Tag` Concept type lives at
-   `registry/concepts/tag/`). If no existing tag fits, add one
-   to `corpus/tags.md` first (gated authorial change).
-3. Check for conflicts: for each tag, grep
-   `corpus/decisions/ADR-*.md` for prior ADRs with overlapping
-   tags. If the new ADR overrides a prior one, prepare to set the
-   prior's `Status:` to `Superseded by ADR-NNN` (do **not** apply
-   yet — wait until step 5).
-4. Draft the ADR file. Present to the Person for **Accept /
-   Correct / Clarify / Reject**. On Reject, delete the file.
-5. After Accept: update `corpus/decisions/decisions.md` (new
-   row); apply any supersession `Status:` edits; append a bullet
-   to the session log's `## Decisions Made`.
+1. Identify the target Layer/Domain. Layers: `apps/<app>/`,
+   `workspace/`, `infrastructure/[<target>/]`, `protocol/` (LF
+   dev-repo only). Pick a Domain name (lowercase, dash-
+   separated) within the Layer. The (Layer, Domain) pair is
+   unique across the corpus.
+2. Author or revise the file at
+   `corpus/manifests/<layer-path>/<domain>.md` per the `lfm`
+   Trope's prose contract (typed metadata header + standalone
+   declarative body; soft `@lfm(<short-hash>)` annotations only;
+   no narrative cross-LFM dependence).
+3. Present the diff to the Person for **Accept / Correct /
+   Clarify / Reject**.
+4. On Accept: write the file. Run `literate reconcile` so the
+   `id` field reflects the body hash, soft-link references in
+   other LFMs are updated, and the `status` field is derived.
+5. Append a bullet to the session log's `## Decisions Made`
+   describing the LFM authored or revised, and `## Work Done`
+   for the file path.
 
 ### IMP-3 — DURING the session, on every material scope change
 
@@ -195,8 +198,8 @@ If this session's work warrants a deliberate multi-session arc:
    shifted, how it relates to upstream.
 4. Confirm `## Work Done` enumerates the files created /
    modified / deleted with rationale.
-5. Confirm `## Decisions Made` references every ADR or Concept
-   revision Accepted in this session.
+5. Confirm `## Decisions Made` references every LFM authored or
+   Concept revision Accepted in this session.
 6. Populate `## Deferred / Discovered` with any carry-over
    items, including unrealised Plan entries and any newly
    surfaced gaps.
@@ -211,10 +214,10 @@ If this session's work warrants a deliberate multi-session arc:
 
 Agentic IDEs (Cursor, Zed, Claude Code) are tuned for action:
 their default behaviour is to run tools, draft code, propose
-changes. LF **Modes** (see `registry/concepts/mode/concept.mdx`,
-ADR-032) override this default. The active session Mode binds
-agent behaviour for the duration of that Mode; in-session Mode
-shifts are explicit and gated.
+changes. LF **Modes** (see `registry/concepts/mode/concept.mdx`)
+override this default. The active session Mode binds agent
+behaviour for the duration of that Mode; in-session Mode shifts
+are explicit and gated.
 
 When the active Mode is **`Exploring`**, the agent resists tool
 calls beyond what is needed to ground the discussion. A single
@@ -223,23 +226,23 @@ code that lands in a file, or modifying files is not. The agent
 asks clarifying questions, offers competing framings, surfaces
 unexamined assumptions, resists proposing specific actions.
 Output lands in the session's `## Exploration` block or in a
-memo under `corpus/memos/<slug>.md` — not in `corpus/decisions/`,
-not in `corpus/specs/`, not in `registry/`. Crystallisation
-into a Goal (or a Filed/Promoted/Dismissed Implication, see
-ADR-033) is the explicit transition out of Exploring.
+memo under `corpus/memos/<slug>.md` — not in
+`corpus/manifests/`, not in `registry/`. Crystallisation into a
+Goal (or a Filed/Promoted/Dismissed Implication) is the explicit
+transition out of Exploring.
 
 When the active Mode is **`Weaving`**, the agent drafts prose
-for the gate (ADR / spec / Concept / Trope prose) and does
-not derive code from that prose in the same gate cycle. Code
-derivation is a separate Mode shift to Tangling, which lands
-after the prose has been Accepted.
+for the gate (LFM body / Concept revision / Trope prose) and
+does not derive code from that prose in the same gate cycle.
+Code derivation is a separate Mode shift to Tangling, which
+lands after the prose has been Accepted.
 
 When the active Mode is **`Tangling`**, the agent derives code
 from already-Accepted prose and does not author new prose.
-Every code change traces back to upstream prose by ADR / spec
-/ Concept reference; if no upstream prose exists, the work is
-not Tangling — shift Mode to Weaving and gate the missing
-prose first (see ADR-005, prose-before-code).
+Every code change traces back to upstream prose by LFM /
+Concept / Trope reference; if no upstream prose exists, the
+work is not Tangling — shift Mode to Weaving and gate the
+missing prose first (prose-before-code).
 
 Mode is set at session-start (per the `session-start` Trope's
 Mode-setting Step — pending v0.1 wiring, defaults applied
@@ -251,24 +254,22 @@ This imperative binds the **agent enactor**.
 
 ### IMP-6 — NEVER
 
-- Never write code before the prose motivating it is authored and
-  gated. (`prose-before-code`, see ADR-005.)
-- Never edit an accepted ADR's body. The `Status:` line is the
-  sole mutable part.
+- Never write code before the prose motivating it is authored
+  and gated (prose-before-code).
 - Never invent a value for a closed vocabulary before the
   corresponding member file exists and is accepted.
 - Never capitalise a corpus-level Concept in prose before its
-  file exists in `corpus/concepts/`.
-- Never end a session without running the `session-end` procedure
-  (IMP-5) or without writing `## Summary`.
-- Never stamp `Status: Open` on a `Planned` session without first
-  re-gating its provisional Goals (IMP-1.6).
-- Never stamp a fresh `Status: Open` on a new spontaneous session
-  while a non-`Planned` log shows `Status: Open` from a prior
-  thread without explicit Person consent (IMP-1.2.c).
-- Never spend tool calls on repo investigation when a `Status:
-  Planned` session ready to start would answer the Person's
-  prompt — surface it instead and ask.
+  file exists.
+- Never end a session without running the `session-end`
+  procedure (IMP-5) or without writing `## Summary`.
+- Never stamp `Status: Open` on a `Planned` session without
+  first re-gating its provisional Goals (IMP-1.6).
+- Never stamp a fresh `Status: Open` on a new spontaneous
+  session while a non-`Planned` log shows `Status: Open` from
+  a prior thread without explicit Person consent (IMP-1.2.c).
+- Never spend tool calls on repo investigation when a
+  `Status: Planned` session ready to start would answer the
+  Person's prompt — surface it instead and ask.
 - Never add a value to a closed vocabulary without first
   updating the matching Concept under `registry/concepts/`
   (gated material revision: edit `concept.mdx` + the
@@ -278,19 +279,20 @@ This imperative binds the **agent enactor**.
   gate becomes invisible work.
 - Never edit a file inside the frozen `legacy/` tree (legacy
   `packages/`, `site/`, `LITERATE.md`, and pre-rewrite root
-  tooling, all now under `legacy/` per
-  [ADR-020](./decisions/ADR-020-unify-monorepo-layout.md); freeze
-  rule from
-  [ADR-018](./decisions/ADR-018-legacy-code-frozen-corpus-global.md))
-  without an explicit Person-authorised freeze lift recorded in
-  the active session's `## Decisions Made`. Reading `legacy/`
-  for historical context is encouraged; editing is not.
-- Never import from `legacy/packages/*` into active `packages/*`.
-  The rewrite is structurally isolated from the legacy by the
-  ADR-020 layout (separate subtrees; the root workspace only
-  enumerates `packages/*`, not `legacy/packages/*`) in addition
-  to the ADR-018 §4 rule. Both trees share the `@literate/`
-  scope per ADR-019; isolation is by subtree, not by namespace.
+  tooling) without an explicit Person-authorised freeze lift
+  recorded in the active session's `## Decisions Made`.
+  Reading `legacy/` for historical context is encouraged;
+  editing is not.
+- Never import from `legacy/packages/*` into active
+  `packages/*`. The rewrite is structurally isolated from the
+  legacy by separate subtrees; the root workspace only
+  enumerates `packages/*`, not `legacy/packages/*`. Both trees
+  share the `@literate/` scope; isolation is by subtree, not
+  by namespace.
+- Never rely on a stale LFM. If `literate reconcile` reports a
+  non-`Reconciled` LFM in the scope of the current session,
+  resolve it (re-author or re-reconcile) before authoring new
+  current-state declarations against it.
 
 ### Goal shape
 
@@ -304,7 +306,7 @@ gate.
 **Status:** (post-Accept; one value from goal-status.md)
 **Category:** (post-Accept; one value from goal-category.md)
 **Topic:** one paragraph of what the work is and why now.
-**Upstream:** the ADRs / Concepts / specs / sessions / files this
+**Upstream:** the LFMs / Concepts / specs / sessions / files this
 work derives from. If none exist, the first sub-task of the Goal
 is to draft the missing prose.
 **Scope:** (optional bullets — what is in)
@@ -326,23 +328,25 @@ paths exist:
 
 1. **Start.** Spontaneous: create a new session log at
    `corpus/sessions/YYYY-MM-DDTHHMM-<slug>.md` with `Status:
-   Open`. Planned: open an existing `Status: Planned` log, stamp
-   `Status: Open` and `Started: YYYY-MM-DDTHH:MM`, freeze the
-   parent's Plan entry by setting its `Realised by` field, and
-   re-gate every provisional Goal copied from the parent. Either
-   way the `session-start` Trope at
-   `packages/trope-session-start/src/prose.mdx` runs the pre-work
-   (read last non-`Planned` session's Summary; surface Deferred /
-   Discovered; check the ADR index; list pending `Planned`
-   sessions).
+   Open`. Planned: open an existing `Status: Planned` log,
+   stamp `Status: Open` and `Started: YYYY-MM-DDTHH:MM`, freeze
+   the parent's Plan entry by setting its `Realised by` field,
+   and re-gate every provisional Goal copied from the parent.
+   Either way the `session-start` Trope at
+   `registry/tropes/session-start/prose.mdx` runs the pre-work
+   (read last non-`Planned` session's Summary; surface
+   Deferred / Discovered; walk the LFM tree; list pending
+   `Planned` sessions).
 2. **Goal drafting and gating.** Write Goal(s) into the log's
    `## Goals` section. Each Goal declares `Topic`, `Upstream`,
-   optional `Scope`, `Out of scope`, `Acceptance`, `Notes`. Present
-   to the Person for Accept / Correct / Clarify / Reject. On Accept,
-   the Goal's `Status` and `Category` fields are added.
-3. **Work.** Author prose (ADRs, Concept-level material revisions,
-   specs, chapter plans) as needed for the Goal; gate each; on
-   Accept, proceed to the code the prose motivates.
+   optional `Scope`, `Out of scope`, `Acceptance`, `Notes`.
+   Present to the Person for Accept / Correct / Clarify /
+   Reject. On Accept, the Goal's `Status` and `Category` fields
+   are added.
+3. **Work.** Author prose (LFMs, Concept-level material
+   revisions, specs, chapter plans) as needed for the Goal;
+   gate each; on Accept, proceed to the code the prose
+   motivates.
 4. **(Optional) Planning.** If this session's work warrants a
    multi-session arc, author a `## Plan` block. Each Plan entry is
    gated (`Slug`, `Topic`, optional `Depends on`, `Goals` with
@@ -359,33 +363,31 @@ paths exist:
 
 ## Review gate
 
-Identical to the LF Protocol review gate (see
-[`LITERATE.md#6-the-review-gate`](../LITERATE.md#6-the-review-gate)).
-The authored prose covered by the gate in this repo:
+Identical to the LF Protocol review gate. The authored prose
+covered by the gate in this repo:
 
-- ADRs in `corpus/decisions/`
-- Specs in `corpus/specs/`
-- Chapters in `corpus/chapters/`
-- Stories if any are added
-- Session `## Goals` entries in `corpus/sessions/`
-- Concept files in `corpus/concepts/` (corpus-level Concepts —
-  the unified Term/Concept primitive per ADR-010)
+- LFMs in `corpus/manifests/` (current-state declarations).
+- Specs in `corpus/specs/` (when present).
+- Chapters in `corpus/chapters/` (when present).
+- Stories (when present).
+- Session `## Goals` entries in `corpus/sessions/`.
+- Concept files at `corpus/concepts/` (corpus-level Concepts).
 - Concept files in `registry/concepts/` (shipped Protocol
-  Concepts — material revisions to closed-vocab `Schema.Literal`
-  member sets are gated)
-- LF's authored tag-set instances in `corpus/tags.md`
+  Concepts — material revisions to closed-vocab
+  `Schema.Literal` member sets are gated).
+- LF's authored tag-set instances in `corpus/tags.md`.
 
-The gate does **not** apply to: journal bodies of session logs, index
-and navigation files, `Status:` transitions that flow atomically from
-accepted ADRs, editorial revisions of Concepts (prose around the
-member set, examples, *Used in* references), code and config
-changes derived from accepted prose.
+The gate does **not** apply to: journal bodies of session logs,
+index and navigation files, `status:` transitions written by
+`literate reconcile`, editorial revisions of Concepts (prose
+around the member set, examples, *Used in* references), and
+code and config changes derived from accepted prose.
 
 ## Mutability
 
 | Kind | Profile |
 |---|---|
-| ADR body | Append-only; `Status:` line sole mutable part |
+| LFM body | Fully mutable; `status` written by `literate reconcile`; `id` recomputed by reconcile; new LFMs and material revisions gated |
 | Spec | Fully mutable; material revisions gated |
 | Chapter | Fully mutable living plan; material revisions gated |
 | Session log | Append-once body; `## Goals` and `## Plan` entries gated; `Summary` written once at end; `## Plan` entries freeze when their successor transitions to `Open` |
@@ -399,16 +401,15 @@ changes derived from accepted prose.
 All enumerated types used in LF-project prose live as typed
 Concepts under `registry/concepts/<id>/` (each with
 `concept.mdx`, `index.ts` carrying the `Schema.Literal(...)`,
-and `README.md`). The Session-3 dissolution of the legacy
-`corpus/categories/` folder promoted each member set to a
-sibling Concept and added composing parents (`Goal`, `ADR`,
-`Step`):
+and `README.md`). Each member set is a sibling Concept; some
+have composing parents (`Goal`, `Step`, `LFM`):
 
-- `adr-status` — ADR `Status:` values + transitions
 - `goal-status` — session-Goal `Status:` values + transitions
 - `goal-category` — session-Goal `Category:` values
 - `session-status` — session `Status:` values + transitions
-- `step-kind` — the six Step kinds (ADR-012)
+- `step-kind` — the six Step kinds
+- `lfm-status` — LFM operational status (Reconciled / Drifted
+  / Pending / Unverified)
 - `tag` — Tag *type* (the brand-typed slug shape)
 
 LF's authored tag *set* (its specific `#process`,
@@ -430,41 +431,37 @@ imperatives.
 ## Working with `packages/` and `legacy/`
 
 `corpus/` is the **global living corpus**: every new session log
-and every new ADR land here regardless of whether the work
-touches the active tree or references the legacy tree. The
-rewrite's ADRs (ADR-011 onwards) continue the same numbering as
-the legacy's.
+and every new LFM land here regardless of whether the work
+touches the active tree or references the legacy tree.
 
 The repository has one active code area and one frozen reference
-area (see [ADR-020](./decisions/ADR-020-unify-monorepo-layout.md)):
+area:
 
-- `packages/*` — **active**. New code ships as `@literate/*` per
-  [ADR-019](./decisions/ADR-019-reinstate-literate-namespace.md)
-  and lives at repo-root `packages/` per
-  [ADR-020](./decisions/ADR-020-unify-monorepo-layout.md). When a
-  corpus decision affects what LF ships, implement it here as a
-  code-after-prose step. New Concept and Trope packages use the
-  Step substrate from ADR-011 through ADR-014 and compose via
-  TypeScript + sibling `.md` per ADR-015.
-- `legacy/*` — **frozen** (ADR-018, scope relocated by ADR-020).
-  Contains the former `packages/*` (legacy `@literate/*`
-  Concepts, Tropes, CLI, template, core), the legacy `site/`
-  scaffold, `LITERATE.md`, and pre-rewrite root tooling. No
-  edits, additions, or deletions. Never publishes. Reading
-  `legacy/*` for historical context is encouraged.
+- `packages/*` — **active**. New code ships under `@literate/*`.
+  When an LFM-authored decision affects what LF ships, implement
+  it here as a code-after-prose step. New Concept and Trope
+  seeds use the Step substrate and compose via TypeScript +
+  sibling `.md`.
+- `legacy/*` — **frozen**. Contains the former `packages/*`
+  (legacy `@literate/*` Concepts, Tropes, CLI, template, core),
+  the legacy `site/` scaffold, `LITERATE.md`, and pre-rewrite
+  root tooling. No edits, additions, or deletions. Never
+  publishes. Reading `legacy/*` for historical context is
+  encouraged.
 
 Do not edit `legacy/packages/concept-*/src/concept.mdx` or
 `legacy/packages/trope-*/src/prose.mdx` prose bodies. Those
-files are the frozen legacy ship surface and are governed by the
-legacy framework Protocol at `legacy/LITERATE.md`, not by this
-file. Any edit to a file under `legacy/` requires an explicit
-Person-authorised freeze lift recorded in the active session's
-`## Decisions Made`.
+files are the frozen legacy ship surface and are governed by
+the legacy framework Protocol at `legacy/LITERATE.md`, not by
+this file. Any edit to a file under `legacy/` requires an
+explicit Person-authorised freeze lift recorded in the active
+session's `## Decisions Made`.
 
 ## Tag vocabulary
 
-See `corpus/tags.md` for LF's authored tag set (the closed
-set of slug instances LF uses on its own ADRs). The `Tag`
-Concept *type* (the brand-typed slug shape) lives at
-`registry/concepts/tag/`. Every ADR must carry at least one
-tag drawn from `corpus/tags.md`.
+See `corpus/tags.md` for LF's authored tag set (the slug
+instances LF uses on prose surfaces where a sub-axis beyond
+Disposition is useful). The `Tag` Concept *type* (the
+brand-typed slug shape) lives at `registry/concepts/tag/`.
+Tagging is optional for LFMs; the LFM's `disposition.scope`
+field carries the primary axis already.

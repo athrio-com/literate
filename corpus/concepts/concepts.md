@@ -14,7 +14,8 @@ published to consumers via `literate tangle` /
 [`registry/concepts/`](../../registry/concepts/) for the
 shipped set: `disposition`, `mode`, `implication`, `session`,
 `session-status`, `goal`, `goal-status`, `goal-category`,
-`adr`, `adr-status`, `tag`, `step`, `step-kind`.
+`tag`, `step`, `step-kind`, `lfm`, `lfm-status`,
+`dispositional-domain`, `layer`.
 
 | Slug | Gloss | Origin |
 |---|---|---|

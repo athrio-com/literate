@@ -1,0 +1,187 @@
+# LFM — Literate Framework Manifest
+
+A **Literate Framework Manifest** (LFM) is a typed, mutable,
+declarative document that states the current state of one
+Dispositional Domain within one Layer. LFMs are the spine of a
+repo's framework state.
+
+The shape is deliberately spare. An LFM declares **what is**, not
+**how it came to be**. History lives in git; the LFM holds the
+present.
+
+## Shape
+
+```typescript
+interface LFM {
+  readonly id: string                    // short content hash
+  readonly disposition: Disposition      // Product | Protocol | Infrastructure (+ scope)
+  readonly layer: Layer                  // typed container in corpus/manifests/
+  readonly domain: string                // Domain name within the Layer
+  readonly status: LFMStatus             // Reconciled | Drifted | Pending | Unverified
+  readonly dependencies?: readonly string[]  // optional soft links to other LFM ids
+}
+```
+
+The on-disk file is markdown with this metadata as a header
+block. Body follows the header in standalone declarative prose.
+
+## File shape
+
+```markdown
+---
+id: a3f2c8b1
+disposition: { base: 'Protocol', scope: 'session-lifecycle' }
+layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
+domain: session-lifecycle
+status: Unverified
+---
+
+# Session Lifecycle
+
+A session is `Open`, `Closed (timestamp)`, `Planned`, or
+`Abandoned`. Each session log is append-once …
+```
+
+The metadata header uses YAML between `---` fences for
+machine readability. The body is plain markdown; it can use
+`@lfm(<short-hash>)` annotations as soft links but never relies
+on them for narrative comprehension.
+
+## Self-sufficiency
+
+The cardinal rule for LFM bodies: **each LFM stands alone**.
+
+A reader picking up an LFM cold should be able to understand
+the current state it declares without reading any other LFM. No
+supersession chains. No "this was decided in LFM(abc123) and
+then refined in LFM(def456)." The body declares what is, in
+plain present-tense prose, with whatever context a fresh reader
+needs to follow it.
+
+Soft links exist (`@lfm(<short-hash>)`) but they are **operational
+tooling**, not narrative load-bearing. They serve two purposes:
+
+1. The `reconcile` Trope uses them to detect dependency edges
+   and update reference hashes when an LFM body changes.
+2. Editor tooling can render them as clickable navigation links.
+
+A body that reads "as declared in `@lfm(abc123)`, the install
+path is …" violates the self-sufficiency rule. Rewrite it: "the
+install path is …" — and let the annotation, if present at all,
+sit operationally at the end.
+
+## Identity by content hash
+
+The `id` field is a **short content hash** computed
+mechanically: the first 8 hexadecimal characters of the SHA-256
+digest of the LFM body (the markdown content below the metadata
+header, with the metadata header itself excluded so that
+metadata edits do not change identity gratuitously, and edits
+to status — which the `reconcile` Trope writes — do not
+re-trigger hash recomputation).
+
+When an author edits the body, the hash changes. The `lfm`
+Trope (which is responsible for authoring and validating LFMs)
+recomputes the hash and writes it back. The `reconcile` Trope
+then walks the corpus and updates any soft `@lfm(<old-hash>)`
+references in other LFMs to the new hash.
+
+If an LFM is deleted, references whose target was that LFM are
+removed (not orphaned).
+
+Hashes collide rarely at 8 hex chars (2^32 namespace, ~65k
+items at 50% collision probability). If a collision occurs,
+extend the hash by two characters and update both colliding
+LFMs and their references in the same `reconcile` run.
+
+## Status is operational, not historical
+
+`status` reports whether the LFM's declared state matches the
+implementation. It is written by the `reconcile` Trope; authors
+leave it at `Unverified` when authoring a new LFM.
+
+See `concepts/lfm-status` for the four-value vocabulary and the
+transition rules. The summary: `Reconciled` is steady-state;
+`Drifted` means implementation moved without an LFM update;
+`Pending` means LFM moved without a reconcile confirmation;
+`Unverified` is the safe default.
+
+## Dependencies (soft links)
+
+The optional `dependencies` field lists other LFM ids the
+present LFM has soft links to. Two reasons it exists:
+
+1. **Reconcile efficiency** — when an LFM's hash changes,
+   `reconcile` knows which other LFMs may need their soft-link
+   references updated by reading the dependency edges directly
+   rather than scanning every LFM body.
+2. **Index navigation** — the `index` Trope can render the
+   dependency graph for a reader who wants to know "what other
+   LFMs touch this Domain."
+
+The field is **not** a load-bearing narrative cross-reference.
+An LFM can omit `dependencies` entirely and still be
+well-formed; the `reconcile` Trope's drift detection works
+without it (at the cost of a full body scan per run).
+
+## The annotation grammar
+
+The canonical cross-reference syntax is:
+
+```
+@lfm(<short-hash>)
+```
+
+Examples: `@lfm(a3f2c8b1)`, `@lfm(def0)` (collisions extend by
+two chars).
+
+The annotation is **grappable** in the LF sense: removable as a
+class on `literate eject`. It is operational, not narrative;
+removing all annotations from an LFM body must leave the body
+readable as standalone prose.
+
+## LFMs and Tropes
+
+The LFM **is** a Trope — specifically, the `lfm` Trope at
+`registry/tropes/lfm/`. Every LFM in the corpus is the *output*
+of an invocation of that Trope.
+
+This framing is precise:
+
+- **Trope** is the higher-order category. A Trope is a
+  reusable, gate-respecting work-doing unit.
+- The `lfm` Trope is **one entry in the Trope category**. Its
+  work is "author and validate a current-state manifest for
+  one Dispositional Domain."
+- An LFM file is **one invocation of that Trope**. The
+  invocation produces a typed instance conforming to `LFMSchema`
+  with a body that obeys the self-sufficiency rule.
+
+LFMs are not *parallel to* Tropes. LFMs are *instances produced
+by* the `lfm` Trope.
+
+Other Tropes (`session-start`, `session-end`, `reconcile`,
+`index`) do other kinds of work — author session logs, walk
+manifests, produce summary indexes. The `lfm` Trope shares the
+category but its output happens to be the system's current-state
+spine.
+
+## Mutability
+
+LFMs are **fully mutable**. An author can revise a body at any
+time; the `lfm` Trope handles hash recomputation; the
+`reconcile` Trope handles status derivation and reference
+maintenance. No append-only constraint, no supersession
+ceremony, no immutable history embedded in the LFM itself —
+git holds the history.
+
+The mutability profile is intentionally distinct from session
+logs (which are immutable, append-only). The split:
+
+- **Sessions** are events. They produce edits. Append-only.
+- **LFMs** are state. They reflect the present. Mutable.
+
+This split is what makes LFMs the spine of a repo's
+framework state without accumulating decisions that need
+chronological reconstruction. Each LFM is a snapshot of
+"what is true right now," readable in isolation.

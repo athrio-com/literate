@@ -15,9 +15,9 @@
  *   - `sessionEndTrope` — the `Trope<typeof SessionEndConcept>`.
  *   - `SessionEndIncomplete` — the tagged error returned on validation fail.
  *
- * Upstream ADRs: ADR-011 (Step substrate), ADR-013 (event store),
- * ADR-014 (Protocol.continue), ADR-015 (TS + .md siblings),
- * ADR-021 (Modality ADT), ADR-025/026 (registry seed shape).
+ * Upstream LFMs: see corpus/manifests/protocol/algebra.md and
+ *   sibling LFMs for the current-state declarations this seed
+ *   realises.
  */
 import { Data, Effect, Schema } from 'effect'
 import {

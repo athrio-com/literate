@@ -40,104 +40,89 @@ waiting. Resolve it via IMP-1 in `corpus/CLAUDE.md`.
 
 This repository is fully dedicated to the Literate Framework (LF).
 One active workspace, one coordination area, one frozen reference
-tree (see [ADR-020](./corpus/decisions/ADR-020-unify-monorepo-layout.md)
-for the layout decision; previous split at `framework/` vs. root
-`packages/` was collapsed on 2026-04-23).
+tree.
 
 Living:
 
 - **`packages/`** — the active `@literate/*` workspace packages
-  (`cli`, `core`, `template-minimal`). Per
-  [ADR-025](./corpus/decisions/ADR-025-shadcn-shaped-distribution.md)
-  + [ADR-026](./corpus/decisions/ADR-026-registry-mechanics-and-extensions-surface.md)
-  the **only** npm-published artefact is `@literate/cli`;
-  `@literate/core` is internal to the CLI bundle. ADR-009
-  (Tropes-as-packages) is superseded for distribution: Tropes
-  and Concepts now ship as registry seeds (see `registry/`).
-- **`registry/`** — Trope and Concept seeds as authored
-  TS+MDX (`registry/tropes/<id>/{index.ts, prose.mdx, README.md}`,
-  `registry/concepts/<id>/{index.ts, concept.mdx, README.md}`).
+  (`cli`, `core`, `template-minimal`). The **only**
+  npm-published artefact is `@literate/cli`; `@literate/core` and
+  `@literate/template-minimal` are bundled into the CLI binary.
+- **`registry/`** — Concept and Trope seeds as authored TS+MDX
+  (`registry/tropes/<id>/{index.ts, prose.mdx, README.md, SEED.md}`,
+  `registry/concepts/<id>/{index.ts, concept.mdx, README.md, SEED.md}`).
   The CLI fetches from here on `tangle`/`update` and bundles
-  these sources at build time for `continue`/`close` (ADR-026 §4).
-  This is the canonical Trope/Concept authoring location in LF's
+  these sources at build time for `continue`/`close`/`reconcile`.
+  This is the canonical Concept/Trope authoring location in LF's
   own repo.
-- **`corpus/`** — the **global living corpus**. ADRs, sessions,
-  categories, concepts, specs, chapters tracking LF as a project.
-  Legacy decisions (ADR-001…ADR-010) and rewrite decisions
-  (ADR-011 onwards) live here. Governed by
+- **`corpus/`** — the **global living corpus**. Sessions,
+  manifests (LFMs), and operational prose (`CLAUDE.md`, `tags.md`)
+  tracking LF as a project. Governed by
   [`corpus/CLAUDE.md`](./corpus/CLAUDE.md).
+  - **`corpus/manifests/`** holds the current-state spine: one LFM
+    per Layer-Domain pair. The framework's typed declarations of
+    what is.
+  - **`corpus/sessions/`** holds the immutable session-log record:
+    why decisions were made.
 
-Frozen (read-only per ADR-018 + ADR-020):
+Frozen (read-only):
 
 - **`legacy/`** — the legacy scaffold, preserved verbatim as
-  historical reference. Contains the prior `packages/` (20+
-  legacy `@literate/*` packages), `site/` (legacy Next.js),
+  historical reference. Contains the prior `packages/` (legacy
+  `@literate/*` packages), `site/` (legacy Next.js),
   `LITERATE.md` (legacy framework Protocol prose), and the
-  pre-rewrite root tooling (`package.json`, `mise.toml`,
-  `moon.yml`, `tsconfig.*.json`, lockfiles, `.moon/`). Never
-  publishes. Never edited without an explicit Person-authorised
-  freeze lift recorded in the active session's `## Decisions
-  Made` (ADR-018 §8 procedure stays).
+  pre-rewrite root tooling. Never publishes. Never edited without
+  an explicit Person-authorised freeze lift recorded in the
+  active session's `## Decisions Made`.
 
 ## Before authoring anything
 
 1. Open [`corpus/CLAUDE.md`](./corpus/CLAUDE.md) — it defines the
-   session lifecycle, gating rules, mutability profiles, and tag
-   vocabulary for LF-project work. Its NEVER list includes the
-   ADR-018 freeze (now targeting `legacy/`).
-2. Check [`corpus/decisions/decisions.md`](./corpus/decisions/decisions.md)
-   for prior decisions that constrain this session's work. ADRs
-   011–020 are the rewrite-stage foundations; read them in order
-   before authoring workflow Tropes or touching `packages/`.
-   Notes on supersession: ADR-019 supersedes ADR-016's namespace
-   clause (LF ships under `@literate/*`, not `@athrio/*`); ADR-020
-   supersedes ADR-016's layout clause (one workspace at repo root;
-   no `framework/` folder).
-3. `legacy/LITERATE.md` is the legacy Protocol (frozen per
-   ADR-018). Read it for historical context; do not edit it. New
-   Protocol prose ships as registry seeds under
-   `registry/tropes/<id>/` and `registry/concepts/<id>/`
-   (ADR-025/026), with prose in sibling `.mdx` files referenced
-   by `index.ts` via `prose(import.meta.url, …)` per
-   [ADR-015](./corpus/decisions/ADR-015-typescript-composition-md-siblings.md).
+   session lifecycle, gating rules, mutability profiles, and the
+   NEVER list.
+2. Check [`corpus/manifests/`](./corpus/manifests/) for the
+   current-state declarations that constrain this session's work.
+   Each LFM stands alone; cross-references are operational
+   `@lfm(<short-hash>)` annotations only.
+3. `legacy/LITERATE.md` is the legacy Protocol (frozen). Read it
+   for historical context; do not edit it. New Protocol prose
+   ships as registry seeds under `registry/tropes/<id>/` and
+   `registry/concepts/<id>/`, with prose in sibling `.mdx` files
+   referenced by `index.ts` via `prose(import.meta.url, …)`.
 
 ## The two protocols
 
 LF defines the **Literate Programming Protocol (LPP)** — the
-methodology this repo ships. Do not confuse LPP with any product-scope
-protocol that a specific LF-using product might define. When precision
-is needed, use "LPP" or "Literate Protocol"; reserve bare "Protocol"
-in LF's own prose for LPP.
+methodology this repo ships. Do not confuse LPP with any
+product-scope protocol that a specific LF-using product might
+define. When precision is needed, use "LPP" or "Literate Protocol";
+reserve bare "Protocol" in LF's own prose for LPP.
 
 ## Principles
 
-1. **Prose before code.** Nothing code-shaped lands until the prose
-   motivating it is authored and gated. Every Concept, Trope, spec,
-   and session Goal is presented for Accept / Correct / Clarify /
-   Reject before anything downstream follows.
-2. **Append-only ADR bodies.** Once accepted, an ADR's body is
-   frozen; only its `Status:` line is mutable (to record supersession
-   or deferral).
+1. **Prose before code.** Nothing code-shaped lands until the
+   prose motivating it is authored and gated. Every Concept,
+   Trope, LFM, spec, and session Goal is presented for Accept /
+   Correct / Clarify / Reject before anything downstream follows.
+2. **Mutable LFMs; append-once sessions.** LFMs are state — each
+   stands alone, evolves freely, status written by `reconcile`.
+   Sessions are events — append-once log entries that produce
+   edits to LFMs and code.
 3. **Person authors meaning; AI drafts and derives syntax.** The
    Person owns all output. The AI drafts prose, surfaces
    inconsistencies, and produces code from accepted prose.
 4. **The algebra holds.** Everything authored fits one of four
-   levels: Concept (what), Trope (how), **Step** (executable unit
-   of how), Authored (instance). Reach for the right level; do
-   not conflate. The Step layer was added by
-   [ADR-011](./corpus/decisions/ADR-011-executable-monadic-prose.md);
-   read it before authoring workflow Tropes.
+   levels: Concept (what), Trope (how), Step (executable unit of
+   how), authored instance. Reach for the right level; do not
+   conflate.
 5. **The Protocol is the program.** `Protocol.continue(repoRoot)`
-   is the single entry point the agent harness invokes each turn
-   (see [ADR-014](./corpus/decisions/ADR-014-protocol-continue-entry-point.md)).
-   The imperatives in `corpus/CLAUDE.md` are the prose
-   explanation of what that function does, not instructions the
-   agent interprets from prose.
+   is the single entry point the agent harness invokes each turn.
+   The imperatives in `corpus/CLAUDE.md` are the prose explanation
+   of what that function does, not instructions the agent
+   interprets from prose.
 
 ## The `@athrio/` scope
 
 The `@athrio/` npm scope is reserved for the sister-repo Athrio
-product at `/Users/yegor/Projects/Coding/athrio-com/athrio/` — the
-Literate-Programming-Protocol implementation from which LF is
-abstracted. LF never publishes under `@athrio/*`
-(ADR-019 supersedes ADR-016 on this).
+product — the LFM-Protocol implementation from which LF is
+abstracted. LF never publishes under `@athrio/*`.

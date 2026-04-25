@@ -1,0 +1,96 @@
+# LFM Status
+
+The **status** of an LFM (Literate Framework Manifest) reports the
+manifest's current *reconciliation state* against its
+implementation. Status is **operational, not historical**: it
+describes what is true right now, not what has changed over time.
+Git holds the history; the status field tells you whether the
+LFM's declared state matches the world it claims to describe.
+
+Status is **written mechanically** by the `reconcile` Trope. An
+author never types it directly. After every implementation change
+or LFM edit, running `literate reconcile` walks the corpus,
+re-derives each LFM's status, and writes it back.
+
+## Shape
+
+```typescript
+type LFMStatus = 'Reconciled' | 'Drifted' | 'Pending' | 'Unverified'
+```
+
+Closed four-value vocabulary. New values would be a gated
+algebraic addition.
+
+## The four values
+
+- **`Reconciled`** — the LFM's declared state matches the
+  implementation, as verified by the most recent `reconcile` run.
+  This is the steady state. Reading a `Reconciled` LFM is
+  authoritative for the present.
+- **`Drifted`** — the LFM was `Reconciled` previously, but the
+  implementation has since changed without an LFM update. The
+  LFM and the world disagree; the LFM is stale. Detected via git
+  state inspection (commits since the last reconcile touched
+  files the LFM declares state about, but the LFM body has not
+  been edited).
+- **`Pending`** — the LFM body was edited, but no `reconcile`
+  run has confirmed the implementation matches the new
+  declaration. Common after an authoring session: the human
+  changed the declaration; the next `reconcile` decides whether
+  the world has caught up.
+- **`Unverified`** — the LFM has never been reconciled. Either
+  it is brand-new (just authored, no reconcile has touched it
+  yet) or the `reconcile` Trope cannot mechanically check this
+  Domain (the Domain-specific check is missing, deferred, or
+  out of scope). `Unverified` is the safe default for newly
+  authored LFMs.
+
+## Transitions
+
+A reconcile run computes the new status from the old status +
+current world state:
+
+| From → | `Reconciled` | `Drifted` | `Pending` | `Unverified` |
+|---|---|---|---|---|
+| Implementation matches | `Reconciled` | `Reconciled` | `Reconciled` | `Reconciled` |
+| Implementation diverges, body unchanged | `Drifted` | `Drifted` | `Pending`* | `Unverified`* |
+| Implementation diverges, body changed | `Pending` | `Pending` | `Pending` | `Pending` |
+| No mechanical check available | `Unverified` | `Unverified` | `Unverified` | `Unverified` |
+
+(* — `Pending` and `Unverified` rows preserve their state when
+the implementation diverges and the body has not changed, since
+the LFM was never confirmed to match.)
+
+## Why status is operational, not historical
+
+ADRs (the prior decision-record primitive LF replaced with LFMs)
+mixed historical narrative with current-state declaration: an
+ADR-001 row in 2026-04-25's index might describe a property
+that was current in 2026-04-22 but has since been refined or
+superseded by ADR-031. Reconstructing the present required
+chronological reasoning across the supersession chain.
+
+LFMs decouple the two channels:
+
+- **Git** holds the history. `git log` and `git blame` answer
+  "when did this declaration land?" and "what did it look like
+  before?"
+- **The LFM** holds the present. Its body declares what is
+  current; its status field reports whether the declaration is
+  still in sync with the implementation.
+
+`Reconciled` does not mean "this decision was made on date X."
+It means "as of the last `reconcile` run, the declaration and
+the world agree."
+
+## Where LFMStatus shows up
+
+- **Every LFM** carries `status` in its metadata header.
+  Authors leave the field at `Unverified` when first writing the
+  LFM; `reconcile` overwrites it on every run.
+- **The `index` Trope** (when shipped, see `tropes/index/`)
+  emits a status column in the navigation index it produces.
+  `Drifted` rows draw the eye to LFMs that need attention.
+- **The `reconcile` Trope** (`tropes/reconcile/`) is the sole
+  writer of this field. Hand-edits to status are not persistent
+  — the next `reconcile` run overwrites them.

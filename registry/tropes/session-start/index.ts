@@ -15,10 +15,9 @@
  *   - `sessionStartStep` — the composing `workflowStep`.
  *   - `sessionStartTrope` — the `Trope<typeof SessionStartConcept>`.
  *
- * Upstream ADRs: ADR-011 (Step substrate), ADR-013 (event store),
- * ADR-014 (Protocol.continue), ADR-015 (TS + .md siblings),
- * ADR-017 (gate decisions), ADR-021 (Modality ADT), ADR-025/026
- * (registry seed shape, CLI bundling).
+ * Upstream LFMs: see corpus/manifests/protocol/algebra.md and
+ *   sibling LFMs for the current-state declarations this seed
+ *   realises.
  */
 import { Effect, Schema } from 'effect'
 import {

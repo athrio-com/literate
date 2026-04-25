@@ -1,0 +1,111 @@
+# LFM Authoring Trope
+
+The `lfm` Trope realises the typed contract for **authoring and
+validating a Literate Framework Manifest**. Every LFM in the
+corpus is the output of an invocation of this Trope.
+
+## Disposition
+
+`Protocol`. The Trope is LF machinery. It runs implicitly when
+an author edits `corpus/manifests/<layer>/.../<domain>.md` (the
+edit *is* the invocation; the Trope's prose tells the author
+what shape to write) and explicitly when the `reconcile` Trope
+calls into it for hash maintenance.
+
+## Input
+
+```typescript
+interface LFMAuthoring {
+  readonly layer: Layer            // see concepts/layer
+  readonly domain: string          // Domain name within the Layer
+  readonly disposition: Disposition // see concepts/disposition
+  readonly body: string            // standalone declarative prose
+  readonly dependencies?: readonly string[]  // optional soft links
+}
+```
+
+## Output
+
+The output is a `LFM` instance (see `concepts/lfm`) with `id`
+computed from `body`, `status: 'Unverified'`, and the metadata
+header serialised to YAML between `---` fences above the body.
+
+## Hash computation
+
+The `id` is the first 8 hexadecimal characters of the SHA-256
+digest of the body bytes (UTF-8). The metadata header is
+**excluded** from the hash so that:
+
+- Status updates (which `reconcile` writes) do not change the
+  hash and trigger a self-referential cascade.
+- Reordering metadata fields by tooling does not change the
+  hash.
+- The hash reflects the *declarative content* an author wrote,
+  not the operational decoration around it.
+
+Hash collisions at 8 hex chars are rare but possible. On
+collision, both colliding LFMs and every reference to either
+extend their hash by two characters in the same `reconcile`
+run.
+
+## Reference-hash maintenance
+
+When an LFM body changes, its `id` changes. Soft `@lfm(<old-id>)`
+references in **other** LFMs must be updated to the new id, or
+removed if the LFM was deleted.
+
+The `lfm` Trope owns this contract. The `reconcile` Trope calls
+into it: when reconcile detects a body change, it invokes the
+`lfm` Trope's `updateReferences(oldId, newId)` Step, which
+walks every LFM in the corpus, rewrites matching annotations,
+and writes back.
+
+References inside `corpus/sessions/*` are **immutable**. The
+session-log tree is append-once; reconcile does not rewrite
+references there even when the target hash has changed. A
+session log captures what was true at write time; stale hash
+references inside it are an accepted historical artefact.
+
+## Self-sufficiency validation
+
+The Trope rejects bodies that violate the self-sufficiency
+rule. v0.1 detects two narrow cases mechanically:
+
+1. The body contains the substring `as declared in
+   @lfm(...)` or `per @lfm(...)` or other prose in which a
+   soft link is the grammatical subject of a clause. (Heuristic
+   regex; opt-out flag for false positives.)
+2. The body contains a markdown link to another LFM file by
+   path (e.g., `[install path](./install-path.md)`). Cross-LFM
+   references must use the `@lfm(<hash>)` annotation, not file
+   paths.
+
+Both produce a `LFMNotSelfSufficient` warning (not error) at
+v0.1 — the Trope is forgiving until the corpus is fully
+migrated. v0.2 may upgrade these to errors.
+
+## Errors
+
+- `LFMHashCollision { id, conflicting: [path1, path2] }` — two
+  LFMs share an id at the current hash length. Auto-resolved by
+  extending hash to 10 chars.
+- `LFMNotSelfSufficient { path, violations }` — the body
+  contains forbidden cross-references (warning at v0.1).
+
+## Services required
+
+- `SessionStore` — read/write LFM files (the SessionStore name
+  is historical; it is the generic file-store service).
+
+## Relationships
+
+- **Realises** the `lfm` Concept (`registry/concepts/lfm/`).
+- **Called by** the `reconcile` Trope (hash maintenance + body
+  validation).
+- **Read by** the `index` Trope (no mutation).
+
+## Versioning
+
+- `version: '0.1.0'` at introduction.
+- Tightening self-sufficiency from warning to error is a minor
+  bump; new metadata fields are major.

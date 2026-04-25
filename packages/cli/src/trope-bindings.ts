@@ -27,3 +27,27 @@ export {
   SessionEndIncomplete,
   type SessionClosure,
 } from '../../../registry/tropes/session-end/index.ts'
+
+export {
+  lfmStep,
+  lfmTrope,
+  LFMAuthoringConcept,
+  computeLfmId,
+  rewriteAnnotations,
+  updateReferencesStep,
+  type LFMRef,
+} from '../../../registry/tropes/lfm/index.ts'
+
+export {
+  reconcileStep,
+  reconcileTrope,
+  ReconcileConcept,
+  type ReconcileReport,
+} from '../../../registry/tropes/reconcile/index.ts'
+
+export {
+  indexStep,
+  indexTrope,
+  IndexConcept,
+  type IndexResult,
+} from '../../../registry/tropes/index/index.ts'

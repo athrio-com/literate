@@ -12,10 +12,9 @@
  * `registry/concepts/mode/index.ts`. Tangled into a consumer repo via
  * `literate tangle concepts mode`.
  *
- * Upstream ADRs: ADR-001 (algebra), ADR-010 (Concepts unify Terms),
- * ADR-015 (TS + .md siblings), ADR-021 (Modality — superseded;
- * operational-stance component lifted into this Concept), ADR-025/026
- * (registry seed shape), ADR-032 (Mode adoption + IMP-N).
+ * Upstream LFMs: see corpus/manifests/protocol/algebra.md and
+ *   sibling LFMs for the current-state declarations this seed
+ *   realises.
  */
 import { Schema } from 'effect'
 import { concept, prose, type Concept } from '@literate/core'

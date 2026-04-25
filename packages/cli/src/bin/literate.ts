@@ -10,7 +10,7 @@
  * `FetcherService`, `WeaverService`), and lets `BunRuntime.runMain`
  * map success/failure into exit codes and pretty-printed errors.
  *
- * Six verbs at v0.1:
+ * Seven verbs at v0.1:
  *
  *   continue   open or resume an LF session (Protocol-mode)
  *   close      close an Open LF session (Protocol-mode)
@@ -18,6 +18,7 @@
  *   tangle     fetch a registry seed and vendor it
  *   weave      materialise `.literate/LITERATE.md`
  *   update     re-fetch a vendored seed at its registry ref
+ *   reconcile  walk LFMs, derive status, maintain soft-link hashes
  *
  * Adding a verb is a one-file change in `src/verbs/` plus one entry
  * in the `subcommands` array below.
@@ -34,6 +35,7 @@ import { WeaverServiceLive } from '../weaver/weaver.ts'
 import closeCommand from '../verbs/close.ts'
 import continueCommand from '../verbs/continue.ts'
 import initCommand from '../verbs/init.ts'
+import reconcileCommand from '../verbs/reconcile.ts'
 import tangleCommand from '../verbs/tangle.ts'
 import updateCommand from '../verbs/update.ts'
 import weaveCommand from '../verbs/weave.ts'
@@ -47,6 +49,7 @@ const root = Command.make('literate').pipe(
     tangleCommand,
     weaveCommand,
     updateCommand,
+    reconcileCommand,
   ]),
 )
 

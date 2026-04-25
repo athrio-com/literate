@@ -12,10 +12,9 @@
  * the `Modality` ADT from ADR-021 (superseded by ADR-031 — see
  * `corpus/decisions/ADR-031-disposition-supersedes-modality.md`).
  *
- * Upstream ADRs: ADR-001 (algebra), ADR-010 (Concepts unify Terms),
- * ADR-015 (TS + .md siblings), ADR-021 (Modality — superseded),
- * ADR-025/026 (registry seed shape), ADR-031 (Disposition supersedes
- * Modality).
+ * Upstream LFMs: see corpus/manifests/protocol/algebra.md and
+ *   sibling LFMs for the current-state declarations this seed
+ *   realises.
  */
 import { Schema } from 'effect'
 import { concept, prose, type Concept } from '@literate/core'

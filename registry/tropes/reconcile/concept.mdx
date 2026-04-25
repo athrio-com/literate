@@ -1,0 +1,156 @@
+# Reconcile Procedure
+
+The `reconcile` Trope walks every LFM in the corpus, derives
+each one's `status` by comparing the declared state against the
+implementation, writes the status back, and maintains soft-link
+reference hashes when LFM bodies have changed.
+
+`reconcile` is invoked explicitly via the `literate reconcile`
+CLI verb. It is **mechanical** — no AI in the loop. The Trope
+takes existing LFMs as ground truth and reports whether they
+agree with the world.
+
+## Disposition
+
+`Protocol`. The Trope is LF machinery, dispatched by the CLI.
+
+## Input
+
+```typescript
+interface ReconcileInput {
+  readonly repoRoot: string
+}
+```
+
+The Trope reads from `<repoRoot>/corpus/manifests/` and (where
+needed) the rest of the repo for drift detection. It writes
+back into the same LFM files (status field) and into other
+LFM files when soft-link hashes change.
+
+## Output
+
+```typescript
+interface ReconcileReport {
+  readonly counts: {
+    readonly Reconciled: number
+    readonly Drifted: number
+    readonly Pending: number
+    readonly Unverified: number
+  }
+  readonly nonReconciled: readonly {
+    readonly path: string
+    readonly status: Exclude<LFMStatus, 'Reconciled'>
+    readonly cause: string
+  }[]
+  readonly hashUpdates: readonly {
+    readonly path: string
+    readonly oldId: string
+    readonly newId: string
+  }[]
+  readonly referencesUpdated: readonly string[]
+}
+```
+
+A summary readable by both human and machine. The CLI verb
+prints a compact human form; consumers can call the Trope
+programmatically and act on the structured output.
+
+## Walk order
+
+LFMs are walked in a fixed order so that runs are deterministic
+and so that two reconcile invocations on the same world produce
+identical output:
+
+1. `corpus/manifests/workspace/<domain>.md` (alphabetical by
+   filename)
+2. `corpus/manifests/apps/<app>/<domain>.md` (apps alphabetical;
+   domains within each app alphabetical)
+3. `corpus/manifests/infrastructure/<domain>.md` (or, when
+   nested by target, `infrastructure/<target>/<domain>.md`;
+   targets alphabetical, domains within alphabetical)
+4. `corpus/manifests/protocol/<domain>.md` (LF dev repo only;
+   absent in consumer scaffolds)
+
+When `corpus/manifests/` is absent or empty, `reconcile` is a
+no-op and reports `counts` all zero.
+
+## Per-LFM procedure
+
+For each LFM file:
+
+1. **Parse** the metadata header + body.
+2. **Recompute** the body hash. If it differs from the declared
+   `id`, the LFM has been edited since the previous reconcile;
+   record `(path, oldId, newId)` for the hash-update pass and
+   write the new id back to the metadata header.
+3. **Derive status** by comparing declared state against
+   implementation:
+   - The default check is **path-existence**: any markdown
+     code blocks tagged `path` (e.g., ```` ```path
+     packages/cli/src/verbs/reconcile.ts ``` ````) declare
+     paths that should exist. If every declared path exists,
+     the file-existence check passes. Domain-specific checks
+     (typed assertions about file content, package versions,
+     etc.) live in optional **Domain Tropes** that an LFM body
+     may invoke; v0.1 ships only the path-existence default.
+   - Inspect git state. If files the LFM declares state about
+     have changed since the most recent reconcile run (or since
+     the LFM was last edited, when no prior reconcile exists),
+     status leans toward `Drifted`.
+4. **Apply transitions** per the table in
+   `concepts/lfm-status/concept.mdx`.
+5. **Write** the new `status` value back to the LFM's metadata
+   header.
+
+## Hash-maintenance pass
+
+After all LFMs have been processed:
+
+- For each `(path, oldId, newId)` recorded during the per-LFM
+  walk, invoke the `lfm` Trope's `updateReferencesStep` with
+  `{ oldId, newId }`. The Step walks every LFM, rewrites
+  `@lfm(<oldId>)` to `@lfm(<newId>)`, and writes back any LFM
+  whose body changed.
+- Soft links inside `corpus/sessions/*` are excluded
+  (immutable). The hash-maintenance pass does not touch the
+  session-log tree.
+- LFM deletions detected by walk-vs-prior-state comparison
+  invoke `updateReferencesStep` with `newId: null`, which
+  removes the matching annotations.
+
+## Errors
+
+- `ReconcileWalkFailed { path, reason }` — a specific LFM file
+  could not be parsed or its hash could not be computed. The
+  Trope reports the error and continues with the rest of the
+  walk; the report's `nonReconciled` array carries the failure
+  alongside the recoverable statuses.
+- `ManifestsAbsent { repoRoot }` — `corpus/manifests/` does not
+  exist. The Trope returns a no-op report (all zero counts);
+  the CLI verb prints "no LFMs to reconcile."
+
+The Trope **does not fail wholesale** on partial errors. A
+single malformed LFM does not block the rest of the corpus
+from being reconciled.
+
+## Services required
+
+- `SessionStore` — directory listing, file read/write.
+
+## Relationships
+
+- **Realises** the `reconcile` Concept.
+- **Calls** the `lfm` Trope's `updateReferencesStep` for
+  hash-maintenance.
+- **Invoked by** the `literate reconcile` CLI verb.
+- **Optionally followed by** the `index` Trope (when shipped)
+  to refresh `corpus/manifests/index.md`.
+
+## Versioning
+
+- `version: '0.1.0'` at introduction.
+- Adding new built-in checks (beyond path-existence) is a
+  minor bump. Tightening the `Drifted` heuristic (which
+  defaults to a permissive baseline at v0.1) is a major
+  surface change for downstream tooling that reads the
+  report.

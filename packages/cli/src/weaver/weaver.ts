@@ -102,7 +102,6 @@ const TROPE_REGISTRY: Readonly<Record<string, AnyTrope>> = {
 interface SeedFiles {
   readonly id: string
   readonly prose?: string
-  readonly readme?: string
   readonly source: 'vendored' | 'extension'
 }
 
@@ -127,11 +126,9 @@ const readSeed = (
   Effect.gen(function* () {
     const dir = path.join(repoRoot, base, kind, id)
     const prose = yield* readMaybe(path.join(dir, seedProseFile(kind)))
-    const readme = yield* readMaybe(path.join(dir, 'README.md'))
     return {
       id,
       ...(prose !== undefined ? { prose } : {}),
-      ...(readme !== undefined ? { readme } : {}),
       source,
     }
   })
@@ -151,16 +148,48 @@ const listExtensionIds = (
 
 const sectionFromSeed = (kind: SeedKind, seed: SeedFiles): string => {
   const heading = `### \`${seed.id}\``
-  const intro = seed.readme
-    ? seed.readme
-        .split('\n')
-        .filter((l, i) => i > 0 && !l.startsWith('# '))
-        .join('\n')
-        .trim()
-    : ''
   const body = seed.prose ?? `*(prose missing — ${kind}/${seed.id})*`
-  const introBlock = intro ? `${intro}\n\n` : ''
-  return `${heading}\n\n${introBlock}${body}\n`
+  // Strip the body's leading H1 (every seed body begins with a
+  // single H1 line; that heading is internal to the file and does
+  // not belong in the woven hierarchy under `### \`<id>\``) and
+  // demote remaining headings by 2 levels (H2 → H4, H3 → H5, …)
+  // so the woven structure reads as `## Concepts` → `### <id>` →
+  // `#### <subsection>` cleanly. Demotion is fence-aware: `#`
+  // characters inside ``` code blocks are unmodified.
+  const stripped = stripLeadingH1(body)
+  const demoted = demoteHeadings(stripped, 2)
+  return `${heading}\n\n${demoted}\n`
+}
+
+const stripLeadingH1 = (src: string): string => {
+  const lines = src.split('\n')
+  // Skip leading blank lines.
+  let i = 0
+  while (i < lines.length && lines[i]!.trim() === '') i++
+  if (i >= lines.length) return src
+  if (!/^#\s+/.test(lines[i]!)) return src
+  // Drop the H1 line + a single immediately-following blank, if
+  // present.
+  const rest = lines.slice(i + 1)
+  if (rest[0] === '') return rest.slice(1).join('\n')
+  return rest.join('\n')
+}
+
+const demoteHeadings = (src: string, levels: number): string => {
+  const lines = src.split('\n')
+  let inFence = false
+  return lines
+    .map((line) => {
+      if (/^```/.test(line)) {
+        inFence = !inFence
+        return line
+      }
+      if (inFence) return line
+      return line.replace(/^(#{1,6})(\s)/, (_, h, ws) =>
+        '#'.repeat(Math.min((h as string).length + levels, 6)) + ws,
+      )
+    })
+    .join('\n')
 }
 
 // Defensive strip of the ADR-024 §3 generated-file sigil before

@@ -1,0 +1,98 @@
+# Reconcile Trope
+
+The workflow Trope that walks every LFM in the corpus, derives
+each one's status, writes status back, and maintains soft-link
+hashes when bodies have changed. See `concept.mdx` for the
+typed contract; this file is the imperative decomposition the
+Step composition implements.
+
+The procedure is mechanical and deterministic. No AI in the
+loop. Two reconcile invocations on the same world produce
+identical output (modulo the order of `nonReconciled` entries,
+which mirrors the canonical walk order).
+
+## Walk manifests
+
+Walk `corpus/manifests/` recursively in the canonical order:
+`workspace/`, `apps/<app>/`, `infrastructure/[<target>/]`,
+`protocol/`. Emit a list of LFM file paths.
+
+When `corpus/manifests/` is absent, return an empty list and
+short-circuit the rest of the composition.
+
+Step: `effect`. Input: `ReconcileInput`. Output:
+`{ paths: readonly string[] }`. Services: `SessionStore`.
+
+## Reconcile each
+
+For each LFM path, parse the metadata header + body, recompute
+the body hash, and decide the new status.
+
+Status is decided by these clauses, applied in order:
+
+1. If the recomputed hash differs from the declared `id`, mark
+   the LFM `Pending` and queue
+   `(path, oldId: declared.id, newId: recomputed)` for the
+   hash-maintenance pass.
+2. Otherwise, run the path-existence check. If any declared
+   path is missing, mark `Drifted` with the missing path as
+   the cause.
+3. Otherwise, if `prior status` was non-`Reconciled` and no
+   relevant git change is detected since the last reconcile,
+   mark `Reconciled`.
+4. Otherwise, mark `Unverified` (the default for never-checked
+   LFMs and LFMs whose Domain has no mechanical check).
+
+A new metadata header replacing the old `status` (and `id`,
+when changed) is serialised; the Step writes it back to the
+LFM file.
+
+Step: `io`. Input: `{ paths: readonly string[] }`. Output:
+`{ statuses: readonly LFMStatusEntry[], hashUpdates: readonly HashUpdate[] }`.
+Services: `SessionStore`.
+
+## Update references
+
+Invoke the `lfm` Trope's `updateReferencesStep` once per
+recorded hash update. Aggregate the union of paths the
+updates rewrote.
+
+Step: `io`. Input: `{ hashUpdates: readonly HashUpdate[] }`.
+Output: `{ referencesUpdated: readonly string[] }`. Services:
+`SessionStore` (delegated through the imported Step).
+
+## Build report
+
+Aggregate the per-LFM status results, the hash updates, and
+the reference-update list into a `ReconcileReport`. Sort
+`nonReconciled` by canonical walk order.
+
+Step: `effect`. Input:
+`{ statuses, hashUpdates, referencesUpdated }`. Output:
+`ReconcileReport`. No services — pure aggregation.
+
+## Composition
+
+The Trope's `realise` is a `workflowStep` whose `run` is:
+
+```typescript
+Effect.gen(function* () {
+  const { paths } = yield* memo(walkManifests)(input)
+  if (paths.length === 0) {
+    return emptyReport()
+  }
+  const { statuses, hashUpdates } =
+    yield* memo(reconcileEach)({ paths })
+  const { referencesUpdated } =
+    yield* memo(updateReferences)({ hashUpdates })
+  return yield* memo(buildReport)({
+    statuses,
+    hashUpdates,
+    referencesUpdated,
+  })
+})
+```
+
+Four atomic Steps, each with its own `ProseRef + section:`. The
+imperative analogue of this procedure lives in this file; the
+contract lives in `concept.mdx`.

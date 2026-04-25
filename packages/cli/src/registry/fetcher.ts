@@ -179,6 +179,7 @@ export const FetcherServiceLive = Layer.succeed(FetcherService, {
 })
 
 export const seedFiles = (kind: SeedKind): ReadonlyArray<string> => {
-  if (kind === 'tropes') return ['index.ts', 'prose.mdx', 'README.md']
-  return ['index.ts', 'concept.mdx', 'README.md']
+  if (kind === 'tropes')
+    return ['index.ts', 'prose.mdx', 'README.md', 'SEED.md']
+  return ['index.ts', 'concept.mdx', 'README.md', 'SEED.md']
 }

@@ -27,6 +27,10 @@ export {
 } from './verbs/init.ts'
 export { runWeave } from './verbs/weave.ts'
 export {
+  runReconcile,
+  type RunReconcileOptions,
+} from './verbs/reconcile.ts'
+export {
   weaveProgram,
   WeaverService,
   WeaverServiceLive,

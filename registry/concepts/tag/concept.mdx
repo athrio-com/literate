@@ -82,10 +82,9 @@ single tag signals a narrow concern.
 
 ## References
 
-- Used in every ADR in `corpus/decisions/` (one or more
-  `Tags:` per ADR).
-- The (forward) `adr-flow` Trope requires at least one tag at
-  draft time.
-- The `adr` parent Concept (see `registry/concepts/adr/`)
-  composes `Schema.Array(TagSchema)` as the `tags` field of
-  `ADRSchema`.
+- The slug-set is general-purpose: tags annotate sessions,
+  LFMs, and authored prose where a sub-axis beyond Disposition
+  is useful.
+- A consumer's repo authoring its own tag set imports
+  `TagSchema` and constrains its prose to the brand-typed
+  shape.

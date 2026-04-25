@@ -1,6 +1,7 @@
 # @literate/cli
 
-Literate Framework CLI — the harness binding for `Protocol.continue`.
+The Literate Framework CLI. Wraps prose as executable,
+composable, memoised programs; the corpus stays pure markdown.
 
 ## Install
 
@@ -22,9 +23,9 @@ bun install -g @literate/cli
 literate init my-project
 ```
 
-Windows users: install Bun via the
+Windows: use Bun's
 [Windows installer](https://bun.sh/docs/installation#windows)
-or use WSL, then run the same `bun install -g` command.
+or WSL, then run the same `bun install -g` command.
 
 ### Per-project pinning
 
@@ -32,8 +33,8 @@ or use WSL, then run the same `bun install -g` command.
 bun add --dev @literate/cli
 ```
 
-Then `bun install` (run by collaborators on clone) resolves
-the pinned version; invoke via `bun run literate`.
+Then `bun install` (run on clone) resolves the pinned version;
+invoke via `bun run literate`.
 
 ## Quick start
 
@@ -45,11 +46,8 @@ literate continue .
 
 ## Docs
 
-Full Protocol, ADRs, and session corpus live in the repo:
+Full repo, corpus, and source:
 <https://github.com/athrio-com/literate>.
-
-Distribution rationale:
-[ADR-038](https://github.com/athrio-com/literate/blob/main/corpus/decisions/ADR-038-bun-direct-install-path.md).
 
 ## License
 

@@ -1,0 +1,90 @@
+# Dispositional Domain
+
+A **Dispositional Domain** is a meaningful application slice
+scoped within a Layer. It is the unit of granularity at which
+LFMs are authored: **one LFM per Layer-Domain pair.**
+
+## Shape
+
+```typescript
+interface DispositionalDomain {
+  readonly layer: Layer    // see `concepts/layer`
+  readonly name: string    // freeform; namespaced by layer
+}
+```
+
+## Why "Dispositional"
+
+A Domain inherits its dispositional character from its Layer's
+kind:
+
+- A Domain in `protocol/` is a Protocol-disposition slice (the
+  algebra, the gates, session lifecycle).
+- A Domain in `workspace/` is an Infrastructure-disposition
+  slice describing repo-wide concerns (dependencies, packaging,
+  layout).
+- A Domain in `apps/<app>/` is a Product-disposition slice for
+  that app (its UX, its CMS, its checkout flow).
+- A Domain in `infrastructure/[<target>/]` is an
+  Infrastructure-disposition slice for deployment / runtime
+  (the install path, the registry trust model, the CI publish
+  pipeline).
+
+The Layer carries the Disposition `base` implicitly. The Domain
+is the *named slice* — the specific subject the LFM declares
+state about.
+
+## Granularity rule
+
+The chain prompt that introduced this Concept stated the rule
+precisely:
+
+> One LFM per Domain. Not per-thing (too granular). Not
+> per-Disposition (too coarse).
+
+A good Domain is **roughly one short conversation's worth of
+current-state**. If you find yourself authoring an LFM whose
+body needs three top-level sections that read like distinct
+concerns ("the install path is X" / "the registry trust model
+is Y" / "the runtime is Z"), split it into three Domains. If
+you find yourself authoring three LFMs whose bodies trivially
+restate one decision, collapse them.
+
+The right size is empirically: a Domain's LFM body fits on
+roughly one screen of prose, declares one coherent slice of
+current-state, and would change for one coherent reason.
+
+## Naming
+
+Domain names are freeform, lowercase, dash-separated. Examples:
+
+- `algebra`, `step-substrate`, `session-lifecycle`,
+  `gates`, `implications`, `disposition-and-mode`
+- `namespace`, `monorepo-layout`, `legacy-freeze`,
+  `dependencies`, `licensing`
+- `cli-runtime`, `distribution-model`, `registry-trust`,
+  `install-path`, `ci-publish`
+- `ux`, `cms`, `checkout`, `auth`, `reporting`
+
+The same name can appear in multiple Layers. `apps/app1/ux.md`
+and `apps/app2/ux.md` are different Domains (different
+Layer-Domain pairs); they share a name only because the
+sub-layer namespace already separates them.
+
+## Domain vs Concept vs Spec
+
+A **Concept** declares a typed primitive in LF's algebra
+(`disposition`, `mode`, `lfm-status`). It lives in
+`registry/concepts/<id>/` and ships as a registry seed.
+
+A **Domain** is a *naming axis* for current-state declarations.
+It lives only in `corpus/manifests/<layer>/[...]/<domain>.md` as
+the file that *contains* the LFM. Domains don't ship as seeds;
+they're emergent from how a repo organises its manifests.
+
+A **Spec** (legacy artefact at `corpus/specs/`, where present)
+typically describes intended behaviour or contract. LFMs
+declare *current* state, not intended state. If the work is
+"what we intend to ship," it belongs in a session Goal, plan
+entry, or spec — not in an LFM.
+

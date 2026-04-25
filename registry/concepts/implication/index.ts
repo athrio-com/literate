@@ -12,9 +12,9 @@
  * `registry/concepts/implication/index.ts`. Tangled into a consumer
  * repo via `literate tangle concepts implication`.
  *
- * Upstream ADRs: ADR-001 (algebra), ADR-010 (Concepts unify Terms),
- * ADR-015 (TS + .md siblings), ADR-017 (gate decisions),
- * ADR-025/026 (registry seed shape), ADR-033 (Implication adoption).
+ * Upstream LFMs: see corpus/manifests/protocol/algebra.md and
+ *   sibling LFMs for the current-state declarations this seed
+ *   realises.
  */
 import { Schema } from 'effect'
 import { concept, prose, type Concept } from '@literate/core'

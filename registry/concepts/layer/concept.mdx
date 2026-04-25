@@ -1,0 +1,125 @@
+# Layer
+
+A **Layer** is a typed container in `corpus/manifests/`. It
+holds either Domains directly (flat) or further sub-layers
+(nested). Layers organise the manifest tree so that a consumer
+can find the LFM relevant to a question by walking a small,
+typed taxonomy rather than scanning a flat list.
+
+## Shape
+
+```typescript
+interface Layer {
+  readonly kind: 'apps' | 'workspace' | 'infrastructure' | 'protocol'
+  readonly path: string             // slash-joined, e.g. 'apps/app1'
+  readonly holds: 'domains' | 'sub-layers'
+}
+```
+
+## The four top-level kinds
+
+The `kind` axis is closed at v0.1. New kinds would be a gated
+algebraic addition.
+
+- **`apps/`** — contains one sub-layer per application. When a
+  repo ships multiple apps, each gets its own sub-layer
+  (`apps/app1/`, `apps/app2/`) as siblings. **Apps are never
+  nested under a "Product" umbrella.** The `apps/` layer itself
+  always `holds: 'sub-layers'`. Each app sub-layer typically
+  holds Domains: `apps/app1/ux.md`, `apps/app1/cms.md`,
+  `apps/app2/ux.md`. The same Domain name (e.g. `ux`) can occur
+  in multiple app sub-layers without collision because the
+  sub-layer scopes the namespace.
+- **`workspace/`** — singleton, flat. Repo-wide concerns that
+  are not specific to any one app or deployment target:
+  dependencies, packaging, monorepo layout, namespace,
+  licensing, build-and-bundle. `holds: 'domains'` always.
+- **`infrastructure/`** — flat or nested by deployment target.
+  Single target: flat (`infrastructure/<domain>.md`). Multiple
+  targets: nested (`infrastructure/aws/<domain>.md`,
+  `infrastructure/gcp/<domain>.md`). The shape is chosen at
+  manifest-authoring time and revisited if a second target is
+  added later.
+- **`protocol/`** — **LF dev-repo only.** Holds Protocol-level
+  current-state (the algebra, the Step substrate, the session
+  lifecycle, gates, implications, the `corpus/`/`packages/`/
+  `registry/` repo shape). Absent in consumer scaffolds: a
+  consumer's framework-state lives in their tangled `.literate/`
+  vendoring, not in their manifests. `holds: 'domains'` (or
+  `'sub-layers'` if the Protocol surface ever grows enough to
+  warrant grouping).
+
+## No prefixes
+
+A common temptation is to prefix Domains with their Layer:
+`app-ux.md`, `app-cms.md`, `infra-deploy.md`. **Resist it.** The
+directory itself is the grouping. `apps/app1/ux.md` carries the
+`apps/app1/` prefix as a path; the file is named `ux.md`. The
+prefix lives in the path, not the filename.
+
+This matters for two reasons. (1) Soft links via `@lfm(<hash>)`
+identify by content hash, not by name; the filename only
+matters for navigation. Prefixed filenames make the navigation
+surface noisier without buying anything. (2) When a Domain is
+moved between Layers (e.g. from `workspace/` into a new
+`apps/app1/` sub-layer), the filename does not change — only
+the path does. Prefixed filenames would force a rename on every
+move.
+
+## Recursion
+
+A Layer may contain sub-layers. A sub-layer is itself a Layer
+(same shape, same vocabulary). Recursion bottoms out when a
+Layer's `holds` field flips from `'sub-layers'` to `'domains'`.
+
+In LF's own dev repo at v0.1:
+
+```
+corpus/manifests/
+  protocol/                    Layer{kind: 'protocol', path: 'protocol', holds: 'domains'}
+    algebra.md                 LFM
+    step-substrate.md          LFM
+    session-lifecycle.md       LFM
+    ...
+  workspace/                   Layer{kind: 'workspace', path: 'workspace', holds: 'domains'}
+    namespace.md               LFM
+    monorepo-layout.md         LFM
+    ...
+  infrastructure/              Layer{kind: 'infrastructure', path: 'infrastructure', holds: 'domains'}
+    cli-runtime.md             LFM
+    install-path.md            LFM
+    ...
+```
+
+A consumer with two apps and two cloud targets would have:
+
+```
+corpus/manifests/
+  apps/                        holds: 'sub-layers'
+    storefront/                holds: 'domains'
+      ux.md
+      cms.md
+      checkout.md
+    admin/                     holds: 'domains'
+      ux.md
+      reporting.md
+  workspace/
+    dependencies.md
+  infrastructure/              holds: 'sub-layers'
+    aws/                       holds: 'domains'
+      deploy.md
+      networking.md
+    gcp/                       holds: 'domains'
+      deploy.md
+```
+
+## When to add a sub-layer
+
+Add a sub-layer when a Domain's Layer would otherwise carry
+unrelated siblings. `infrastructure/deploy-aws.md` next to
+`infrastructure/deploy-gcp.md` is a sub-layer waiting to happen
+— promote them to `infrastructure/aws/deploy.md` and
+`infrastructure/gcp/deploy.md`. Do not pre-emptively add
+sub-layers when only one item lives at the level; flat is
+fine until concrete pressure justifies a split.
+

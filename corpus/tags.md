@@ -60,9 +60,6 @@ enforcement when needed.
 
 - The `Tag` Concept type ships at
   [`registry/concepts/tag/`](../registry/concepts/tag/).
-- The `ADR` Concept (also at `registry/concepts/adr/`)
-  composes `Schema.Array(TagSchema)` as the `tags` field of
-  `ADRSchema`.
-- IMP-2 (Mandatory Agent Instruction in
-  [`CLAUDE.md`](./CLAUDE.md)) describes the during-session
-  ADR-authoring procedure that consults this file.
+- LFM frontmatter (`disposition.scope`) carries the
+  Disposition's primary axis; secondary tagging via this
+  slug-set is optional and ungated.

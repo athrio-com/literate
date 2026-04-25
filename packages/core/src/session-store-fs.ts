@@ -56,8 +56,13 @@ export const makeFileSystemSessionStore = (
             const entries = await fs.readdir(abs(relPath), {
               withFileTypes: true,
             })
+            // Return both files and directories so callers can
+            // recurse. Filtering happens caller-side (e.g.,
+            // `isSessionFilename` in session-start). The
+            // in-memory implementation already returns immediate
+            // children of both kinds; this matches.
             return entries
-              .filter((e) => e.isFile())
+              .filter((e) => e.isFile() || e.isDirectory())
               .map((e) => e.name)
               .sort()
           },

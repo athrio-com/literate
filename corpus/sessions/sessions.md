@@ -5,7 +5,9 @@ entries are gated, the rest is ungated journal material.
 
 | File | Topic | Status |
 |---|---|---|
-| [2026-04-25T0816-bun-canonical-install-path.md](./2026-04-25T0816-bun-canonical-install-path.md) | Bun-direct as canonical install path: ADR-038 (supersedes ADR-036); README rewrite; INSTALL_PROMPT.md; Docker verification | Open |
+| [2026-04-25T1432-lf-repo-prose-purification.md](./2026-04-25T1432-lf-repo-prose-purification.md) | Purify LF dev repo's user-facing prose: strip narrative LFM/ADR references from README and CLAUDE.md surfaces; generalise README/SEED.md split across all registry seeds; fence-aware heading demotion in weave; purify `packages/cli/README.md` | Closed (2026-04-25T14:55) |
+| [2026-04-25T0905-adr-removal-and-lfm-substrate.md](./2026-04-25T0905-adr-removal-and-lfm-substrate.md) | Remove ADR as a corpus primitive; author LFM substrate (Concepts + Tropes + `@lfm` annotation + `reconcile` verb); migrate decisive ADR content to self-sufficient LFMs; delete `corpus/decisions/` | Closed (2026-04-25T14:32) |
+| [2026-04-25T0816-bun-canonical-install-path.md](./2026-04-25T0816-bun-canonical-install-path.md) | Bun-direct as canonical install path: ADR-038 (supersedes ADR-036); README rewrite; INSTALL_PROMPT.md; Docker verification | Closed (2026-04-25T09:00) |
 | [2026-04-25T0607-mise-canonical-install-path.md](./2026-04-25T0607-mise-canonical-install-path.md) | Mise as canonical install path: ADR-036 (supersedes ADR-035); README rewrite; remove `install.sh` + `install.ps1`; Docker validation | Closed (2026-04-25T06:18) |
 | [2026-04-29T0900-ci-oidc-publish-pipeline.md](./2026-04-29T0900-ci-oidc-publish-pipeline.md) | Verify `publish.yml` end-to-end against a live `workflow_run`; add post-publish install-smoke job (Linux + Windows); tag-to-version reconciliation; docs pass | Planned |
 | [2026-04-24T2004-publish-readiness-fixes.md](./2026-04-24T2004-publish-readiness-fixes.md) | Publish-readiness fixes for `@literate/cli@0.1.0-alpha.1`: `--version` from `package.json`, CLI README, drop redundant `dependencies`, dry-run verify, queue CI OIDC Planned session | Closed (2026-04-24T20:11) |

@@ -1,7 +1,7 @@
 # Session: 2026-04-25 — Bun-direct as canonical install path
 
 **Date:** 2026-04-25
-**Status:** Open
+**Status:** Closed (2026-04-25T09:00)
 **Chapter:** — (no chapter yet)
 **Agent:** Claude Opus 4.7 (1M context) — fast mode
 **Started:** 2026-04-25T08:16
@@ -139,7 +139,7 @@ their coding agent. Bounded, explicit, idempotent.
 
 ### Goal 5 — Implications log update
 
-**Status:** Active
+**Status:** Abandoned
 **Category:** prose
 **Mode:** Tangling
 
@@ -153,6 +153,14 @@ proceeding.
 - Three entries filed (distribution path; shebang fragility;
   install.sh UX) with rationales referencing ADR-038.
 - Surfaced entries unchanged.
+
+**Abandonment rationale (2026-04-25T09:00):** the `implications.md`
+target was never identified, and the next session in the chain
+(ADR removal + LFM substrate) deletes `corpus/decisions/` in
+entirety, dissolving ADR-038's anchor for these implications.
+Recording the resolutions inside ADR-038's own body is no longer
+load-bearing. Any surviving implication content migrates into
+the relevant LFM(s) authored in Session 1 Goal 9.
 
 ### Goal 6 — Final Docker verification
 
@@ -356,8 +364,33 @@ three interpretation paths surfaced for the Person.
 
 ## Summary
 
-*(Pending — written at session close after G5 resolution.)*
+ADR-038 reverses ADR-036's mise direction and codifies
+`bun install -g @literate/cli` as the canonical install path.
+Repo-root README, `packages/cli/README.md`, and a new
+`INSTALL_PROMPT.md` agent wrapper carry the three-line
+install instructions; `install.sh` and `install.ps1` stay
+deleted from the prior session. Docker verification on fresh
+`ubuntu:24.04` confirmed the path end-to-end against the live
+`@literate/[email protected]` publish (G6 captured verbatim).
+G5 (implications log update) was abandoned without work
+product — its target file was never identified, and the
+follow-on session removes ADRs entirely, dissolving the anchor.
 
 ## Deferred / Discovered
 
-*(Pending — written at session close.)*
+- **Implication-tracking semantics need a target.** The chain
+  prompt's "implications.md" reference did not resolve to any
+  artifact in the working tree, no session log carries an
+  `## Implications` block, and three interpretation paths
+  (top-level file / per-session block / skip) remained open at
+  abandonment. The follow-on `adr-removal-and-lfm-substrate`
+  session reframes the question entirely (LFMs replace ADRs;
+  implication content migrates into LFM bodies where applicable),
+  so this carry-over is informational, not actionable.
+- **The Bun-direct install path is empirically green** against
+  the live registry (Docker run captured in G6). Subsequent
+  sessions touching install/distribution surfaces inherit this
+  baseline.
+- **CI OIDC publish pipeline session** (`2026-04-29T0900-ci-oidc-publish-pipeline.md`,
+  `Status: Planned`) carries forward unchanged; not affected
+  by the install-path reversal.

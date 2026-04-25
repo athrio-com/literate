@@ -18,12 +18,9 @@
  * `registry/concepts/session/index.ts`. Tangled into a consumer repo
  * via `literate tangle concepts session`.
  *
- * Upstream ADRs: ADR-001 (algebra), ADR-010 (Concepts unify Terms),
- * ADR-013 (session log as event store), ADR-014 (Protocol.continue
- * dispatches sessions), ADR-015 (TS + .md siblings), ADR-021
- * (Modality — superseded for session by ADR-031's Disposition),
- * ADR-031 (Disposition), ADR-032 (Mode + IMP-N), ADR-033
- * (Implication).
+ * Upstream LFMs: see corpus/manifests/protocol/algebra.md and
+ *   sibling LFMs for the current-state declarations this seed
+ *   realises.
  */
 import { Schema } from 'effect'
 import { concept, prose, type Concept } from '@literate/core'

@@ -1,0 +1,79 @@
+# Index Trope
+
+The workflow Trope that produces `corpus/manifests/index.md` —
+a single markdown document summarising every LFM in the corpus.
+The index is pure navigation; it carries no decisive content of
+its own.
+
+This file is the imperative decomposition the Step composition
+implements. The contract lives in `concept.mdx`.
+
+## Walk manifests
+
+Walk `corpus/manifests/` recursively in canonical order. Emit
+the LFM file paths, excluding `corpus/manifests/index.md`
+itself (the Trope does not include itself in its own output).
+
+When `corpus/manifests/` is absent, emit an empty list and
+short-circuit the rest of the composition.
+
+Step: `effect`. Input: `IndexInput`. Output:
+`{ paths: readonly string[] }`. Services: `SessionStore`.
+
+## Read entries
+
+For each path, read the file, parse the metadata header, and
+extract the body's first sentence as the summary line. The
+first sentence is the longest run of body text starting after
+the leading `# heading` line and ending at the first `\n\n`.
+Whitespace is collapsed; the result is trimmed.
+
+When the file is unreadable or unparseable, emit a placeholder
+entry so the index still surfaces the file's existence — its
+state is "see file directly."
+
+Step: `io`. Input: `{ paths: readonly string[] }`. Output:
+`{ entries: readonly IndexEntry[] }`. Services: `SessionStore`.
+
+## Render document
+
+Render the table. The header is fixed; the rows iterate
+`entries` in canonical order. Wrap with the LF-generated
+sigil (the same sigil used by `weave`, adapted for this
+file's path) so the file is identifiable as machine-generated.
+
+Step: `effect`. Input: `{ entries: readonly IndexEntry[] }`.
+Output: `{ markdown: string }`. No services — pure rendering.
+
+## Write index
+
+Write `corpus/manifests/index.md` atomically. Return the result
+record.
+
+When the entries list is empty, the file is still written (with
+a "no LFMs in this corpus" placeholder body) so that the index
+file's existence is a stable signal — its absence means
+`corpus/manifests/` itself is absent.
+
+Step: `io`. Input: `{ markdown: string, entryCount: number }`.
+Output: `IndexResult`. Services: `SessionStore`.
+
+## Composition
+
+The Trope's `realise` is a `workflowStep` whose `run` is:
+
+```typescript
+Effect.gen(function* () {
+  const { paths } = yield* memo(walkManifests)(input)
+  const { entries } = yield* memo(readEntries)({ paths })
+  const { markdown } = yield* memo(renderDocument)({ entries })
+  return yield* memo(writeIndex)({
+    markdown,
+    entryCount: entries.length,
+  })
+})
+```
+
+Four atomic Steps, each with its own `ProseRef + section:`. The
+imperative analogue lives in this file; the contract lives in
+`concept.mdx`.
