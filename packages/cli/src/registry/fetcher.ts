@@ -29,9 +29,9 @@ export interface SeedRequest {
   readonly kind: SeedKind
   readonly id: string
   /**
-   * Files comprising one seed (per ADR-025 §4):
-   * for tropes: 'index.ts', 'prose.mdx', 'README.md'
-   * for concepts: 'index.ts', 'concept.mdx', 'README.md'
+   * Files comprising one seed:
+   * for tropes: 'index.ts', 'trope.mdx', 'README.md', 'SEED.md'
+   * for concepts: 'index.ts', 'concept.mdx', 'README.md', 'SEED.md'
    */
   readonly files: ReadonlyArray<string>
 }
@@ -180,6 +180,6 @@ export const FetcherServiceLive = Layer.succeed(FetcherService, {
 
 export const seedFiles = (kind: SeedKind): ReadonlyArray<string> => {
   if (kind === 'tropes')
-    return ['index.ts', 'prose.mdx', 'README.md', 'SEED.md']
+    return ['index.ts', 'trope.mdx', 'README.md', 'SEED.md']
   return ['index.ts', 'concept.mdx', 'README.md', 'SEED.md']
 }

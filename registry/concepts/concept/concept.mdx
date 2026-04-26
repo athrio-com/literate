@@ -1,0 +1,57 @@
+# Concept
+
+A **Concept** is the typed essence of a primitive in LF's
+vocabulary — what kind of thing the framework recognises. Every
+Concept ships with two surfaces that travel together: an Effect
+`Schema` declaring what valid instances look like, and a prose
+body explaining what the kind *means*.
+
+Concepts are the algebra's recognition layer. A Concept on its
+own does not enact anything — it presupposes one or more
+**Tropes** that realise it as procedural prose or code. Realising
+the same Concept through more than one Trope means alternative
+full realisations, not partial views.
+
+## Shape
+
+```typescript
+interface Concept<D = unknown> {
+  readonly _tag: 'Concept'
+  readonly id: string
+  readonly version: string
+  readonly description: string
+  readonly instanceSchema: Schema.Schema<D>
+  readonly prose: ProseRef
+  readonly dependencies: ReadonlyArray<AnyConcept>
+  readonly tropes: ReadonlyArray<AnyTrope>
+}
+```
+
+The `instanceSchema` typed on `D` is the contract any instance
+must satisfy. The `prose` field references the authored body
+(`concept.mdx` sibling). `dependencies` lists Concepts this one
+references; `tropes` lists Tropes that realise it.
+
+## Disposition and Mode
+
+Concepts do **not** carry Disposition or Mode at the type level.
+Both fields live on Tropes. A Concept's effective Disposition is
+the aggregate of its realising Tropes' Dispositions; its
+effective Mode is similarly composite. Asking *what is this
+Concept disposed toward* is shorthand for *what are its Tropes
+disposed toward*.
+
+## Two scopes
+
+LF-level Concepts ship as registry seeds under
+`registry/concepts/<id>/`. Corpus-level Concepts (a consumer's
+own primitives) live under `corpus/concepts/<id>/`. Same
+primitive, two scopes; the algebra makes no further distinction.
+
+## This seed
+
+`registry/concepts/concept/` is the meta-Concept seed: a Concept
+whose `instanceSchema` validates Concept values themselves, and
+whose prose body is this file. `literate learn concept` returns
+this seed; `literate learn :::concept{}` does the same. The
+substrate is self-describing through this seed.

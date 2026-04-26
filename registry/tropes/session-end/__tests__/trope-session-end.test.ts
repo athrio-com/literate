@@ -145,13 +145,15 @@ Summary text.
 // Tests
 
 describe('@literate/trope-session-end — static surface', () => {
-  test('Concept and Trope expose the expected modality + identifiers', () => {
+  test('Concept and Trope expose the expected disposition + identifiers', () => {
     expect(SessionEndConcept._tag).toBe('Concept')
     expect(SessionEndConcept.id).toBe('session-end-procedure')
-    expect(SessionEndConcept.modality).toEqual({ _tag: 'Protocol' })
     expect(sessionEndTrope._tag).toBe('Trope')
     expect(sessionEndTrope.id).toBe('session-end')
-    expect(sessionEndTrope.modality).toEqual({ _tag: 'Protocol' })
+    expect(sessionEndTrope.disposition).toEqual({
+      base: 'Protocol',
+      scope: 'session-lifecycle',
+    })
     expect(sessionEndTrope.realises).toBe(SessionEndConcept)
     expect(sessionEndTrope.realise.kind).toBe('workflow')
     expect(sessionEndTrope.realise.dependencies.length).toBe(5)

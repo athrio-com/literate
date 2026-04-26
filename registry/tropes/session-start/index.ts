@@ -27,7 +27,6 @@ import {
   GateService,
   ioStep,
   memo,
-  Modality,
   prose,
   requireMdxStructure,
   SessionStore,
@@ -42,7 +41,7 @@ import {
 // Prose refs — sibling `.md` files per ADR-015.
 
 const ConceptProse = prose(import.meta.url, './concept.mdx')
-const TropeProse = prose(import.meta.url, './prose.mdx')
+const TropeProse = prose(import.meta.url, './trope.mdx')
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -230,7 +229,6 @@ export const SessionStartConcept: Concept<SessionRef> = concept({
     'The typed contract for beginning an LF session: detect the start path, handle orphans, open the log with a stamped header, surface prior context, and (on the planned path) re-gate provisional Goals.',
   instanceSchema: SessionRefSchema,
   prose: ConceptProse,
-  modality: Modality.Protocol,
 })
 
 // ---------------------------------------------------------------------------
@@ -782,10 +780,10 @@ export const sessionStartTrope: Trope<typeof SessionStartConcept> = trope({
   id: 'session-start',
   version: '0.0.1',
   realises: SessionStartConcept,
+  disposition: { base: 'Protocol', scope: 'session-lifecycle' },
   prose: TropeProse,
   proseSchema: sessionStartProseSchema,
   realise: sessionStartStep,
-  modality: Modality.Protocol,
 })
 
 export default sessionStartTrope

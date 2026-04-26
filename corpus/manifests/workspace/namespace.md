@@ -1,5 +1,5 @@
 ---
-id: 435e223f
+id: d8e2db9f
 disposition: { base: 'Infrastructure', scope: 'namespace' }
 layer: { kind: 'workspace', path: 'workspace', holds: 'domains' }
 domain: namespace
@@ -16,7 +16,7 @@ is abstracted); LF never publishes under `@athrio/*`.
 ## What ships under `@literate/*`
 
 Per the shadcn-shaped distribution model
-(`@lfm(eff0d243)` `infrastructure/distribution-model.md`),
+(`:lfm[distribution-model]{hash=ea66ac0e}` `infrastructure/distribution-model.md`),
 **only one package publishes** to npm at v0.1: `@literate/cli`.
 
 The internal workspace packages (`@literate/core`,
@@ -51,7 +51,7 @@ Three rules:
 1. **No package outside `packages/*` may use `@literate/*`.**
    The `legacy/packages/` tree carries the scope historically
    but is frozen and never publishes
-   (`@lfm(5842b2de)` `workspace/legacy-freeze.md`).
+   (`:lfm[legacy-freeze]{hash=5842b2de}` `workspace/legacy-freeze.md`).
 2. **`@literate/cli` is the only published artefact.** Other
    workspace packages are bundled into the CLI binary.
 3. **`@athrio/*` is reserved.** Any future Athrio integration

@@ -4,10 +4,10 @@
  * Exercises the weaver's validation path against the two bundled
  * Tropes (session-start, session-end):
  *
- *   1. Structurally-correct fixture — canonical `prose.mdx` copied
+ *   1. Structurally-correct fixture — canonical `trope.mdx` copied
  *      from `registry/`. Weave succeeds; `LITERATE.md` is written.
  *   2. Structurally-broken fixture — same seeds, but one required
- *      H2 section deleted from `session-start/prose.mdx`. Weave
+ *      H2 section deleted from `session-start/trope.mdx`. Weave
  *      throws `ProseSchemaViolations` naming the missing slug;
  *      `LITERATE.md` is NOT written (aggregate-before-write per
  *      session-end validator pattern).
@@ -49,7 +49,7 @@ const seedManifest = async (repo: string): Promise<void> => {
         registry: 'literate',
         ref: 'main',
         fetchedAt: now(),
-        files: ['index.ts', 'prose.mdx', 'README.md'],
+        files: ['index.ts', 'trope.mdx', 'README.md'],
       },
       {
         kind: 'tropes',
@@ -57,7 +57,7 @@ const seedManifest = async (repo: string): Promise<void> => {
         registry: 'literate',
         ref: 'main',
         fetchedAt: now(),
-        files: ['index.ts', 'prose.mdx', 'README.md'],
+        files: ['index.ts', 'trope.mdx', 'README.md'],
       },
     ],
   }
@@ -73,7 +73,7 @@ const copyVendored = async (repo: string, id: string): Promise<void> => {
   const src = path.join(LF_REPO_ROOT, 'registry', 'tropes', id)
   const dst = path.join(repo, '.literate', 'tropes', id)
   await fs.mkdir(dst, { recursive: true })
-  for (const f of ['index.ts', 'prose.mdx', 'README.md']) {
+  for (const f of ['index.ts', 'trope.mdx', 'README.md']) {
     await fs.copyFile(path.join(src, f), path.join(dst, f))
   }
 }
@@ -120,7 +120,7 @@ describe('weave — proseSchema validation (P3)', () => {
       '.literate',
       'tropes',
       'session-start',
-      'prose.mdx',
+      'trope.mdx',
     )
     const original = await fs.readFile(prosePath, 'utf8')
     const mutated = original.replace(
@@ -145,7 +145,7 @@ describe('weave — proseSchema validation (P3)', () => {
     expect(violations).toHaveLength(1)
     const v = violations[0]!
     expect(v.tropeId).toBe('session-start')
-    expect(v.path).toBe('.literate/tropes/session-start/prose.mdx')
+    expect(v.path).toBe('.literate/tropes/session-start/trope.mdx')
     expect(v.got).toContain('detect-start-path')
 
     // Weave did not write LITERATE.md — validation happens before write.

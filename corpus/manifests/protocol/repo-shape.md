@@ -1,5 +1,5 @@
 ---
-id: 56305840
+id: 7ba91734
 disposition: { base: 'Protocol', scope: 'repo-shape' }
 layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
 domain: repo-shape
@@ -58,7 +58,7 @@ overwrite.
 For LF's own dev repo, `.literate/` is **absent**. LF is
 self-hosted — its `registry/` *is* the registry; its
 `packages/` *is* the consumer code. There is no vendoring
-into LF itself. See `@lfm(c1f847cc)` `protocol/self-hosting.md`
+into LF itself. See `:lfm[self-hosting]{hash=c1f847cc}` `protocol/self-hosting.md`
 for the rationale.
 
 ## Why three folders, not one

@@ -17,7 +17,6 @@ import {
   effectStep,
   ioStep,
   memo,
-  Modality,
   prose,
   requireMdxStructure,
   SessionStore,
@@ -35,6 +34,8 @@ import {
 } from '../../concepts/lfm-status/index.ts'
 import {
   computeLfmId,
+  migrateLegacyLfmReferences,
+  populateColonLfmHash,
   rewriteAnnotations,
   updateReferencesStep,
 } from '../lfm/index.ts'
@@ -43,7 +44,7 @@ import {
 // Prose refs
 
 const ConceptProse = prose(import.meta.url, './concept.mdx')
-const TropeProse = prose(import.meta.url, './prose.mdx')
+const TropeProse = prose(import.meta.url, './trope.mdx')
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -88,6 +89,12 @@ export const ReconcileReport = Schema.Struct({
   nonReconciled: Schema.Array(NonReconciledEntry),
   hashUpdates: Schema.Array(HashUpdate),
   referencesUpdated: Schema.Array(Schema.String),
+  /**
+   * Files where the migration step rewrote `@lfm(<hash>)` to
+   * `:lfm[<name>]{hash=<hash>}` or populated a missing `{hash=…}`
+   * attribute on a `:lfm[<name>]` reference.
+   */
+  migrated: Schema.Array(Schema.String),
 })
 export type ReconcileReport = Schema.Schema.Type<typeof ReconcileReport>
 
@@ -110,10 +117,16 @@ const RefUpdateBatch = Schema.Struct({
 })
 type RefUpdateBatch = Schema.Schema.Type<typeof RefUpdateBatch>
 
+const MigrationResult = Schema.Struct({
+  migrated: Schema.Array(Schema.String),
+})
+type MigrationResult = Schema.Schema.Type<typeof MigrationResult>
+
 const ReportInput = Schema.Struct({
   statuses: Schema.Array(StatusEntry),
   hashUpdates: Schema.Array(HashUpdate),
   referencesUpdated: Schema.Array(Schema.String),
+  migrated: Schema.Array(Schema.String),
 })
 type ReportInput = Schema.Schema.Type<typeof ReportInput>
 
@@ -164,6 +177,34 @@ const collectManifestPaths = (
       }
       const nested = yield* collectManifestPaths(store, `${base}/${entry}`)
       out.push(...nested)
+    }
+    return out
+  })
+
+/**
+ * Walk a directory tree collecting every `.md` and `.mdx` file.
+ * Used to scope migration over `corpus/manifests/`, `corpus/sessions/`,
+ * and `registry/`.
+ */
+const collectAuthoredPaths = (
+  store: SessionStoreService,
+  base: string,
+): Effect.Effect<ReadonlyArray<string>, never> =>
+  Effect.gen(function* () {
+    const out: string[] = []
+    const entries = yield* store
+      .listDir(base)
+      .pipe(Effect.catchAll(() => Effect.succeed([] as ReadonlyArray<string>)))
+    for (const entry of entries) {
+      if (entry.endsWith('.md') || entry.endsWith('.mdx')) {
+        out.push(`${base}/${entry}`)
+        continue
+      }
+      // Heuristic: descend into anything without a file extension.
+      if (!entry.includes('.')) {
+        const nested = yield* collectAuthoredPaths(store, `${base}/${entry}`)
+        out.push(...nested)
+      }
     }
     return out
   })
@@ -243,7 +284,6 @@ export const ReconcileConcept: Concept<ReconcileReport> = concept({
     'Walk every LFM in the corpus, derive each one\'s status, write status back, maintain soft-link hashes when bodies change. Mechanical; no AI in the loop.',
   instanceSchema: ReconcileReport,
   prose: ConceptProse,
-  modality: Modality.Protocol,
 })
 
 // ---------------------------------------------------------------------------
@@ -398,6 +438,81 @@ export const updateReferencesAggregateStep = ioStep({
 })
 
 // ---------------------------------------------------------------------------
+// Step 3.5 — migrateAtLfmReferences
+//
+// Build the hash → name and name → hash indices from the parsed
+// manifests, then walk authored prose under `corpus/manifests/`,
+// `corpus/sessions/`, and `registry/`, rewriting `@lfm(<hash>)` to
+// `:lfm[<name>]{hash=<hash>}` and populating missing `{hash=…}` on
+// `:lfm[<name>]` references. Idempotent.
+//
+// Per-location rewrite policy is implicit: cascade
+// (`:lfm[name]{hash=<old>}` → `…{hash=<new>}` when target body
+// changes) is performed by `updateReferencesStep` upstream and only
+// touches `corpus/manifests/`. This step is the one-shot migration
+// for *all* scopes; in `corpus/sessions/` it runs once per session
+// log and never updates an existing `:lfm[…]{hash=…}` afterward.
+
+const MIGRATION_SCOPES: ReadonlyArray<string> = [
+  'corpus/manifests',
+  'corpus/sessions',
+  'registry',
+]
+
+export const migrateAtLfmReferencesStep = ioStep({
+  id: StepId('reconcile.migrate-at-lfm'),
+  inputSchema: ReconcileInput,
+  outputSchema: MigrationResult,
+  prose: TropeProse,
+  run: (_input) =>
+    Effect.gen(function* () {
+      const store = yield* SessionStore
+      // Build hash → name + name → hash from current manifest state.
+      const hashToName = new Map<string, string>()
+      const nameToHash = new Map<string, string>()
+      const manifestPaths = yield* collectManifestPaths(
+        store,
+        MANIFESTS_DIR,
+      )
+      for (const p of manifestPaths) {
+        const content = yield* store
+          .read(p)
+          .pipe(Effect.catchAll(() => Effect.succeed('')))
+        if (!content) continue
+        const parsed = parseLFM(p, content)
+        if (!parsed) continue
+        const id = parsed.meta['id']
+        const domain = parsed.meta['domain']
+        if (id && domain) {
+          hashToName.set(id, domain)
+          nameToHash.set(domain, id)
+        }
+      }
+
+      const migrated: string[] = []
+      for (const scope of MIGRATION_SCOPES) {
+        const paths = yield* collectAuthoredPaths(store, scope)
+        for (const p of paths) {
+          const content = yield* store
+            .read(p)
+            .pipe(Effect.catchAll(() => Effect.succeed('')))
+          if (!content) continue
+          let next = content
+          const m1 = migrateLegacyLfmReferences(next, hashToName)
+          if (m1 !== null) next = m1
+          const m2 = populateColonLfmHash(next, nameToHash)
+          if (m2 !== null) next = m2
+          if (next !== content) {
+            yield* store.write(p, next)
+            migrated.push(p)
+          }
+        }
+      }
+      return { migrated }
+    }),
+})
+
+// ---------------------------------------------------------------------------
 // Step 4 — buildReport
 
 export const buildReportStep = effectStep({
@@ -405,7 +520,7 @@ export const buildReportStep = effectStep({
   inputSchema: ReportInput,
   outputSchema: ReconcileReport,
   prose: TropeProse,
-  run: ({ statuses, hashUpdates, referencesUpdated }) =>
+  run: ({ statuses, hashUpdates, referencesUpdated, migrated }) =>
     Effect.sync(() => {
       const counts = {
         Reconciled: 0,
@@ -429,6 +544,7 @@ export const buildReportStep = effectStep({
         nonReconciled,
         hashUpdates,
         referencesUpdated,
+        migrated,
       }
     }),
 })
@@ -445,6 +561,7 @@ export const reconcileStep = workflowStep({
     walkManifestsStep,
     reconcileEachStep,
     updateReferencesAggregateStep,
+    migrateAtLfmReferencesStep,
     buildReportStep,
   ],
   run: (input) =>
@@ -456,6 +573,7 @@ export const reconcileStep = workflowStep({
           nonReconciled: [],
           hashUpdates: [],
           referencesUpdated: [],
+          migrated: [],
         }
       }
       const { statuses, hashUpdates } = yield* memo(reconcileEachStep)({
@@ -464,10 +582,12 @@ export const reconcileStep = workflowStep({
       const { referencesUpdated } = yield* memo(
         updateReferencesAggregateStep,
       )({ hashUpdates })
+      const { migrated } = yield* memo(migrateAtLfmReferencesStep)(input)
       return yield* memo(buildReportStep)({
         statuses,
         hashUpdates,
         referencesUpdated,
+        migrated,
       })
     }),
 })
@@ -481,6 +601,7 @@ export const reconcileProseSchema = requireMdxStructure({
     'walk-manifests',
     'reconcile-each',
     'update-references',
+    'migrate-at-lfm',
     'build-report',
     'composition',
   ],
@@ -490,10 +611,10 @@ export const reconcileTrope: Trope<typeof ReconcileConcept> = trope({
   id: 'reconcile',
   version: '0.1.0',
   realises: ReconcileConcept,
+  disposition: { base: 'Protocol', scope: 'lfm-reconcile' },
   prose: TropeProse,
   proseSchema: reconcileProseSchema,
   realise: reconcileStep,
-  modality: Modality.Protocol,
 })
 
 export default reconcileTrope

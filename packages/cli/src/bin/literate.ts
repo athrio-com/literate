@@ -35,6 +35,7 @@ import { WeaverServiceLive } from '../weaver/weaver.ts'
 import closeCommand from '../verbs/close.ts'
 import continueCommand from '../verbs/continue.ts'
 import initCommand from '../verbs/init.ts'
+import learnCommand from '../verbs/learn.ts'
 import reconcileCommand from '../verbs/reconcile.ts'
 import tangleCommand from '../verbs/tangle.ts'
 import updateCommand from '../verbs/update.ts'
@@ -50,6 +51,7 @@ const root = Command.make('literate').pipe(
     weaveCommand,
     updateCommand,
     reconcileCommand,
+    learnCommand,
   ]),
 )
 

@@ -9,7 +9,7 @@
  *   2. `<tmpdir>/CLAUDE.md` exists.
  *   3. `<tmpdir>/.literate/concepts/<id>/{concept.mdx, index.ts, README.md}`
  *      exists for every Concept in `TEMPLATE_DEFAULT_SEEDS['minimal']`.
- *   4. `<tmpdir>/.literate/tropes/<id>/{prose.mdx, index.ts, README.md}`
+ *   4. `<tmpdir>/.literate/tropes/<id>/{trope.mdx, index.ts, README.md}`
  *      exists for every Trope in `TEMPLATE_DEFAULT_SEEDS['minimal']`.
  *   5. `<tmpdir>/.literate/extensions/` is empty (or `.keep`-only).
  *   6. `<tmpdir>/corpus/sessions/` contains exactly one `.md` file
@@ -46,11 +46,11 @@ interface SeedSpec {
 // `packages/cli/src/verbs/init.ts`. Kept manually in sync; the
 // smoke-e2e is the test that catches drift.
 const EXPECTED_SEEDS: ReadonlyArray<SeedSpec> = [
-  { kind: 'tropes', id: 'session-start', files: ['index.ts', 'prose.mdx', 'README.md', 'SEED.md'] },
-  { kind: 'tropes', id: 'session-end',   files: ['index.ts', 'prose.mdx', 'README.md', 'SEED.md'] },
-  { kind: 'tropes', id: 'lfm',           files: ['index.ts', 'prose.mdx', 'README.md', 'SEED.md'] },
-  { kind: 'tropes', id: 'reconcile',     files: ['index.ts', 'prose.mdx', 'README.md', 'SEED.md'] },
-  { kind: 'tropes', id: 'index',         files: ['index.ts', 'prose.mdx', 'README.md', 'SEED.md'] },
+  { kind: 'tropes', id: 'session-start', files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
+  { kind: 'tropes', id: 'session-end',   files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
+  { kind: 'tropes', id: 'lfm',           files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
+  { kind: 'tropes', id: 'reconcile',     files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
+  { kind: 'tropes', id: 'index',         files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
   ...(['disposition', 'mode', 'implication', 'session', 'session-status', 'goal', 'goal-status', 'goal-category', 'tag', 'step', 'step-kind', 'lfm', 'lfm-status', 'dispositional-domain', 'layer'] as const).map((id) => ({
     kind: 'concepts' as const,
     id,

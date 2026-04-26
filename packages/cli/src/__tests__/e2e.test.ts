@@ -132,7 +132,7 @@ describe('@literate/cli e2e — init + continue + close + update', () => {
 
     // The vendored Trope files are present at .literate/tropes/<id>/.
     for (const id of ['session-start', 'session-end']) {
-      for (const f of ['index.ts', 'prose.mdx', 'README.md']) {
+      for (const f of ['index.ts', 'trope.mdx', 'README.md']) {
         const p = path.join(tmp, '.literate', 'tropes', id, f)
         const content = await fs.readFile(p, 'utf8')
         expect(content.length).toBeGreaterThan(0)
@@ -220,7 +220,7 @@ describe('@literate/cli e2e — init + continue + close + update', () => {
       '.literate',
       'tropes',
       'session-start',
-      'prose.mdx',
+      'trope.mdx',
     )
     const original = await fs.readFile(vendoredProse, 'utf8')
     await fs.writeFile(vendoredProse, original + '\n<!-- consumer edit -->\n', 'utf8')
@@ -245,7 +245,7 @@ describe('@literate/cli e2e — init + continue + close + update', () => {
     expect(result.entry.id).toBe('session-start')
     expect(result.entry.fetchedAt).not.toBe(beforeFetched)
     expect(result.overwritten).toContain(
-      '.literate/tropes/session-start/prose.mdx',
+      '.literate/tropes/session-start/trope.mdx',
     )
 
     // The consumer edit was wiped — file is back to canonical.

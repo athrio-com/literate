@@ -15,7 +15,6 @@ import {
   effectStep,
   ioStep,
   memo,
-  Modality,
   prose,
   requireMdxStructure,
   SessionStore,
@@ -31,7 +30,7 @@ import {
 // Prose refs
 
 const ConceptProse = prose(import.meta.url, './concept.mdx')
-const TropeProse = prose(import.meta.url, './prose.mdx')
+const TropeProse = prose(import.meta.url, './trope.mdx')
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -239,7 +238,6 @@ export const IndexConcept: Concept<IndexResult> = concept({
     'Produce a permanent navigation index at corpus/manifests/index.md summarising every LFM in the corpus. Pure navigation; carries no decisive content. Regenerated on every invocation.',
   instanceSchema: IndexResult,
   prose: ConceptProse,
-  modality: Modality.Protocol,
 })
 
 // ---------------------------------------------------------------------------
@@ -364,10 +362,10 @@ export const indexTrope: Trope<typeof IndexConcept> = trope({
   id: 'index',
   version: '0.1.0',
   realises: IndexConcept,
+  disposition: { base: 'Protocol', scope: 'corpus-index' },
   prose: TropeProse,
   proseSchema: indexProseSchema,
   realise: indexStep,
-  modality: Modality.Protocol,
 })
 
 export default indexTrope

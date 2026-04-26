@@ -1,5 +1,5 @@
 ---
-id: 13d5f10c
+id: 8536c525
 disposition: { base: 'Infrastructure', scope: 'monorepo-layout' }
 layer: { kind: 'workspace', path: 'workspace', holds: 'domains' }
 domain: monorepo-layout
@@ -45,7 +45,7 @@ literate/                  the repo root
 enumerated by the workspace, never installs as a sibling, and
 imports between active and legacy packages are forbidden. The
 isolation is by subtree, not by namespace; both trees share
-the `@literate/` scope (per `@lfm(435e223f)`
+the `@literate/` scope (per `:lfm[namespace]{hash=d8e2db9f}`
 `workspace/namespace.md`).
 
 ## Why no `framework/` folder
@@ -69,11 +69,11 @@ up with vendored copies under `.literate/`.
 
 `registry/` is not published as an npm package and does not
 need to be — the CLI bundles it from source at build time
-(see `@lfm(eff0d243)` `infrastructure/distribution-model.md`).
+(see `:lfm[distribution-model]{hash=ea66ac0e}` `infrastructure/distribution-model.md`).
 
 ## What `legacy/` is
 
-`legacy/` is **frozen** (see `@lfm(5842b2de)`
+`legacy/` is **frozen** (see `:lfm[legacy-freeze]{hash=5842b2de}`
 `workspace/legacy-freeze.md`). Its contents are preserved
 verbatim as historical reference. It contains the previous
 `packages/*` tree (the legacy `@literate/*` packages), the

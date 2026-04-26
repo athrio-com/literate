@@ -1,53 +1,63 @@
 /**
- * Concept, Trope, Variant, Modality — the algebraic metalanguage.
+ * Concept, Trope, Variant — the algebraic metalanguage.
  *
  * A Concept is the *what* (a schema-backed prose declaration);
- * a Trope is the *how* (a Concept realisation bound to a Step);
- * a Variant is an ADT case of a Concept — a refinement with its
+ * a Trope is the *how* (a Concept realisation bound to a Step).
+ * Concept and Trope are co-primitive: every Concept presupposes
+ * one or more Tropes, and a Trope realises exactly one Concept.
+ * A Variant is an ADT case of a Concept — a refinement with its
  * own schema and prose, emitted under the same Concept tag.
- * A Modality is the *mode of work* (protocol / weave / tangle /
- * unweave / untangle / attest), a general six-case ADT applied
- * to Tropes (required) and Concepts (optional).
  *
- * See ADR-001 (three-level algebra), ADR-009 (Tropes as packages),
- * ADR-010 (unify Terms into Concepts), ADR-011 (Step substrate),
- * ADR-015 (TypeScript composition + .md siblings), ADR-021
- * (Modality ADT) in `../../../corpus/decisions/`.
+ * Mode and Disposition are Trope-level fields. A Concept does
+ * not carry either directly; its effective Disposition is the
+ * aggregate of its Tropes' Dispositions.
+ *
+ * See `corpus/manifests/protocol/algebra.md` (Concept-primary
+ * substrate), `corpus/manifests/protocol/disposition-and-mode.md`
+ * (Mode + Disposition semantics), and
+ * `corpus/manifests/protocol/step-substrate.md` (Steps as atomic
+ * Tropes) for the load-bearing prose.
  */
 import { Schema } from 'effect'
 import type { ParsedMdx } from './mdx.ts'
 import type { AnyStep, ProseRef } from './step.ts'
 
 // ---------------------------------------------------------------------------
-// Modality — general six-case ADT (ADR-021).
+// Disposition — the referential domain a Trope is disposed toward.
 //
-// A tagged union of six unit variants. Each variant is a `{_tag: '...'}`
-// struct — pattern-matchable via `switch (m._tag)` or `Match.type<Modality>()`
-// from `effect/Match`. Payloads are deferred; adding a payload to a variant
-// in a later revision is non-breaking as long as existing `_tag` values are
-// preserved and the new fields are additive.
+// Parametrised: closed `base` (three values), open `scope`/`prompt`/`prose`.
+// A Trope's Disposition declares what subject matter the Trope is about;
+// a Concept's effective Disposition is the aggregate of its Tropes'.
 
-export const ModalitySchema = Schema.Union(
-  Schema.Struct({ _tag: Schema.Literal('Protocol') }),
-  Schema.Struct({ _tag: Schema.Literal('Weave') }),
-  Schema.Struct({ _tag: Schema.Literal('Tangle') }),
-  Schema.Struct({ _tag: Schema.Literal('Unweave') }),
-  Schema.Struct({ _tag: Schema.Literal('Untangle') }),
-  Schema.Struct({ _tag: Schema.Literal('Attest') }),
+export const DispositionSchema = Schema.Struct({
+  base: Schema.Literal('Product', 'Protocol', 'Infrastructure'),
+  scope: Schema.optional(Schema.String),
+  prompt: Schema.optional(Schema.String),
+  prose: Schema.optional(Schema.String),
+})
+
+export type Disposition = Schema.Schema.Type<typeof DispositionSchema>
+
+// ---------------------------------------------------------------------------
+// Mode — the operational stance of a Trope's enactment.
+//
+// Closed three-value vocabulary: Exploring | Weaving | Tangling.
+// Mandatory on atomic Tropes (Steps); optional on composite Tropes whose
+// effective Mode is derived from their composing sub-Tropes.
+
+export const ModeSchema = Schema.Union(
+  Schema.Literal('Exploring'),
+  Schema.Literal('Weaving'),
+  Schema.Literal('Tangling'),
 )
 
-export type Modality = Schema.Schema.Type<typeof ModalitySchema>
+export type Mode = Schema.Schema.Type<typeof ModeSchema>
 
-// Ergonomic constructors. Grouped on a namespace-like const so call-sites
-// read `Modality.Protocol` rather than assembling object literals.
-export const Modality = {
-  Protocol: { _tag: 'Protocol' } as const,
-  Weave: { _tag: 'Weave' } as const,
-  Tangle: { _tag: 'Tangle' } as const,
-  Unweave: { _tag: 'Unweave' } as const,
-  Untangle: { _tag: 'Untangle' } as const,
-  Attest: { _tag: 'Attest' } as const,
-} satisfies Record<string, Modality>
+export const Mode = {
+  Exploring: 'Exploring' as const,
+  Weaving: 'Weaving' as const,
+  Tangling: 'Tangling' as const,
+} satisfies Record<string, Mode>
 
 // ---------------------------------------------------------------------------
 // Concept<D> — the "what": a schema-backed prose declaration.
@@ -60,7 +70,7 @@ export interface Concept<D = unknown> {
   readonly instanceSchema: Schema.Schema<D, any, never>
   readonly prose: ProseRef
   readonly dependencies: ReadonlyArray<AnyConcept>
-  readonly modality?: Modality
+  readonly tropes: ReadonlyArray<AnyTrope>
 }
 
 export type AnyConcept = Concept<any>
@@ -74,7 +84,7 @@ export interface ConceptDefinition<D> {
   readonly instanceSchema: Schema.Schema<D, any, never>
   readonly prose: ProseRef
   readonly dependencies?: ReadonlyArray<AnyConcept> | undefined
-  readonly modality?: Modality | undefined
+  readonly tropes?: ReadonlyArray<AnyTrope> | undefined
 }
 
 export const concept = <D>(def: ConceptDefinition<D>): Concept<D> => ({
@@ -85,7 +95,7 @@ export const concept = <D>(def: ConceptDefinition<D>): Concept<D> => ({
   instanceSchema: def.instanceSchema,
   prose: def.prose,
   dependencies: def.dependencies ?? [],
-  ...(def.modality !== undefined ? { modality: def.modality } : {}),
+  tropes: def.tropes ?? [],
 })
 
 // ---------------------------------------------------------------------------
@@ -134,12 +144,13 @@ export interface Trope<C extends AnyConcept = AnyConcept> {
   readonly id: string
   readonly version: string
   readonly realises: C
+  readonly disposition: Disposition
+  readonly mode?: Mode
   readonly prose: ProseRef
   readonly proseSchema: Schema.Schema<ParsedMdx, any, never>
   readonly realise: AnyStep
   readonly dependencies: ReadonlyArray<AnyTrope>
   readonly variants: ReadonlyArray<AnyVariant>
-  readonly modality: Modality
 }
 
 export type AnyTrope = Trope<any>
@@ -148,12 +159,13 @@ export interface TropeDefinition<C extends AnyConcept> {
   readonly id: string
   readonly version?: string | undefined
   readonly realises: C
+  readonly disposition: Disposition
+  readonly mode?: Mode | undefined
   readonly prose: ProseRef
   readonly proseSchema: Schema.Schema<ParsedMdx, any, never>
   readonly realise: AnyStep
   readonly dependencies?: ReadonlyArray<AnyTrope> | undefined
   readonly variants?: ReadonlyArray<AnyVariant> | undefined
-  readonly modality: Modality
 }
 
 export const trope = <C extends AnyConcept>(
@@ -163,12 +175,13 @@ export const trope = <C extends AnyConcept>(
   id: def.id,
   version: def.version ?? '0.0.1',
   realises: def.realises,
+  disposition: def.disposition,
+  ...(def.mode !== undefined ? { mode: def.mode } : {}),
   prose: def.prose,
   proseSchema: def.proseSchema,
   realise: def.realise,
   dependencies: def.dependencies ?? [],
   variants: def.variants ?? [],
-  modality: def.modality,
 })
 
 // ---------------------------------------------------------------------------

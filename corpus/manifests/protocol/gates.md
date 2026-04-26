@@ -1,5 +1,5 @@
 ---
-id: e04db647
+id: 1eb10731
 disposition: { base: 'Protocol', scope: 'gates' }
 layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
 domain: gates
@@ -58,7 +58,7 @@ re-run does not re-prompt.
 ## Implications and gates
 
 An **Implication** is a typed soft Goal (see
-`@lfm(b00e3745)` `protocol/implications.md`) that surfaces from
+`:lfm[implications]{hash=b00e3745}` `protocol/implications.md`) that surfaces from
 work without crystallising into an immediate Gate. Implications
 have their own four-status vocabulary
 (`Surfaced | Promoted | Filed | Dismissed`); the `session-end`

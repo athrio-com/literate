@@ -1,5 +1,5 @@
 ---
-id: 4f4e0592
+id: d666893b
 disposition: { base: 'Infrastructure', scope: 'install-path' }
 layer: { kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }
 domain: install-path
@@ -59,7 +59,7 @@ direction:
    user's `node` global. `bun install -g @literate/cli` does
    not touch the user's other globals.
 
-The runtime *is* the package manager. `@lfm(0a1c969d)`
+The runtime *is* the package manager. `:lfm[cli-runtime]{hash=0a1c969d}`
 `infrastructure/cli-runtime.md` declares Bun as the required
 runtime; this LFM declares the install path that follows from
 that.

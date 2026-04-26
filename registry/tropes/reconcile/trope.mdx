@@ -61,15 +61,40 @@ Step: `io`. Input: `{ hashUpdates: readonly HashUpdate[] }`.
 Output: `{ referencesUpdated: readonly string[] }`. Services:
 `SessionStore` (delegated through the imported Step).
 
+## Migrate at LFM
+
+Build the hash → name and name → hash indices from the parsed
+manifests. Walk every authored `.md` and `.mdx` file under
+`corpus/manifests/`, `corpus/sessions/`, and `registry/`.
+For each file:
+
+1. Rewrite every `@lfm(<hash>)` reference to
+   `:lfm[<name>]{hash=<hash>}` using the hash → name index.
+   References whose hash is not in the index are left as-is.
+2. Populate the missing `{hash=<hash>}` attribute on bare
+   `:lfm[<name>]` references using the name → hash index.
+   Existing `{hash=…}` attributes are not touched (the
+   cascade is performed by *Update references* upstream and
+   only applies to `corpus/manifests/`; `corpus/sessions/` is
+   frozen post-first-encounter per the
+   `annotation-substrate` LFM's per-location policy).
+
+The migration is idempotent: a second invocation on the same
+world produces no further writes.
+
+Step: `io`. Input: `ReconcileInput`. Output:
+`{ migrated: readonly string[] }`. Services: `SessionStore`.
+
 ## Build report
 
-Aggregate the per-LFM status results, the hash updates, and
-the reference-update list into a `ReconcileReport`. Sort
-`nonReconciled` by canonical walk order.
+Aggregate the per-LFM status results, the hash updates, the
+reference-update list, and the migration list into a
+`ReconcileReport`. Sort `nonReconciled` by canonical walk
+order.
 
 Step: `effect`. Input:
-`{ statuses, hashUpdates, referencesUpdated }`. Output:
-`ReconcileReport`. No services — pure aggregation.
+`{ statuses, hashUpdates, referencesUpdated, migrated }`.
+Output: `ReconcileReport`. No services — pure aggregation.
 
 ## Composition
 
@@ -85,14 +110,17 @@ Effect.gen(function* () {
     yield* memo(reconcileEach)({ paths })
   const { referencesUpdated } =
     yield* memo(updateReferences)({ hashUpdates })
+  const { migrated } =
+    yield* memo(migrateAtLfmReferences)(input)
   return yield* memo(buildReport)({
     statuses,
     hashUpdates,
     referencesUpdated,
+    migrated,
   })
 })
 ```
 
-Four atomic Steps, each with its own `ProseRef + section:`. The
+Five atomic Steps, each with its own `ProseRef + section:`. The
 imperative analogue of this procedure lives in this file; the
 contract lives in `concept.mdx`.

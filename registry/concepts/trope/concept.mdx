@@ -1,0 +1,65 @@
+# Trope
+
+A **Trope** realises a Concept. It is typed composable monadic
+prose with a typed runtime — prose-first MDX with Effect Schema
+backing and a Step substrate that composes via Effect's monadic
+structure. Where a Concept is recognition, a Trope is enactment.
+
+## Shape
+
+```typescript
+interface Trope<C extends AnyConcept = AnyConcept> {
+  readonly _tag: 'Trope'
+  readonly id: string
+  readonly version: string
+  readonly realises: C
+  readonly disposition: Disposition
+  readonly mode?: Mode
+  readonly prose: ProseRef
+  readonly proseSchema: Schema.Schema<ParsedMdx>
+  readonly realise: AnyStep
+  readonly dependencies: ReadonlyArray<AnyTrope>
+  readonly variants: ReadonlyArray<AnyVariant>
+}
+```
+
+A Trope realises exactly one Concept. The same Concept may be
+realised by more than one Trope — alternative full realisations,
+not partial views of one realisation.
+
+## Disposition and Mode
+
+Both fields are Trope-level:
+
+- **`disposition: Disposition`** — mandatory. Names the
+  referential domain the Trope is disposed toward (Product,
+  Protocol, or Infrastructure, with an optional `scope` naming
+  a Domain).
+- **`mode?: Mode`** — optional on composite Tropes (sessions,
+  multi-Step procedures), mandatory on atomic Tropes (Steps).
+  A composite Trope's effective Mode at any moment is the
+  active sub-Trope's Mode.
+
+A Trope is not Code. It is typed prose with a code-bound
+substrate; the output of *tangling* a Trope is Code, and the
+output of *weaving* a Trope is further Prose, but the Trope
+itself lives as prose-with-types in the registry.
+
+## Composition
+
+A Trope's `proseSchema` may reference other Tropes. When the
+weave-time validator encounters a section that names a sub-
+Trope (a `:::name{key=val}…:::` container directive), it
+dispatches to the sub-Trope's own `proseSchema`. The resulting
+graph of nested Tropes is the parent Trope's **Arc**.
+
+The `arcSchema` helper in `@literate/core` (in `mdx.ts`)
+authors such composing schemas; the `requireMdxStructure`
+helper authors flat structural contracts.
+
+## This seed
+
+`registry/concepts/trope/` is the meta-Concept seed for Tropes.
+`literate learn trope` returns this seed. Together with the
+sibling Concept-of-Concept seed at `registry/concepts/concept/`,
+it closes the substrate's self-description loop.

@@ -71,13 +71,15 @@ const sessionsIndex = `# Sessions — index
 // Tests
 
 describe('@literate/trope-session-start — static surface', () => {
-  test('Concept and Trope expose the expected modality + identifiers', () => {
+  test('Concept and Trope expose the expected disposition + identifiers', () => {
     expect(SessionStartConcept._tag).toBe('Concept')
     expect(SessionStartConcept.id).toBe('session-start-procedure')
-    expect(SessionStartConcept.modality).toEqual({ _tag: 'Protocol' })
     expect(sessionStartTrope._tag).toBe('Trope')
     expect(sessionStartTrope.id).toBe('session-start')
-    expect(sessionStartTrope.modality).toEqual({ _tag: 'Protocol' })
+    expect(sessionStartTrope.disposition).toEqual({
+      base: 'Protocol',
+      scope: 'session-lifecycle',
+    })
     expect(sessionStartTrope.realises).toBe(SessionStartConcept)
     expect(sessionStartTrope.realise.kind).toBe('workflow')
     expect(sessionStartTrope.realise.dependencies.length).toBe(10)

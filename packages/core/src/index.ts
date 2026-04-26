@@ -128,28 +128,35 @@ export {
   type SessionRef,
 } from './protocol.ts'
 
-// MDX prose-schema surface (ADR-015, P3 — proseSchema as Trope contract).
+// MDX prose-schema surface — proseSchema as Trope contract; arcSchema
+// for sub-Trope-aware composition via container directives.
 export {
+  arcSchema,
   headingsOfDepth,
   ParsedMdxSchema,
   requireMdxStructure,
   slugify,
+  type ArcSchemaParams,
+  type ArcSection,
   type MdastNode,
   type ParsedMdx,
   type RequireMdxStructureParams,
 } from './mdx.ts'
 
-// Metalanguage: Concept / Trope / Variant / Modality (ADR-001, ADR-009,
-// ADR-010, extended with the Step substrate from ADR-011; Modality ADT
-// added by ADR-021). Variant is the FP ADT-case name for what legacy
-// ADR-001 called "Subkind".
+// Metalanguage: Concept / Trope / Variant + Disposition / Mode.
+// Concept and Trope are co-primitive; Mode and Disposition are
+// Trope-level fields (Concepts do not carry either directly).
+// See `corpus/manifests/protocol/algebra.md` for the load-bearing
+// prose. Variant is the FP ADT-case name for what older prose
+// called "Subkind".
 export {
   concept,
+  DispositionSchema,
   isConcept,
   isTrope,
   isVariant,
-  Modality,
-  ModalitySchema,
+  Mode,
+  ModeSchema,
   trope,
   variant,
   type AnyConcept,
@@ -158,6 +165,7 @@ export {
   type Concept,
   type ConceptDefinition,
   type ConceptInstance,
+  type Disposition,
   type Trope,
   type TropeDefinition,
   type Variant,

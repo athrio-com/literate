@@ -1,5 +1,5 @@
 ---
-id: eff0d243
+id: ea66ac0e
 disposition: { base: 'Infrastructure', scope: 'distribution-model' }
 layer: { kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }
 domain: distribution-model
@@ -45,7 +45,7 @@ registry. Two registry shapes:
   in-repo `registry/`).
 - **`github:owner/repo[#ref]`** — a GitHub repository at the
   given ref. The fetcher reads the seed files via the GitHub
-  raw URL; trust is TLS-only (see `@lfm(4a2dcd7b)`
+  raw URL; trust is TLS-only (see `:lfm[registry-trust]{hash=4a2dcd7b}`
   `infrastructure/registry-trust.md`).
 
 After fetch, the seed files land at

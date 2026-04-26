@@ -24,7 +24,6 @@ import {
   effectStep,
   ioStep,
   memo,
-  Modality,
   prose,
   requireMdxStructure,
   SessionStore,
@@ -43,7 +42,7 @@ import { LayerSchema } from '../../concepts/layer/index.ts'
 // Prose refs
 
 const ConceptProse = prose(import.meta.url, './concept.mdx')
-const TropeProse = prose(import.meta.url, './prose.mdx')
+const TropeProse = prose(import.meta.url, './trope.mdx')
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -113,14 +112,36 @@ export type UpdateReferencesResult = Schema.Schema.Type<
 // Pure helpers
 
 /**
+ * Strip mechanical `{hash=…}` attributes from `:lfm[<name>]`
+ * references. Used by `computeLfmId` so that the cached hash
+ * attributes (which are maintained mechanically by reconcile and
+ * change in lockstep with target-body changes) do not feed back
+ * into the source LFM's own hash. Without this, mutually-referencing
+ * LFMs form a non-convergent cascade.
+ */
+const stripCachedHashAttrs = (body: string): string =>
+  body.replace(
+    /(:lfm\[[a-z][a-z0-9-]*\])\{hash=[0-9a-f]{8,}\}/g,
+    '$1',
+  )
+
+/**
  * Compute the short content hash of an LFM body.
  *
- * SHA-256 of the body bytes (UTF-8), first 8 hex characters. The
- * metadata header is excluded — pass the *body only* (the markdown
- * content below the `---` fence).
+ * SHA-256 of the body bytes (UTF-8), first 8 hex characters. Two
+ * exclusions keep the hash stable across operational metadata
+ * changes:
+ *
+ *   1. The metadata header is excluded — pass the *body only*
+ *      (the markdown content below the `---` fence).
+ *   2. Cached `{hash=<8-hex>}` attributes on `:lfm[<name>]`
+ *      references are stripped before hashing, so that
+ *      reconcile's cascade rewrites of those attributes do not
+ *      invalidate the hashing source's own id.
  */
 export const computeLfmId = async (body: string): Promise<string> => {
-  const data = new TextEncoder().encode(body)
+  const canonical = stripCachedHashAttrs(body)
+  const data = new TextEncoder().encode(canonical)
   const digest = await crypto.subtle.digest('SHA-256', data)
   const bytes = new Uint8Array(digest)
   let hex = ''
@@ -133,9 +154,18 @@ export const computeLfmId = async (body: string): Promise<string> => {
 const ANNOTATION_RE = /@lfm\(([0-9a-f]{8,})\)/g
 
 /**
+ * The unified `:lfm[<name>]{hash=<8-hex>}` annotation form. The
+ * `{hash=…}` portion is optional in authored prose; reconcile
+ * populates it mechanically from the hash → name index.
+ */
+const COLON_LFM_RE =
+  /:lfm\[([a-z][a-z0-9-]*)\](\{hash=([0-9a-f]{8,})\})?/g
+
+/**
  * Rewrite every `@lfm(<oldId>)` annotation in `source` to
- * `@lfm(<newId>)` (or remove the annotation when `newId` is
- * `null`, indicating the target LFM was deleted).
+ * `@lfm(<newId>)` (or remove it when `newId` is `null`,
+ * indicating the target LFM was deleted). Mirrors the same
+ * cascade for the unified `:lfm[<name>]{hash=<oldId>}` form.
  *
  * Returns `null` when no rewrite was needed (caller can skip the
  * write).
@@ -146,11 +176,119 @@ export const rewriteAnnotations = (
   newId: string | null,
 ): string | null => {
   let changed = false
-  const out = source.replace(ANNOTATION_RE, (full, captured: string) => {
+  let out = source.replace(ANNOTATION_RE, (full, captured: string) => {
     if (captured !== oldId) return full
     changed = true
     return newId === null ? '' : `@lfm(${newId})`
   })
+  out = out.replace(COLON_LFM_RE, (full, name: string, _attrs: string | undefined, hash: string | undefined) => {
+    if (!hash || hash !== oldId) return full
+    changed = true
+    return newId === null ? '' : `:lfm[${name}]{hash=${newId}}`
+  })
+  return changed ? out : null
+}
+
+/**
+ * Look at the textual neighbourhood of a match for a current LFM
+ * name. Used as a fallback when the legacy `@lfm(<hash>)`
+ * reference's hash isn't in the current hash → name index — a
+ * common case for stale references in session logs whose target
+ * LFM body has since changed.
+ *
+ * Returns the first valid LFM name found within ±200 characters
+ * of the match, recognised either as `corpus/manifests/<layer>/<name>.md`
+ * or as a parenthesised `(<layer>/<name>)` / `(<name>)` form.
+ */
+const findNearbyLfmName = (
+  source: string,
+  matchIndex: number,
+  matchLength: number,
+  validNames: ReadonlySet<string>,
+): string | undefined => {
+  const start = Math.max(0, matchIndex - 200)
+  const end = Math.min(source.length, matchIndex + matchLength + 200)
+  const window = source.slice(start, end)
+  // Patterns try most-specific first: full file paths, then
+  // backticked or bare `(layer/name)` and `(name)` forms.
+  const candidates: RegExp[] = [
+    /corpus\/manifests\/[a-z][a-z0-9-]*\/([a-z][a-z0-9-]*)\.md/g,
+    /\(`?(?:[a-z][a-z0-9-]*\/)?([a-z][a-z0-9-]*)`?\)/g,
+    /`(?:[a-z][a-z0-9-]*\/)?([a-z][a-z0-9-]*)`/g,
+    /\b(?:the\s+)?([a-z][a-z0-9-]*)\s+(?:LFM|manifest)\b/g,
+  ]
+  for (const re of candidates) {
+    let m: RegExpExecArray | null
+    while ((m = re.exec(window)) !== null) {
+      const candidate = m[m.length - 1]!
+      if (validNames.has(candidate)) return candidate
+    }
+  }
+  return undefined
+}
+
+/**
+ * Migrate every legacy `@lfm(<hash>)` annotation in `source` to
+ * the unified `:lfm[<name>]{hash=<hash>}` form. Resolution
+ * proceeds in two passes:
+ *
+ *   1. The hash → name index lookup (matches when the reference
+ *      points at a current LFM body's hash).
+ *   2. A textual-proximity lookup against the set of current LFM
+ *      names — used when the hash is stale (target body has
+ *      changed since the reference was written, common for
+ *      session logs). The hash itself is preserved verbatim;
+ *      only the form changes.
+ *
+ * References that resolve neither way are left as-is. The
+ * migration is idempotent and partial-safe.
+ *
+ * Returns `null` when no rewrite was needed.
+ */
+export const migrateLegacyLfmReferences = (
+  source: string,
+  hashToName: ReadonlyMap<string, string>,
+  validNames?: ReadonlySet<string>,
+): string | null => {
+  let changed = false
+  const names = validNames ?? new Set(hashToName.values())
+  const out = source.replace(
+    ANNOTATION_RE,
+    (full, hash: string, offset: number) => {
+      const direct = hashToName.get(hash)
+      const name =
+        direct ?? findNearbyLfmName(source, offset, full.length, names)
+      if (!name) return full
+      changed = true
+      return `:lfm[${name}]{hash=${hash}}`
+    },
+  )
+  return changed ? out : null
+}
+
+/**
+ * Populate the missing `{hash=…}` attribute in `:lfm[<name>]`
+ * references using the name → hash index. Existing `{hash=…}`
+ * attributes are not touched (cascade lives in `rewriteAnnotations`).
+ * References whose name is not in the index are preserved.
+ *
+ * Returns `null` when no rewrite was needed.
+ */
+export const populateColonLfmHash = (
+  source: string,
+  nameToHash: ReadonlyMap<string, string>,
+): string | null => {
+  let changed = false
+  const out = source.replace(
+    COLON_LFM_RE,
+    (full, name: string, attrs: string | undefined) => {
+      if (attrs) return full
+      const hash = nameToHash.get(name)
+      if (!hash) return full
+      changed = true
+      return `:lfm[${name}]{hash=${hash}}`
+    },
+  )
   return changed ? out : null
 }
 
@@ -208,7 +346,6 @@ export const LFMAuthoringConcept: Concept<LFMRef> = concept({
     'Author and validate one Literate Framework Manifest. Compute the content hash, validate self-sufficiency, write to corpus/manifests/<layer>/<domain>.md. Reference-hash maintenance is invoked separately by reconcile.',
   instanceSchema: LFMRef,
   prose: ConceptProse,
-  modality: Modality.Protocol,
 })
 
 // ---------------------------------------------------------------------------
@@ -369,10 +506,10 @@ export const lfmTrope: Trope<typeof LFMAuthoringConcept> = trope({
   id: 'lfm',
   version: '0.1.0',
   realises: LFMAuthoringConcept,
+  disposition: { base: 'Protocol', scope: 'lfm-authoring' },
   prose: TropeProse,
   proseSchema: lfmProseSchema,
   realise: lfmStep,
-  modality: Modality.Protocol,
 })
 
 export default lfmTrope

@@ -25,7 +25,6 @@ import {
   effectStep,
   ioStep,
   memo,
-  Modality,
   prose,
   requireMdxStructure,
   SessionStore,
@@ -42,7 +41,7 @@ import { isTerminalGoalStatus } from '../../concepts/goal-status/index.ts'
 // Prose refs
 
 const ConceptProse = prose(import.meta.url, './concept.mdx')
-const TropeProse = prose(import.meta.url, './prose.mdx')
+const TropeProse = prose(import.meta.url, './trope.mdx')
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -311,7 +310,6 @@ export const SessionEndConcept: Concept<SessionClosure> = concept({
     'The typed contract for closing an LF session: validate the log, return SessionEndIncomplete on any failure, stamp Closed atomically on success, update the sessions index.',
   instanceSchema: SessionClosure,
   prose: ConceptProse,
-  modality: Modality.Protocol,
 })
 
 // ---------------------------------------------------------------------------
@@ -572,10 +570,10 @@ export const sessionEndTrope: Trope<typeof SessionEndConcept> = trope({
   id: 'session-end',
   version: '0.0.1',
   realises: SessionEndConcept,
+  disposition: { base: 'Protocol', scope: 'session-lifecycle' },
   prose: TropeProse,
   proseSchema: sessionEndProseSchema,
   realise: sessionEndStep,
-  modality: Modality.Protocol,
 })
 
 export default sessionEndTrope
