@@ -37,6 +37,7 @@ import {
 
 import { DispositionSchema } from '../../concepts/disposition/index.ts'
 import { LayerSchema } from '../../concepts/layer/index.ts'
+import { serialiseMetadataBlock } from '../metadata/index.ts'
 
 // ---------------------------------------------------------------------------
 // Prose refs
@@ -320,17 +321,17 @@ const detectViolations = (body: string): Array<Violation> => {
 }
 
 const serialiseHeader = (input: ValidatedBody): string => {
-  const parts: string[] = ['---']
-  parts.push(`id: ${input.id}`)
-  parts.push(`disposition: ${JSON.stringify(input.disposition)}`)
-  parts.push(`layer: ${JSON.stringify(input.layer)}`)
-  parts.push(`domain: ${input.domain}`)
-  parts.push(`status: Unverified`)
-  if (input.dependencies && input.dependencies.length > 0) {
-    parts.push(`dependencies: ${JSON.stringify(input.dependencies)}`)
+  const meta: Record<string, string> = {
+    id: input.id,
+    disposition: JSON.stringify(input.disposition),
+    layer: JSON.stringify(input.layer),
+    domain: input.domain,
+    status: 'Unverified',
   }
-  parts.push('---')
-  return parts.join('\n')
+  if (input.dependencies && input.dependencies.length > 0) {
+    meta['dependencies'] = JSON.stringify(input.dependencies)
+  }
+  return serialiseMetadataBlock(meta)
 }
 
 const lfmRelPath = (input: { layer: { path: string }; domain: string }): string =>

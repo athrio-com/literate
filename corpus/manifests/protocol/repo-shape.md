@@ -1,10 +1,4 @@
----
-id: 7ba91734
-disposition: { base: 'Protocol', scope: 'repo-shape' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: repo-shape
-status: Reconciled
----
+::metadata{id=ed4d88d9, disposition={ base: 'Protocol', scope: 'repo-shape' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=repo-shape, status=Reconciled}
 
 # Repo Shape
 
@@ -26,10 +20,8 @@ collaboration. Sessions, manifests (LFMs), memos. It is the
 are immutable; manifests are mutable.
 
 For LF's own dev repo, `corpus/` additionally holds operational
-prose (`CLAUDE.md`, `tags.md`) and — historically —
-`decisions/` (deleted in the LFM rewrite). For consumer repos,
-`corpus/` holds whatever Product-level prose the consumer
-authors.
+prose (`CLAUDE.md`, `tags.md`). For consumer repos, `corpus/`
+holds whatever Product-level prose the consumer authors.
 
 ## `src/` — derivative code
 

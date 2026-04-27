@@ -1,10 +1,4 @@
----
-id: d666893b
-disposition: { base: 'Infrastructure', scope: 'install-path' }
-layer: { kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }
-domain: install-path
-status: Reconciled
----
+::metadata{id=6ee10bd5, disposition={ base: 'Infrastructure', scope: 'install-path' }, layer={ kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }, domain=install-path, status=Reconciled}
 
 # Install Path
 
@@ -45,24 +39,25 @@ script.
 
 ## Why direct, not via a tool manager
 
-A prior install-path direction used `mise` as a wrapper:
-`mise use -g npm:@literate/cli`. Two findings retired that
-direction:
+The runtime *is* the package manager.
+`:lfm[cli-runtime]{hash=0a1c969d}` `infrastructure/cli-runtime.md`
+declares Bun as the required runtime; `bun install -g` is the
+install command Bun ships, so the install path collapses onto
+the runtime with no wrapper layer.
 
-1. **Bun is the runtime.** `bun install -g` works directly
-   without any wrapper. The wrapper-script failure that
-   originally motivated `mise` was a bug in the wrapper's
-   shell-rc-edit logic, not a flaw in `bun install -g`.
-2. **`mise use -g` silently overrides users' existing global
-   tool versions** (Node in particular). That is a real trust
-   violation — installing the LF CLI should not change a
-   user's `node` global. `bun install -g @literate/cli` does
-   not touch the user's other globals.
+Two properties keep the path direct:
 
-The runtime *is* the package manager. `:lfm[cli-runtime]{hash=0a1c969d}`
-`infrastructure/cli-runtime.md` declares Bun as the required
-runtime; this LFM declares the install path that follows from
-that.
+1. **No tool-manager wrappers.** Tool managers that resolve
+   global packages (e.g. `mise use -g npm:<pkg>`) silently
+   shadow other global tools (Node in particular). Installing
+   the LF CLI must not change a user's `node` global or any
+   other tool already on PATH; `bun install -g` touches only
+   Bun's own global namespace.
+2. **No shell-rc edits beyond Bun's installer.** Bun's
+   official installer handles cross-shell PATH setup; the LF
+   install path adds nothing on top. A user's shell-rc files
+   are written only by the Bun installer step, not by anything
+   LF ships.
 
 ## `INSTALL_PROMPT.md` for agents
 

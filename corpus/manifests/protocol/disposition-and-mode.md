@@ -1,10 +1,4 @@
----
-id: 12132d70
-disposition: { base: 'Protocol', scope: 'disposition-and-mode' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: disposition-and-mode
-status: Reconciled
----
+::metadata{id=12132d70, disposition={ base: 'Protocol', scope: 'disposition-and-mode' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=disposition-and-mode, status=Reconciled}
 
 # Disposition and Mode
 

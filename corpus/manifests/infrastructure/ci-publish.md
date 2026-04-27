@@ -1,10 +1,4 @@
----
-id: c1fa127a
-disposition: { base: 'Infrastructure', scope: 'ci-publish' }
-layer: { kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }
-domain: ci-publish
-status: Reconciled
----
+::metadata{id=c1fa127a, disposition={ base: 'Infrastructure', scope: 'ci-publish' }, layer={ kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }, domain=ci-publish, status=Reconciled}
 
 # CI Publish
 

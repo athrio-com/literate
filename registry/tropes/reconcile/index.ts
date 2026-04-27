@@ -36,9 +36,13 @@ import {
   computeLfmId,
   migrateLegacyLfmReferences,
   populateColonLfmHash,
-  rewriteAnnotations,
   updateReferencesStep,
 } from '../lfm/index.ts'
+import {
+  parseMetadataBlock,
+  serialiseMetadataBlock,
+  type MetadataForm,
+} from '../metadata/index.ts'
 
 // ---------------------------------------------------------------------------
 // Prose refs
@@ -214,49 +218,29 @@ interface ParsedLFM {
   readonly headerRaw: string
   readonly body: string
   readonly meta: Record<string, string>
+  /**
+   * Wire form the head-of-file block used. Reconcile keeps
+   * reading both forms during the YAML → directive transition;
+   * writes always emit the canonical directive form, so a
+   * `yaml` parse implies the file gets rewritten on save.
+   */
+  readonly form: MetadataForm
 }
 
 const parseLFM = (path: string, content: string): ParsedLFM | null => {
-  // Expect the file to begin with `---\n…\n---\n`.
-  const lines = content.split('\n')
-  if (lines[0] !== '---') return null
-  let endIdx = -1
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i] === '---') {
-      endIdx = i
-      break
-    }
+  const block = parseMetadataBlock(content)
+  if (!block) return null
+  return {
+    path,
+    headerRaw: block.headerRaw,
+    body: block.body,
+    meta: { ...block.meta },
+    form: block.form,
   }
-  if (endIdx < 0) return null
-  const headerLines = lines.slice(1, endIdx)
-  const bodyLines = lines.slice(endIdx + 1)
-  // Drop a single leading blank line from the body so that the
-  // hash is stable across `---\n\n# body` and `---\n# body`.
-  const body = (bodyLines[0] === '' ? bodyLines.slice(1) : bodyLines).join('\n')
-  const meta: Record<string, string> = {}
-  for (const line of headerLines) {
-    const m = line.match(/^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$/)
-    if (m) meta[m[1]!] = m[2]!.trim()
-  }
-  return { path, headerRaw: lines.slice(0, endIdx + 1).join('\n'), body, meta }
 }
 
-const serialiseHeader = (meta: Record<string, string>): string => {
-  const order = ['id', 'disposition', 'layer', 'domain', 'status', 'dependencies']
-  const parts: string[] = ['---']
-  for (const key of order) {
-    if (meta[key] !== undefined && meta[key] !== '') {
-      parts.push(`${key}: ${meta[key]}`)
-    }
-  }
-  for (const key of Object.keys(meta)) {
-    if (!order.includes(key) && meta[key] !== undefined && meta[key] !== '') {
-      parts.push(`${key}: ${meta[key]}`)
-    }
-  }
-  parts.push('---')
-  return parts.join('\n')
-}
+const serialiseHeader = (meta: Record<string, string>): string =>
+  serialiseMetadataBlock(meta)
 
 interface PathDeclaration {
   readonly path: string

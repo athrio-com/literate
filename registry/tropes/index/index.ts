@@ -26,6 +26,8 @@ import {
   type Trope,
 } from '@literate/core'
 
+import { parseMetadataBlock } from '../metadata/index.ts'
+
 // ---------------------------------------------------------------------------
 // Prose refs
 
@@ -124,8 +126,8 @@ const collectManifestPaths = (
   })
 
 const parseEntry = (path: string, content: string): IndexEntry => {
-  const lines = content.split('\n')
-  if (lines[0] !== '---') {
+  const block = parseMetadataBlock(content)
+  if (!block) {
     return {
       path,
       layer: 'unknown',
@@ -135,44 +137,21 @@ const parseEntry = (path: string, content: string): IndexEntry => {
       summary: '(metadata header missing)',
     }
   }
-  let endIdx = -1
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i] === '---') {
-      endIdx = i
-      break
-    }
-  }
-  if (endIdx < 0) {
-    return {
-      path,
-      layer: 'unknown',
-      domain: path.split('/').slice(-1)[0]!.replace(/\.md$/, ''),
-      id: '(unparseable)',
-      status: 'Unverified',
-      summary: '(metadata header unterminated)',
-    }
-  }
-
-  const meta: Record<string, string> = {}
-  for (const line of lines.slice(1, endIdx)) {
-    const m = line.match(/^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$/)
-    if (m) meta[m[1]!] = m[2]!.trim()
-  }
+  const meta = block.meta
   const layerPathFromPath = path
     .replace(`${MANIFESTS_DIR}/`, '')
     .replace(/\/[^/]+\.md$/, '')
   let layerLabel = layerPathFromPath
-  // Best-effort extract from `layer: { ..., path: 'apps/app1', ... }`.
   const declared = meta['layer'] ?? ''
   const pathMatch = declared.match(/path:\s*['"]([^'"]+)['"]/)
   if (pathMatch) layerLabel = pathMatch[1]!
 
-  const domain = meta['domain'] ?? path.split('/').slice(-1)[0]!.replace(/\.md$/, '')
+  const domain =
+    meta['domain'] ?? path.split('/').slice(-1)[0]!.replace(/\.md$/, '')
   const id = meta['id'] ?? '(no-id)'
   const status = meta['status'] ?? 'Unverified'
 
-  // Body summary — first sentence after the first `# heading`.
-  const body = lines.slice(endIdx + 1).join('\n').trim()
+  const body = block.body.trim()
   const bodyAfterH1 = body.replace(/^#\s+[^\n]+\n+/, '')
   const firstPara = bodyAfterH1.split(/\n\n/)[0] ?? ''
   const firstSentence =
@@ -181,9 +160,7 @@ const parseEntry = (path: string, content: string): IndexEntry => {
       ?.replace(/\s+/g, ' ')
       .trim() ?? ''
   const summary =
-    firstSentence === ''
-      ? '(empty body)'
-      : firstSentence.slice(0, 200)
+    firstSentence === '' ? '(empty body)' : firstSentence.slice(0, 200)
 
   return {
     path,

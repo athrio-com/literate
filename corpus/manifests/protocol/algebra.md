@@ -1,10 +1,4 @@
----
-id: 1d2b036a
-disposition: { base: 'Protocol', scope: 'algebra' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: algebra
-status: Reconciled
----
+::metadata{id=1d2b036a, disposition={ base: 'Protocol', scope: 'algebra' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=algebra, status=Reconciled}
 
 # Algebra
 
@@ -114,7 +108,7 @@ Trope's complete typed shape without re-walking the prose.
 
 Universal sub-Tropes (Metadata is the canonical example) live
 once in the registry and compose into many parent Tropes by
-reference. The annotation substrate (see :lfm[annotation-substrate]{hash=9a6b8081})
+reference. The annotation substrate (see :lfm[annotation-substrate]{hash=d3b990b2})
 declares the directive syntax for expressing sub-Trope
 composition in authored prose.
 

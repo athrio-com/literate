@@ -71,22 +71,24 @@ const TEMPLATE_DEFAULT_SEEDS: Record<
   // The `minimal` template ships the canonical Trope set + the
   // typed Concept set:
   //
-  //   Tropes  (5): session-start, session-end, lfm, reconcile, index
-  //   Concepts (15):
+  //   Tropes  (6): session-start, session-end, lfm, metadata,
+  //                reconcile, index
+  //   Concepts (16):
   //     - axes:        disposition, mode, implication, session
   //     - status enums: session-status, goal-status, goal-category,
   //                     lfm-status, step-kind
   //     - composing parents: goal, step
   //     - tag type:    tag
-  //     - LFM substrate: lfm, dispositional-domain, layer
+  //     - LFM substrate: lfm, dispositional-domain, layer, metadata
   //
-  // Total: 20 seeds. The ADR primitive was retired in the
+  // Total: 22 seeds. The ADR primitive was retired in the
   // LFM-substrate rewrite — `adr` and `adr-status` no longer
   // ship.
   minimal: [
     { kind: 'tropes', id: 'session-start' },
     { kind: 'tropes', id: 'session-end' },
     { kind: 'tropes', id: 'lfm' },
+    { kind: 'tropes', id: 'metadata' },
     { kind: 'tropes', id: 'reconcile' },
     { kind: 'tropes', id: 'index' },
     { kind: 'concepts', id: 'disposition' },
@@ -104,6 +106,7 @@ const TEMPLATE_DEFAULT_SEEDS: Record<
     { kind: 'concepts', id: 'lfm-status' },
     { kind: 'concepts', id: 'dispositional-domain' },
     { kind: 'concepts', id: 'layer' },
+    { kind: 'concepts', id: 'metadata' },
   ],
 }
 

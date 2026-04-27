@@ -1,10 +1,4 @@
----
-id: 1eb10731
-disposition: { base: 'Protocol', scope: 'gates' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: gates
-status: Reconciled
----
+::metadata{id=1eb10731, disposition={ base: 'Protocol', scope: 'gates' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=gates, status=Reconciled}
 
 # Gates
 

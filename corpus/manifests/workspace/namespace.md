@@ -1,14 +1,8 @@
----
-id: d8e2db9f
-disposition: { base: 'Infrastructure', scope: 'namespace' }
-layer: { kind: 'workspace', path: 'workspace', holds: 'domains' }
-domain: namespace
-status: Reconciled
----
+::metadata{id=06997960, disposition={ base: 'Infrastructure', scope: 'namespace' }, layer={ kind: 'workspace', path: 'workspace', holds: 'domains' }, domain=namespace, status=Reconciled}
 
 # Namespace
 
-LF's rewrite packages live under the **`@literate/*`** npm
+LF's active workspace packages live under the **`@literate/*`** npm
 scope. The `@athrio/*` scope is reserved for the sister-repo
 Athrio product (the LFM-Protocol implementation from which LF
 is abstracted); LF never publishes under `@athrio/*`.
@@ -16,7 +10,7 @@ is abstracted); LF never publishes under `@athrio/*`.
 ## What ships under `@literate/*`
 
 Per the shadcn-shaped distribution model
-(`:lfm[distribution-model]{hash=ea66ac0e}` `infrastructure/distribution-model.md`),
+(`:lfm[distribution-model]{hash=32aa53dc}` `infrastructure/distribution-model.md`),
 **only one package publishes** to npm at v0.1: `@literate/cli`.
 
 The internal workspace packages (`@literate/core`,
@@ -32,30 +26,24 @@ CLI's `tangle` verb and vendored into the consumer's repo.
 
 ## Why `@literate/*` and not `@athrio/*`
 
-`@athrio/*` was the original namespace candidate when LF was
-expected to live as a sub-project of Athrio. The decision to
-spin LF out as its own framework — abstracted from Athrio's
-LFM-Protocol implementation — required a distinct scope.
-`@literate/*` was the obvious choice: the framework's name is
-the framework's scope.
-
-The legacy code under `legacy/packages/` was authored in a
-transitional period and carries the `@literate/*` scope
-already; the rewrite maintains that scope rather than
-reverting.
+The framework's name is the framework's scope. LF is its own
+framework, distinct from the Athrio product that uses it; the
+two carry distinct scopes (`@literate/*` for the framework,
+`@athrio/*` for the product) so consumers can depend on either
+without coupling to the other.
 
 ## Scope discipline
 
 Three rules:
 
-1. **No package outside `packages/*` may use `@literate/*`.**
-   The `legacy/packages/` tree carries the scope historically
-   but is frozen and never publishes
-   (`:lfm[legacy-freeze]{hash=5842b2de}` `workspace/legacy-freeze.md`).
+1. **`@literate/*` is reserved for the active workspace at
+   `packages/*`.** The `legacy/packages/` subtree shares the
+   scope but is frozen and never publishes
+   (`:lfm[legacy-freeze]{hash=bf4e66f8}` `workspace/legacy-freeze.md`).
 2. **`@literate/cli` is the only published artefact.** Other
    workspace packages are bundled into the CLI binary.
-3. **`@athrio/*` is reserved.** Any future Athrio integration
-   work uses that scope; LF does not.
+3. **`@athrio/*` is reserved for the sister-repo Athrio
+   product.** LF never publishes under `@athrio/*`.
 
 ```path
 packages/cli/package.json

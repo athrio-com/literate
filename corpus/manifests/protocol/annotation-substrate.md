@@ -1,10 +1,4 @@
----
-id: 9a6b8081
-disposition: { base: 'Protocol', scope: 'annotation-substrate' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: annotation-substrate
-status: Reconciled
----
+::metadata{id=d3b990b2, disposition={ base: 'Protocol', scope: 'annotation-substrate' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=annotation-substrate, status=Reconciled}
 
 # Annotation substrate
 
@@ -146,41 +140,27 @@ The hash-rewrite policy depends on where the reference lives:
 
 - **In `corpus/manifests/<layer>/<domain>.md` (LFM-to-LFM
   references).** When the target LFM's body changes, reconcile
-  updates the `hash` attribute in place — same cascade
-  behaviour as today's `@lfm(<old>)` → `@lfm(<new>)` rewrite.
-  LFMs declare current state; references must reflect the
-  latest body.
+  updates the `hash` attribute in place. LFMs declare current
+  state; references reflect the latest body.
 - **In `corpus/sessions/<...>.md` (session-to-LFM references).**
   Reconcile populates the `hash` attribute once at first
   reconcile and never updates it after. Session logs are
-  append-once and journal point-in-time references; preserving
-  the stale hash is a feature, not a bug. The same convention
-  carries over from the legacy `@lfm(<hash>)` form (see
-  `registry/tropes/lfm/concept.mdx` for the prior rationale).
-- **In `registry/` and `.literate/` authored prose.** Treat
-  like LFM-to-LFM (live cascade); these surfaces declare
-  current substrate state.
+  append-once and journal point-in-time references; the stale
+  hash is the feature.
+- **In `registry/` and `.literate/` authored prose.** Live
+  cascade, same as LFM-to-LFM; these surfaces declare current
+  substrate state.
 
-## Migration from `@lfm(<hash>)`
+## Compatibility with `@lfm(<hash>)`
 
-LF currently uses `@lfm(<short-hash>)` as the cross-reference
-form. Under the unified `:` surface, the form becomes
-`:lfm[<name>]{hash=<8-hex>}` per the rules above. The legacy
-form is preserved in existing prose until `literate reconcile`
-(extended in the Tangling successor) migrates the corpus
-mechanically.
-
-The migration is mechanical:
-
-1. Build a hash → name index from the LFM tree at first
-   reconcile run (walk `corpus/manifests/`, hash each body,
-   record `(hash, name)` pairs).
-2. Rewrite each `@lfm(<hash>)` in authored prose to
-   `:lfm[<name>]{hash=<hash>}` using the index.
-3. Idempotent — subsequent runs produce no diff.
-
-Until migration completes, both forms coexist. Reconcile parses
-both; the new form is the canonical target.
+The substrate also accepts the bare `@lfm(<short-hash>)`
+form as a legacy alias. Reconcile reads either form and
+rewrites bare `@lfm(<hash>)` references to
+`:lfm[<name>]{hash=<hash>}` mechanically (idempotent — a
+second run produces no diff). The unified `:lfm[<name>]{…}`
+form is the canonical write target; the bare form exists so
+that authored prose written before the unification still
+parses.
 
 ## What annotations are not
 

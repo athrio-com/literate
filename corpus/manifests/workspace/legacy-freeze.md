@@ -1,30 +1,27 @@
----
-id: 5842b2de
-disposition: { base: 'Infrastructure', scope: 'legacy-freeze' }
-layer: { kind: 'workspace', path: 'workspace', holds: 'domains' }
-domain: legacy-freeze
-status: Reconciled
----
+::metadata{id=bf4e66f8, disposition={ base: 'Infrastructure', scope: 'legacy-freeze' }, layer={ kind: 'workspace', path: 'workspace', holds: 'domains' }, domain=legacy-freeze, status=Reconciled}
 
 # Legacy Freeze
 
 The `legacy/` tree is **frozen** and never publishes. Its
-contents are preserved verbatim as historical reference for
-the rewrite. No file under `legacy/` is edited without an
+contents are preserved verbatim as a read-only reference
+subtree. No file under `legacy/` is edited without an
 explicit Person-authorised freeze lift recorded in the active
 session's `## Decisions Made`.
 
 ## What lives in `legacy/`
 
-- **`legacy/packages/*`** — the pre-rewrite `@literate/*`
-  packages (Concepts, Tropes, CLI, template, core authored
-  before the Step substrate and registry-seed shape).
-- **`legacy/site/`** — the pre-rewrite Next.js scaffold.
-- **`legacy/LITERATE.md`** — the pre-rewrite framework
-  Protocol prose, authored on the legacy three-level algebra.
+- **`legacy/packages/*`** — a parallel `@literate/*` package
+  set (Concepts, Tropes, CLI, template, core) authored on a
+  three-level algebra and a published-Trope distribution
+  shape, both superseded by the active surface.
+- **`legacy/site/`** — a Next.js scaffold not used by the
+  active surface.
+- **`legacy/LITERATE.md`** — the framework Protocol prose
+  authored on the three-level algebra; supersession by the
+  active Protocol is structural, not narrative.
 - **`legacy/package.json`, `legacy/mise.toml`,
   `legacy/moon.yml`, `legacy/tsconfig.*.json`,
-  `legacy/.moon/`** — pre-rewrite root tooling.
+  `legacy/.moon/`** — root tooling for the frozen subtree.
 
 ## Three rules
 
@@ -43,17 +40,18 @@ session's `## Decisions Made`.
 
 ## Why preserve at all
 
-The rewrite re-authored the framework's Protocol on a deeper
-algebra (Step substrate, registry-seed shape, Disposition ×
-Mode split). Several authoritative decisions and
-clarifications live in the legacy prose; reading them is the
-fastest way to understand *why* the rewrite landed the way it
-did.
+The `legacy/` tree carries authoritative prose — the prior
+framework Protocol, its Concepts, its Tropes, its design
+clarifications — that the active surface can reference for
+context without absorbing. The freeze keeps that reference
+material available for cold reading while guaranteeing it
+never leaks into the active code or prose surface: no imports,
+no publishes, no edits.
 
-Deletion would force the rewrite's prose to relitigate
-decisions the legacy already settled. Preservation under a
-hard freeze keeps the historical record without contaminating
-the active surface.
+The two surfaces are intentionally disjoint. The active
+surface declares what LF is; the frozen surface preserves
+what LF authored before. A reader who needs the latter can
+read it directly; a reader who needs the former never has to.
 
 ## Lifting the freeze
 

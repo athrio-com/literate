@@ -1,10 +1,4 @@
----
-id: c43b78ed
-disposition: { base: 'Protocol', scope: 'consumer-folder-shape' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: consumer-folder-shape
-status: Reconciled
----
+::metadata{id=c43b78ed, disposition={ base: 'Protocol', scope: 'consumer-folder-shape' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=consumer-folder-shape, status=Reconciled}
 
 # Consumer Folder Shape
 

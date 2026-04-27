@@ -1,10 +1,4 @@
----
-id: aed6cd59
-disposition: { base: 'Infrastructure', scope: 'licensing' }
-layer: { kind: 'workspace', path: 'workspace', holds: 'domains' }
-domain: licensing
-status: Reconciled
----
+::metadata{id=aed6cd59, disposition={ base: 'Infrastructure', scope: 'licensing' }, layer={ kind: 'workspace', path: 'workspace', holds: 'domains' }, domain=licensing, status=Reconciled}
 
 # Licensing
 

@@ -1,10 +1,4 @@
----
-id: c3606f28
-disposition: { base: 'Protocol', scope: 'learn-and-coherence' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: learn-and-coherence
-status: Reconciled
----
+::metadata{id=c3606f28, disposition={ base: 'Protocol', scope: 'learn-and-coherence' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=learn-and-coherence, status=Reconciled}
 
 # Learn and coherence
 

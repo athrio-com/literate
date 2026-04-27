@@ -1,10 +1,4 @@
----
-id: 19c7230b
-disposition: { base: 'Protocol', scope: 'step-substrate' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: step-substrate
-status: Reconciled
----
+::metadata{id=19c7230b, disposition={ base: 'Protocol', scope: 'step-substrate' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=step-substrate, status=Reconciled}
 
 # Step Substrate
 
@@ -78,7 +72,7 @@ bytes back into a typed value.
 
 Steps are declared in TypeScript. There is no directive syntax,
 no parser, no codegen for the Step layer itself — the directive
-substrate (see :lfm[annotation-substrate]{hash=9a6b8081}) operates on
+substrate (see :lfm[annotation-substrate]{hash=d3b990b2}) operates on
 *authored prose*, not on the typed runtime declarations of
 Steps. Step prose lives in sibling `.md` (or `.mdx`) files
 referenced via `prose(import.meta.url, './file.md')` or

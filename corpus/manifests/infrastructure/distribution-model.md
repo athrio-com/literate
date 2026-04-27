@@ -1,10 +1,4 @@
----
-id: ea66ac0e
-disposition: { base: 'Infrastructure', scope: 'distribution-model' }
-layer: { kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }
-domain: distribution-model
-status: Reconciled
----
+::metadata{id=32aa53dc, disposition={ base: 'Infrastructure', scope: 'distribution-model' }, layer={ kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }, domain=distribution-model, status=Reconciled}
 
 # Distribution Model
 
@@ -29,9 +23,9 @@ Two artefacts:
 ## What does not ship
 
 - **No npm packages for individual Concepts or Tropes.** The
-  rewrite-stage attempt to ship each Trope as
-  `@literate/trope-<id>` was retired: vendoring as registry
-  seeds replaces it.
+  per-Trope `@literate/trope-<id>` shape is intentionally
+  absent; Tropes and Concepts ship exclusively as registry
+  seeds vendored into the consumer's repo.
 - **No compiled binaries.** Bun has compile-to-binary
   capability; LF defers it to post-1.0.
 

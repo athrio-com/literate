@@ -1,10 +1,4 @@
----
-id: 4a2dcd7b
-disposition: { base: 'Infrastructure', scope: 'registry-trust' }
-layer: { kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }
-domain: registry-trust
-status: Reconciled
----
+::metadata{id=4a2dcd7b, disposition={ base: 'Infrastructure', scope: 'registry-trust' }, layer={ kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }, domain=registry-trust, status=Reconciled}
 
 # Registry Trust
 

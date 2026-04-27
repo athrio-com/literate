@@ -49,9 +49,10 @@ const EXPECTED_SEEDS: ReadonlyArray<SeedSpec> = [
   { kind: 'tropes', id: 'session-start', files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
   { kind: 'tropes', id: 'session-end',   files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
   { kind: 'tropes', id: 'lfm',           files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
+  { kind: 'tropes', id: 'metadata',      files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
   { kind: 'tropes', id: 'reconcile',     files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
   { kind: 'tropes', id: 'index',         files: ['index.ts', 'trope.mdx', 'README.md', 'SEED.md'] },
-  ...(['disposition', 'mode', 'implication', 'session', 'session-status', 'goal', 'goal-status', 'goal-category', 'tag', 'step', 'step-kind', 'lfm', 'lfm-status', 'dispositional-domain', 'layer'] as const).map((id) => ({
+  ...(['disposition', 'mode', 'implication', 'session', 'session-status', 'goal', 'goal-status', 'goal-category', 'tag', 'step', 'step-kind', 'lfm', 'lfm-status', 'dispositional-domain', 'layer', 'metadata'] as const).map((id) => ({
     kind: 'concepts' as const,
     id,
     files: ['index.ts', 'concept.mdx', 'README.md', 'SEED.md'],

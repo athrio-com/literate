@@ -1,10 +1,4 @@
----
-id: 0a1c969d
-disposition: { base: 'Infrastructure', scope: 'cli-runtime' }
-layer: { kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }
-domain: cli-runtime
-status: Reconciled
----
+::metadata{id=0a1c969d, disposition={ base: 'Infrastructure', scope: 'cli-runtime' }, layer={ kind: 'infrastructure', path: 'infrastructure', holds: 'domains' }, domain=cli-runtime, status=Reconciled}
 
 # CLI Runtime
 

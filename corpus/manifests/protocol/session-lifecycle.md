@@ -1,10 +1,4 @@
----
-id: 255d1d85
-disposition: { base: 'Protocol', scope: 'session-lifecycle' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: session-lifecycle
-status: Reconciled
----
+::metadata{id=82b984cc, disposition={ base: 'Protocol', scope: 'session-lifecycle' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=session-lifecycle, status=Reconciled}
 
 # Session Lifecycle
 
@@ -63,9 +57,8 @@ The log is parsed into structured sections:
 - `## Pre-work` — what `session-start` surfaced.
 - `## Goals` — gated Goal entries.
 - `## Plan` — optional multi-session arc.
-- `## Decisions Made` — ungated bullets recording each ADR or
-  Concept revision. (Pre-LFM-rewrite vocabulary; the same role
-  now records LFM-authoring decisions.)
+- `## Decisions Made` — ungated bullets recording each LFM
+  authored or Concept-level revision Accepted in the session.
 - `## Work Done` — files created/modified/deleted with
   rationale.
 - `## Summary` — written once at close.

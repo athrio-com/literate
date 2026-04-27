@@ -1,10 +1,4 @@
----
-id: 8536c525
-disposition: { base: 'Infrastructure', scope: 'monorepo-layout' }
-layer: { kind: 'workspace', path: 'workspace', holds: 'domains' }
-domain: monorepo-layout
-status: Reconciled
----
+::metadata{id=6c6aee81, disposition={ base: 'Infrastructure', scope: 'monorepo-layout' }, layer={ kind: 'workspace', path: 'workspace', holds: 'domains' }, domain=monorepo-layout, status=Reconciled}
 
 # Monorepo Layout
 
@@ -31,7 +25,7 @@ literate/                  the repo root
 │   ├── memos/             ephemeral notes (when present)
 │   ├── tags.md            authored tag set
 │   └── CLAUDE.md          Mandatory Agent Instructions
-├── legacy/                frozen pre-rewrite code (never publishes)
+├── legacy/                frozen reference subtree (never publishes)
 ├── package.json           workspace root
 ├── README.md              user-facing entry
 └── CLAUDE.md              maintainer orientation shim
@@ -40,23 +34,14 @@ literate/                  the repo root
 ## One workspace, one root
 
 `package.json` at the repo root declares
-`"workspaces": ["packages/*"]`. The legacy tree under
-`legacy/packages/*` is structurally **isolated** — it is not
-enumerated by the workspace, never installs as a sibling, and
-imports between active and legacy packages are forbidden. The
-isolation is by subtree, not by namespace; both trees share
-the `@literate/` scope (per `:lfm[namespace]{hash=d8e2db9f}`
-`workspace/namespace.md`).
-
-## Why no `framework/` folder
-
-An earlier attempt grouped the rewrite under a `framework/`
-folder while legacy code stayed at `packages/`. The split
-created two parallel workspace roots, two `package.json`
-files, two install graphs. Collapsing to a single
-repo-root workspace eliminates the duplication; the legacy
-code lives at `legacy/` (frozen) and the active code lives at
-`packages/` (live).
+`"workspaces": ["packages/*"]` — a single workspace, a single
+`package.json`, a single install graph, no `framework/`
+umbrella around the active tree. The `legacy/packages/*`
+subtree is structurally **isolated**: not enumerated by the
+workspace, never installs as a sibling, and imports between
+active and legacy packages are forbidden. The isolation is by
+subtree, not by namespace; both trees share the `@literate/`
+scope (per `:lfm[namespace]{hash=06997960}` `workspace/namespace.md`).
 
 ## What `registry/` is
 
@@ -69,16 +54,17 @@ up with vendored copies under `.literate/`.
 
 `registry/` is not published as an npm package and does not
 need to be — the CLI bundles it from source at build time
-(see `:lfm[distribution-model]{hash=ea66ac0e}` `infrastructure/distribution-model.md`).
+(see `:lfm[distribution-model]{hash=32aa53dc}` `infrastructure/distribution-model.md`).
 
 ## What `legacy/` is
 
-`legacy/` is **frozen** (see `:lfm[legacy-freeze]{hash=5842b2de}`
-`workspace/legacy-freeze.md`). Its contents are preserved
-verbatim as historical reference. It contains the previous
-`packages/*` tree (the legacy `@literate/*` packages), the
-previous `site/` scaffold, the legacy `LITERATE.md`, and the
-pre-rewrite root tooling.
+`legacy/` is **frozen** (see `:lfm[legacy-freeze]{hash=bf4e66f8}`
+`workspace/legacy-freeze.md`). It is a read-only reference
+subtree containing a parallel `packages/*` of `@literate/*`
+modules, a `site/` scaffold, the framework Protocol prose at
+`legacy/LITERATE.md`, and root tooling files. Nothing under
+`legacy/` publishes, builds, or installs as part of the active
+workspace.
 
 ```path
 package.json

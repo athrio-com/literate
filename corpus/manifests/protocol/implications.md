@@ -1,10 +1,4 @@
----
-id: b00e3745
-disposition: { base: 'Protocol', scope: 'implications' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: implications
-status: Reconciled
----
+::metadata{id=b00e3745, disposition={ base: 'Protocol', scope: 'implications' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=implications, status=Reconciled}
 
 # Implications
 

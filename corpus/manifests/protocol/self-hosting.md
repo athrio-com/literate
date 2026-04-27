@@ -1,10 +1,4 @@
----
-id: c1f847cc
-disposition: { base: 'Protocol', scope: 'self-hosting' }
-layer: { kind: 'protocol', path: 'protocol', holds: 'domains' }
-domain: self-hosting
-status: Reconciled
----
+::metadata{id=c1f847cc, disposition={ base: 'Protocol', scope: 'self-hosting' }, layer={ kind: 'protocol', path: 'protocol', holds: 'domains' }, domain=self-hosting, status=Reconciled}
 
 # Self-Hosting
 
