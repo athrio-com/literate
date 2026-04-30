@@ -1,0 +1,27 @@
+{
+  "name": "literate-seed",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "license": "(MIT OR Apache-2.0)",
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "scripts": {
+    "tangle": "bun tangle.ts"
+  },
+  "dependencies": {
+    "@effect/platform": "latest",
+    "@effect/platform-bun": "latest",
+    "effect": "latest",
+    "remark-parse": "latest",
+    "unified": "latest",
+    "unist-util-visit": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/mdast": "latest",
+    "@types/unist": "latest",
+    "typescript": "latest"
+  }
+}
