@@ -1,8 +1,0 @@
-node_modules/
-*.log
-.DS_Store
-
-# `.literate/LITERATE.md` is materialised by `literate weave` from
-# vendored seeds + extensions. Track the seeds + extensions; ignore
-# the generated artifact.
-.literate/LITERATE.md
