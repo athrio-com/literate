@@ -16,7 +16,8 @@
     "effect": "latest",
     "remark-parse": "latest",
     "unified": "latest",
-    "unist-util-visit": "latest"
+    "unist-util-visit": "latest",
+    "yaml": "^2.8.3"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,9 +1,10 @@
-import { Console, Effect } from "effect"
+import { Console, Effect, Schema } from "effect"
 import { FileSystem, Path } from "@effect/platform"
 import { BunContext, BunRuntime } from "@effect/platform-bun"
 import { unified } from "unified"
 import remarkParse from "remark-parse"
 import { visit } from "unist-util-visit"
+import * as YAML from "yaml"
 import type { Code, Root } from "mdast"
 
 interface Block {
@@ -22,6 +23,11 @@ const parseMeta = (meta: string | null | undefined): Record<string, string> => {
   return result
 }
 
+const parseFrontmatter = (source: string): Record<string, unknown> => {
+  const match = source.match(/^---\n([\s\S]*?)\n---/)
+  return match ? (YAML.parse(match[1]!) ?? {}) : {}
+}
+
 const extractBlocks = (source: string): ReadonlyArray<Block> => {
   const tree = unified().use(remarkParse).parse(source) as Root
   const blocks: Block[] = []
@@ -35,27 +41,50 @@ const extractBlocks = (source: string): ReadonlyArray<Block> => {
   return blocks
 }
 
-const tangleManifest = (manifestPath: string) =>
+const writeBlock = ({ target, content }: Block) =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem
     const path = yield* Path.Path
+    const dir = path.dirname(target)
+    if (dir !== "." && dir !== "") {
+      yield* fs.makeDirectory(dir, { recursive: true })
+    }
+    const body = content.endsWith("\n") ? content : content + "\n"
+    yield* fs.writeFileString(target, body)
+    yield* Console.log(`tangled → ${target}`)
+  })
+
+const validateConcept = (frontmatter: Record<string, unknown>) =>
+  Effect.gen(function* () {
+    const path = yield* Path.Path
+    const conceptModulePath = path.resolve("src/concept.ts")
+    const mod = yield* Effect.tryPromise({
+      try: () => import(conceptModulePath),
+      catch: (e) => new Error(`failed to import src/concept.ts: ${e}`),
+    })
+    const result = Schema.decodeUnknownEither(mod.Concept)(frontmatter)
+    if (result._tag === "Left") {
+      yield* Console.error(`✗ ${frontmatter["name"]}: frontmatter does not satisfy Concept schema`)
+      yield* Console.error(String(result.left))
+      return yield* Effect.fail(new Error("validation failed"))
+    }
+    yield* Console.log(`✓ ${frontmatter["name"]}: validates as Concept`)
+  })
+
+const tangleManifest = (manifestPath: string) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
     const source = yield* fs.readFileString(manifestPath)
+    const frontmatter = parseFrontmatter(source)
     const blocks = extractBlocks(source)
     if (blocks.length === 0) {
       yield* Console.log(`no tangle blocks in ${manifestPath}`)
-      return
+    } else {
+      yield* Effect.forEach(blocks, writeBlock)
     }
-    yield* Effect.forEach(blocks, ({ target, content }) =>
-      Effect.gen(function* () {
-        const dir = path.dirname(target)
-        if (dir !== "." && dir !== "") {
-          yield* fs.makeDirectory(dir, { recursive: true })
-        }
-        const body = content.endsWith("\n") ? content : content + "\n"
-        yield* fs.writeFileString(target, body)
-        yield* Console.log(`tangled → ${target}`)
-      })
-    )
+    if (frontmatter["kind"] === "Concept") {
+      yield* validateConcept(frontmatter)
+    }
   })
 
 const main = Effect.gen(function* () {
