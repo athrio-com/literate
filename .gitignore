@@ -35,5 +35,8 @@ out/
 .scratch/
 temp/
 
+# Tangled output — generated from corpus/, never hand-edited
+src/
+
 # Packed tarballs (created by `bun pm pack` / `npm pack`)
 *.tgz
