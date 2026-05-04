@@ -1,28 +1,26 @@
 {
-  "name": "literate-seed",
-  "private": true,
-  "version": "0.0.0",
+  "name": "loom",
+  "version": "0.0.1",
   "type": "module",
-  "license": "(MIT OR Apache-2.0)",
-  "engines": {
-    "bun": ">=1.1.0"
-  },
   "scripts": {
-    "tangle": "bun tangle.ts"
+    "dev": "bunx vite",
+    "build": "bunx vite build",
+    "smoke": "bun src/smoke.ts",
+    "lsp": "bun src/server.ts --stdio",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
-    "@effect/platform": "latest",
-    "@effect/platform-bun": "latest",
-    "effect": "latest",
-    "remark-parse": "latest",
-    "unified": "latest",
-    "unist-util-visit": "latest",
-    "yaml": "^2.8.3"
+    "effect": "^3.12.0",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "0.24.7"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/mdast": "latest",
-    "@types/unist": "latest",
-    "typescript": "latest"
+    "@volar/language-core": "^2.4.28",
+    "@volar/language-server": "^2.4.28",
+    "@volar/typescript": "^2.4.28",
+    "typescript": "^6.0.3",
+    "vite": "^6.0.0",
+    "volar-service-typescript": "^0.0.70"
   }
 }

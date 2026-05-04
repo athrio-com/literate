@@ -4,17 +4,11 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
-    "exactOptionalPropertyTypes": true,
-    "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
-    "isolatedModules": true,
-    "lib": ["ES2022"],
-    "types": ["bun"]
+    "sourceMap": true,
+    "noEmit": true
   },
-  "include": ["tangle.ts"]
+  "include": ["src", "corpus", "*.ts"],
+  "exclude": ["src/from ai", "src/**/*.test.ts"]
 }
