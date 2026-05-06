@@ -1,8 +1,4 @@
 declare module "*.loom" {
-  import type { Effect } from "effect"
-
-  export const blocks: readonly string[]
-  export const program: Effect.Effect<void, never, never>
-  const _default: Record<string, (...args: any[]) => Effect.Effect<string, never, never>>
-  export default _default
+  // Actual exports depend on the code sections in the .loom file.
+  // The Vite plugin transforms .loom imports via projectRuntime.
 }

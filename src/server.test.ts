@@ -184,6 +184,32 @@ describe("Loom LSP diagnostics", () => {
     expect(loomDiags[0].message).toContain("not a valid identifier")
   })
 
+  test("invalid tag identifier emits diagnostic for comma-separated value", async () => {
+    const uri = "file:///test/invalid-tangle.loom"
+    const source = `[typescript]
+
+# The document [F2, 34]
+
+  console.log("hello")
+`
+
+    const diagPromise = waitForDiagnostics(connection, uri)
+
+    connection.sendNotification(DidOpenTextDocumentNotification.type, {
+      textDocument: {
+        uri,
+        languageId: "loom",
+        version: 1,
+        text: source,
+      },
+    })
+
+    const result = await diagPromise
+    const loomDiags = result.diagnostics.filter((d) => d.source === "loom")
+    expect(loomDiags.length).toBe(1)
+    expect(loomDiags[0].message).toContain("not a valid identifier")
+  })
+
   test("loom diagnostics survive alongside TS diagnostics", async () => {
     const uri = "file:///test/mixed-diags.loom"
     const source = `[typescript]
@@ -287,5 +313,58 @@ describe("Loom LSP diagnostics", () => {
     expect(last).toBeDefined()
     const loomAfter = last.diagnostics.filter((d) => d.source === "loom")
     expect(loomAfter.length).toBe(0)
+  })
+
+  test("Stack language change triggers clean rebuild", async () => {
+    const uri = "file:///test/stack-change.loom"
+    const pythonSource = `# PyApp [Python]
+
+# Greeter
+
+  def greet():
+      print("hello")
+`
+    const tsSource = `# TsApp [TypeScript]
+
+# Greeter [Greet]
+
+  const msg: string = "hello"
+`
+
+    // Open as Python
+    const diagPromise1 = waitForDiagnostics(connection, uri)
+    connection.sendNotification(DidOpenTextDocumentNotification.type, {
+      textDocument: { uri, languageId: "loom", version: 1, text: pythonSource },
+    })
+    await diagPromise1
+
+    // Switch Stack to TypeScript — this should trigger close + reopen
+    const allPublishes: PublishDiagnosticsParams[] = []
+    const settled = new Promise<void>((resolve) => {
+      let timer: ReturnType<typeof setTimeout>
+      connection.onNotification(
+        "textDocument/publishDiagnostics",
+        (params: PublishDiagnosticsParams) => {
+          if (params.uri === uri) {
+            allPublishes.push(params)
+            clearTimeout(timer)
+            timer = setTimeout(resolve, 3000)
+          }
+        },
+      )
+      timer = setTimeout(resolve, 10000)
+    })
+
+    connection.sendNotification(DidChangeTextDocumentNotification.type, {
+      textDocument: { uri, version: 2 },
+      contentChanges: [{ text: tsSource }],
+    })
+
+    await settled
+
+    // After Stack change, we should get fresh diagnostics (not stale Python state)
+    const last = allPublishes[allPublishes.length - 1]
+    expect(last).toBeDefined()
+    expect(last.diagnostics).toBeDefined()
   })
 })

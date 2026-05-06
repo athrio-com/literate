@@ -1,0 +1,5 @@
+# LoomDrafting [Typescript]
+
+Looms are free narrative polyglot literate programming specifications tangled into production code.
+
+In order to implement Loom, we need Loom Runtime, Loom Frames, Kleisli Code Composition Machine, Volar LSP for TypeScript, 

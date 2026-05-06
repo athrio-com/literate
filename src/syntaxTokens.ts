@@ -254,6 +254,37 @@ export const TreeSitterLive = Layer.scoped(
 
 // ── Volar plugin (boundary adapter) ─────────────────────────────────────
 
+const GRAMMAR_ALIAS: Record<string, string> = {
+  typescript: "typescript",
+  ts: "typescript",
+  javascript: "javascript",
+  js: "javascript",
+  tsx: "tsx",
+  jsx: "javascript",
+  json: "json",
+  css: "css",
+  html: "html",
+  python: "python",
+  py: "python",
+  go: "go",
+  rust: "rust",
+  rs: "rust",
+  sql: "sql",
+  scala: "scala",
+  java: "java",
+  c: "c",
+  cpp: "cpp",
+  ruby: "ruby",
+  rb: "ruby",
+  bash: "bash",
+  sh: "bash",
+  yaml: "yaml",
+  yml: "yaml",
+  toml: "toml",
+  markdown: "markdown",
+  md: "markdown",
+}
+
 export function createSyntaxTokenPlugin(
   runtime: ManagedRuntime.ManagedRuntime<TreeSitter, never>,
 ): LanguageServicePlugin {
@@ -274,7 +305,11 @@ export function createSyntaxTokenPlugin(
             Effect.scoped(
               Effect.gen(function* () {
                 const ts = yield* TreeSitter
-                const lang = yield* ts.getLanguage("typescript")
+
+                const grammarName = GRAMMAR_ALIAS[document.languageId]
+                if (!grammarName) return [] as SemanticToken[]
+
+                const lang = yield* ts.getLanguage(grammarName)
                 if (!lang) return [] as SemanticToken[]
 
                 const text = document.getText()
@@ -291,6 +326,7 @@ export function createSyntaxTokenPlugin(
                   )
                 })
 
+                tokens.sort((a, b) => a[0] - b[0] || a[1] - b[1])
                 return tokens
               }),
             ),

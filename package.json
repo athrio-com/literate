@@ -4,14 +4,17 @@
   "type": "module",
   "scripts": {
     "dev": "bunx vite",
-    "build": "bunx vite build",
+    "build": "bun build src/prettier-plugin-loom.ts --outfile dist/prettier-plugin-loom.mjs --format esm --external prettier && bunx vite build",
+    "tangle": "bun tangle.ts",
     "smoke": "bun src/smoke.ts",
     "lsp": "bun src/server.ts --stdio",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit"
   },
   "dependencies": {
-    "effect": "^3.12.0",
+    "@effect/platform": "^0.96.1",
+    "@effect/platform-bun": "^0.89.0",
+    "effect": "3.21.2",
     "tree-sitter-wasms": "^0.1.13",
     "web-tree-sitter": "0.24.7"
   },
@@ -19,6 +22,7 @@
     "@volar/language-core": "^2.4.28",
     "@volar/language-server": "^2.4.28",
     "@volar/typescript": "^2.4.28",
+    "prettier": "^3.8.3",
     "typescript": "^6.0.3",
     "vite": "^6.0.0",
     "volar-service-typescript": "^0.0.70"

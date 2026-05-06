@@ -14,7 +14,7 @@ readable documentation.
 - [`./corpus/`](./corpus/) — Manifests (Concepts and Tropes). Empty at
   this baseline; the first Manifests will be authored here.
 - [`./CLAUDE.md`](./CLAUDE.md) — orientation for AI collaborators.
-- [`./corpus/LITERATE.md`](./corpus/LITERATE.md) — operational protocol.
+- [`./.literate/LITERATE.md`](./.literate/LITERATE.md) — operational protocol.
 
 ## Status
 
