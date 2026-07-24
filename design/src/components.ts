@@ -1,6 +1,6 @@
 import { Array } from 'effect'
 import type { Html } from 'foldkit/html'
-import { Copied, h } from './model'
+import { h } from './model'
 import logos from './logos.json'
 
 const strokeIcon = (size: string, paths: ReadonlyArray<Html>): Html =>
@@ -92,6 +92,12 @@ export const arrowIcon = (): Html =>
     ],
   )
 
+export const downIcon = (): Html =>
+  strokeIcon('16', [strokePath('M6 9l6 6 6-6')])
+
+export const checkIcon = (): Html =>
+  strokeIcon('13', [strokePath('M20 6 9 17l-5-5')])
+
 export const playIcon = (): Html =>
   h.svg(
     [h.Width('12'), h.Height('12'), h.ViewBox('0 0 24 24'), h.Fill('currentColor'), h.AriaHidden(true)],
@@ -127,63 +133,11 @@ export const denoIcon = (): Html => svgMark(logos.deno)
 export const npmIcon = (): Html => svgMark(logos.npm)
 export const pnpmIcon = (): Html => svgMark(logos.pnpm)
 
-export const copyButton = (props: {
-  id: string
-  text: string
-  copied: string
-  label?: string
-}): Html => {
-  const isCopied = props.copied === props.id
-  return h.button(
-    [
-      h.Class(isCopied ? 'copy-btn copied' : 'copy-btn'),
-      h.AriaLabel('Copy'),
-      h.OnClick(Copied({ id: props.id, text: props.text })),
-    ],
-    [
-      copyIcon(),
-      h.span([h.Class('copy-label')], [isCopied ? 'copied' : props.label ?? 'copy']),
-    ],
-  )
-}
-
-export type Mark = {
-  readonly accent: string
-  readonly note: string
-}
-
-export const frontmatter: Mark = { accent: 'front', note: 'The block at the top of a chapter, fenced by triple dashes. It names the part and title, the package its sections tangle to, and the language they are written in.' }
-export const heading: Mark = { accent: 'head', note: 'A line of one to six hashes that opens a section, the way a heading opens a chapter of a book.' }
-export const preamble: Mark = { accent: 'prose', note: "A section's opening prose, from its heading to the first arrow. Here you say what the code does and why — the specification the code implements." }
-export const warp: Mark = { accent: 'warp', note: 'A declaration that binds a value the code reads, so a name lives in one place instead of many.' }
-export const arrow: Mark = { accent: 'arrow', note: 'Opens a block of code — the turn from prose into the code the prose has just described.' }
-export const anchor: Mark = { accent: 'anchor', note: 'A reference by name. It reads a bound value, or draws another section in whole, so a file is composed from named parts.' }
-export const tilde: Mark = { accent: 'tilde', note: 'Closes a block of code and returns to prose. Prose and code alternate down a section, each arrow in and each tilde out.' }
-export const specifier: Mark = { accent: 'spec', note: "A brace label on a heading. It sets a section's language, or marks the section a {Tangle} that writes a file." }
-export const sink: Mark = { accent: 'sink', note: 'The bracketed file a heading tangles to. A section carrying one names a file to write.' }
-
-export const tip = (mark: Mark, text: string): Html =>
-  h.span([h.Class(`tok a-${mark.accent}`)], [text, h.span([h.Class('tip')], [mark.note])])
-
-export const prose = (text: string): Html =>
-  h.span([h.Class('wspec-prose')], [text])
-
-const specimenLine = (parts: ReadonlyArray<Html | string>): Html =>
-  parts.length === 0
-    ? h.div([h.Class('wspec-line gap')], [])
-    : h.div([h.Class('wspec-line')], parts)
-
-export const specimenView = (lines: ReadonlyArray<ReadonlyArray<Html | string>>): Html =>
-  h.div([h.Class('wspec')], Array.map(lines, specimenLine))
-
 export const titlebar = (version: string): Html =>
   h.div(
     [h.Class('titlebar'), h.Role('banner')],
     [
-      h.div(
-        [h.Class('traffic')],
-        [h.span([], []), h.span([], []), h.span([], [])],
-      ),
+      h.span([h.Class('title-mark')], [loomIcon()]),
       h.div(
         [h.Class('crumbs')],
         [
@@ -198,7 +152,7 @@ export const titlebar = (version: string): Html =>
         [h.Class('right')],
         [
           h.span([h.Class('live-dot'), h.Title('tangled')], []),
-          h.span([], [`v${version} · literate programming`]),
+          h.span([], [`v${version}`]),
           h.span([], [h.kbd([], ['⌘']), ' ', h.kbd([], ['K'])]),
         ],
       ),

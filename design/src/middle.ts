@@ -1,126 +1,10 @@
-import { Array } from 'effect'
+import { Array, Match, Option, pipe } from 'effect'
 import type { Html } from 'foldkit/html'
-import {
-  anchor,
-  arrow,
-  frontmatter,
-  heading,
-  type Mark,
-  preamble,
-  sink,
-  specifier,
-  specimenView,
-  tilde,
-  tip,
-  warp,
-} from './components'
-import { h } from './model'
-
-const whatLoomIs = (): Html =>
-  h.section(
-    [h.Class('s'), h.Id('what')],
-    [
-      h.div(
-        [h.Class('wrap')],
-        [
-          h.div(
-            [h.Class('sec-head')],
-            [
-              h.div(
-                [h.Class('sec-num')],
-                [h.span([h.Class('arrow')], ['▸']), ' 01 · WHAT LOOM IS'],
-              ),
-              h.h2([h.Class('sec-h')], ['Written in the order you think.']),
-            ],
-          ),
-          h.div(
-            [h.Class('wstory')],
-            [
-              h.div(
-                [h.Class('wprose')],
-                [
-                  h.p(
-                    [],
-                    [
-                      'Loom is a small compositional language for writing a program in the order you reason about it — a narrative order, often the opposite of what a compiler wants.',
-                    ],
-                  ),
-                  specimen(),
-                  h.p(
-                    [],
-                    [
-                      'The greeter is a whole program, and about the smallest one. Three marks carry it: a heading opens the section, an arrow turns prose into code, and a sink names the file it tangles to — its language read from the extension.',
-                    ],
-                  ),
-                  h.p(
-                    [],
-                    [
-                      'Notice the balance. The prose outweighs the code, and across a real loom it runs about three to one. That is the intent, not an accident.',
-                    ],
-                  ),
-                  h.p(
-                    [],
-                    [
-                      'Prose and code are equal citizens here, but the prose carries what the code cannot. It is the definition of what the code does — it specifies the code, and holds its meaning and context for whoever reads the loom next, a person or an AI.',
-                    ],
-                  ),
-                  h.p(
-                    [],
-                    [
-                      'Everything past the greeter is a handful more marks, and they compose looms into whole programs.',
-                    ],
-                  ),
-                ],
-              ),
-              h.div([h.Class('wrest')], Array.map(REST, restMark)),
-            ],
-          ),
-        ],
-      ),
-    ],
-  )
-
-const SPECIMEN: ReadonlyArray<ReadonlyArray<Html | string>> = [
-  [tip(heading, '# Hi there!'), ' ', tip(sink, '[mini.ts]')],
-  [],
-  [tip(preamble, 'This is the simplest Loom program, written in TypeScript.')],
-  [],
-  [tip(arrow, '=>')],
-  [],
-  ['console.log("Hi there!")'],
-]
-
-const specimen = (): Html => specimenView(SPECIMEN)
-
-type Chip = {
-  readonly mark: Mark
-  readonly glyph: string
-  readonly name: string
-}
-
-const REST: ReadonlyArray<Chip> = [
-  { mark: frontmatter, glyph: '---', name: 'Frontmatter' },
-  { mark: warp, glyph: '{{ }}', name: 'Warp' },
-  { mark: anchor, glyph: '::' + '[ ]', name: 'Anchor' },
-  { mark: tilde, glyph: '~', name: 'Tilde' },
-  { mark: specifier, glyph: '{ }', name: 'Specifier' },
-]
-
-const restMark = (chip: Chip): Html =>
-  h.span(
-    [h.Class(`wmark a-${chip.mark.accent}`)],
-    [
-      h.span([h.Class('wmark-glyph')], [chip.glyph]),
-      chip.name,
-      h.span([h.Class('tip')], [chip.mark.note]),
-    ],
-  )
-
-import { Match, Option, pipe } from 'effect'
 import { marked } from 'marked'
 import {
   ExpandedExample,
   GotGameMessage,
+  h,
   type Message,
   type Model,
   MovedFocus,
@@ -130,7 +14,7 @@ import {
   Typed,
 } from './model'
 import * as Gomoku from '../../examples/gomoku/gomoku'
-import { loomIcon, playIcon } from './components'
+import { downIcon, loomIcon, playIcon } from './components'
 import wovenCorpus from './gomoku.woven.json'
 import highlighted from './gomoku.highlighted.json'
 
@@ -338,7 +222,7 @@ const tabBody = (model: Model): Html =>
 const expandOverlay = (): Html =>
   h.button(
     [h.Class('how-expand'), h.OnClick(ExpandedExample())],
-    [h.span([h.Class('how-expand-label')], ['See full example'])],
+    [h.span([h.Class('how-expand-label')], ['See full example', downIcon()])],
   )
 
 const examplePanel = (model: Model): Html => {
@@ -488,22 +372,15 @@ const howItWorks = (model: Model): Html =>
             [
               h.div(
                 [h.Class('sec-num')],
-                [h.span([h.Class('arrow')], ['▸']), ' 02 · HOW IT WORKS'],
+                [h.span([h.Class('arrow')], ['▸']), ' EXAMPLE OF A PROGRAM IN LOOM'],
               ),
               h.div(
                 [],
                 [
-                  h.h2([h.Class('sec-h')], ['Built for reading by people.']),
+                  h.h2([h.Class('sec-h')], ['Literate programming with Loom.']),
                   h.p(
                     [h.Class('sec-lede')],
-                    [
-                      'A ',
-                      h.code(
-                        [h.Style({ fontFamily: 'var(--mono)', color: 'var(--acc-cyan)', fontSize: '0.92em' })],
-                        ['.loom'],
-                      ),
-                      ' corpus is a set of files read in order, like chapters in a book. Open one and read it top to bottom: each section explains a piece in prose, then shows the code that piece becomes. The sections compose by name, and tangle resolves them into real source.',
-                    ],
+                    ['An example of what a program looks like in Loom.'],
                   ),
                 ],
               ),
@@ -515,5 +392,4 @@ const howItWorks = (model: Model): Html =>
     ],
   )
 
-export const middle = (model: Model): Html =>
-  h.div([], [whatLoomIs(), howItWorks(model)])
+export const middle = (model: Model): Html => howItWorks(model)

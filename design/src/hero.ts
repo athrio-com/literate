@@ -1,22 +1,16 @@
 import { Array, Match } from 'effect'
 import type { Html } from 'foldkit/html'
 import {
-  copyButton,
+  copyIcon,
+  checkIcon,
   bookIcon,
-  externalIcon,
-  arrowIcon,
+  loomIcon,
   bunIcon,
   denoIcon,
   npmIcon,
   pnpmIcon,
-  arrow,
-  heading,
-  prose,
-  specimenView,
-  tilde,
-  tip,
 } from './components'
-import { h, type Model } from './model'
+import { Copied, h, type Model } from './model'
 
 export const ROTATOR_WORDS = ['a book', 'an article', 'a spec']
 
@@ -61,78 +55,68 @@ const RUNTIMES: ReadonlyArray<Runtime> = [
   { id: 'pnpm', command: 'pnpm add -g @athrio/loom', icon: pnpmIcon() },
 ]
 
+const rowCopy = (id: string, copied: string): Html => {
+  const done = copied === id
+  return h.span(
+    [h.Class(done ? 'rt-copy copied' : 'rt-copy')],
+    [done ? checkIcon() : copyIcon()],
+  )
+}
+
 const installRow = (copied: string) => (runtime: Runtime): Html =>
-  h.div(
-    [h.Class('install-row')],
+  h.button(
+    [
+      h.Class('install-row'),
+      h.AriaLabel(`Copy: ${runtime.command}`),
+      h.OnClick(Copied({ id: `install-${runtime.id}`, text: runtime.command })),
+    ],
     [
       h.span([h.Class('rt-mark')], [runtime.icon]),
       h.code([h.Class('rt-cmd')], [runtime.command]),
-      copyButton({ id: `install-${runtime.id}`, text: runtime.command, copied }),
-    ],
-  )
-
-const initRow = (copied: string): Html =>
-  h.div(
-    [h.Class('init-row')],
-    [
-      h.div(
-        [h.Class('install-row')],
-        [
-          h.span([h.Class('rt-mark then')], [arrowIcon()]),
-          h.code([h.Class('rt-cmd')], ['loom init']),
-          copyButton({ id: 'loom-init', text: 'loom init', copied }),
-        ],
-      ),
-      h.div(
-        [h.Class('rt-note')],
-        ['Scaffolds a Loom workspace in the current directory.'],
-      ),
+      rowCopy(`install-${runtime.id}`, copied),
     ],
   )
 
 const installRows = (model: Model): Html =>
-  h.div(
-    [h.Class('install-rows')],
-    [...Array.map(RUNTIMES, installRow(model.copied)), initRow(model.copied)],
-  )
+  h.div([h.Class('install-rows')], Array.map(RUNTIMES, installRow(model.copied)))
 
-const QUICKSORT: ReadonlyArray<ReadonlyArray<Html | string>> = [
-  [tip(heading, '# Quicksort, in halves')],
-  [],
-  [prose('Quicksort chooses the first element as its pivot, then divides the rest into the elements smaller than the pivot and the elements at least as large.')],
-  [],
-  [tip(arrow, '=>')],
-  [],
-  ['const partition = (pivot: number, rest: number[]) => ({'],
-  ['  smaller: rest.filter((x) => x < pivot),'],
-  ['  larger: rest.filter((x) => x >= pivot),'],
-  ['})'],
-  [],
-  [tip(tilde, '~')],
-  [],
-  [prose('Sorting the smaller elements, then the pivot, then the larger ones, sorts the whole list. A list of one element or none is already sorted, which ends the recursion.')],
-  [],
-  [tip(arrow, '=>')],
-  [],
-  ['const sort = (xs: number[]): number[] => {'],
-  ['  if (xs.length <= 1) return xs'],
-  ['  const [pivot, ...rest] = xs'],
-  ['  const { smaller, larger } = partition(pivot, rest)'],
-  ['  return [...sort(smaller), pivot, ...sort(larger)]'],
-  ['}'],
-  [],
-  ['console.log(sort([5, 2, 8, 1, 9, 3]))'],
-]
+const prim = (token: string): Html =>
+  h.code([h.Class('hero-prim')], [token])
 
-const quicksortExample = (): Html =>
+const point = (content: ReadonlyArray<Html | string>): Html =>
+  h.li([], [h.span([h.Class('hero-bullet')], [loomIcon()]), h.span([], content)])
+
+const whatLoom = (): Html =>
   h.div(
-    [h.Class('hero-example')],
+    [h.Class('hero-note')],
     [
-      h.div(
-        [h.Class('panel-head')],
-        [h.span([h.Class('dot')], []), 'quicksort.loom'],
+      h.p(
+        [h.Class('hero-lead')],
+        ['Loom is a compositional language designed for AI-assisted literate programming.'],
       ),
-      specimenView(QUICKSORT),
+      h.ul(
+        [h.Class('hero-points')],
+        [
+          point(['Provides the tools to write programs in the order demanded by natural language, logic, and the flow of thought.']),
+          point(['Keeps specification alongside code, while structurally separating the two.']),
+          point([
+            'Introduces a minimal syntax surface over standard Markdown, with intuitive primitives like ',
+            prim('=>'),
+            ', ',
+            prim('~'),
+            ', ',
+            prim('::' + '[]'),
+            ', and ',
+            prim('{}'),
+            '.',
+          ]),
+          point(['Installs as a CLI with integrated LSP and MCP devtools.']),
+        ],
+      ),
+      h.p(
+        [],
+        ['Everything else is just prose and code in your favourite programming language.'],
+      ),
     ],
   )
 
@@ -142,34 +126,22 @@ const metaRow = (version: string): Html =>
     [
       h.span(
         [h.Class('pill')],
-        [h.span([h.Class('gh')], ['~']), ` loom · v${version}`],
+        [h.span([h.Class('pill-mark')], [loomIcon()]), `loom · v${version}`],
       ),
-      h.span([], ['Built with Loom']),
+    ],
+  )
+
+const cta = (): Html =>
+  h.div(
+    [h.Class('actions hero-cta')],
+    [
+      h.a([h.Class('btn primary'), h.Href('#')], ['Read the docs', bookIcon()]),
+      h.a([h.Class('btn'), h.Href('#')], ['Browse the source']),
     ],
   )
 
 const pitch = (model: Model): Html =>
-  h.div(
-    [h.Class('hero-col')],
-    [
-      metaRow(model.version),
-      headline(model),
-      installRows(model),
-      h.div(
-        [h.Class('actions hero-cta')],
-        [
-          h.a(
-            [h.Class('btn primary'), h.Href('#')],
-            ['Read the docs', bookIcon()],
-          ),
-          h.a(
-            [h.Class('btn'), h.Href('#')],
-            ['Browse the source', externalIcon()],
-          ),
-        ],
-      ),
-    ],
-  )
+  h.div([h.Class('hero-col')], [headline(model), installRows(model), cta()])
 
 export const hero = (model: Model): Html =>
   h.section(
@@ -177,7 +149,10 @@ export const hero = (model: Model): Html =>
     [
       h.div(
         [h.Class('wrap')],
-        [h.div([h.Class('hero-grid')], [pitch(model), quicksortExample()])],
+        [
+          metaRow(model.version),
+          h.div([h.Class('hero-grid')], [pitch(model), whatLoom()]),
+        ],
       ),
     ],
   )

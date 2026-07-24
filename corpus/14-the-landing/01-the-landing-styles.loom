@@ -59,7 +59,7 @@ main, header, footer { position: relative; }
 
 ## The window chrome
 
-The page wears a window's chrome. A title bar runs across the top with three traffic lights, a breadcrumb trail, and a live dot; below it, a tab bar carries the site's menu, styled as a row of open tabs. Both stay sticky, so the chrome stays while the content scrolls.
+The page wears a window's chrome. A title bar runs across the top with the loom mark, a breadcrumb trail, and a live dot; below it, a tab bar carries the site's menu, styled as a row of open tabs. Both stay sticky, so the chrome stays while the content scrolls.
 
 =>
 
@@ -74,14 +74,7 @@ The page wears a window's chrome. A title bar runs across the top with three tra
   color: var(--fg-3);
   position: sticky; top: 0; z-index: 60;
 }
-.traffic { display: flex; gap: 6px; margin-right: 14px; }
-.traffic span {
-  width: 11px; height: 11px; border-radius: 50%;
-  background: #3A3D47;
-}
-.traffic span:nth-child(1) { background: #E48A9A; }
-.traffic span:nth-child(2) { background: #E8B86C; }
-.traffic span:nth-child(3) { background: #8FE0B6; }
+.title-mark { display: inline-flex; margin-right: 14px; color: var(--acc-mint); }
 .titlebar .crumbs { display: flex; align-items: center; gap: 8px; }
 .titlebar .crumbs .sep { color: var(--fg-4); }
 .titlebar .crumbs .file { color: var(--fg); }
@@ -146,9 +139,7 @@ The page wears a window's chrome. A title bar runs across the top with three tra
 
 ## The hero and its rotating headline
 
-The hero is the first screen, laid out in two columns. On the left is the pitch: the meta line, the headline, the install rows beneath it, and the calls to action. On the right is a loom, the quicksort example. The headline is set large in the display serif, and one word of it rotates — swapping on a blur-and-slide transition — with a blinking caret after it. Below a set width the two columns fall into one, the pitch above the loom.
-
-The example is a small editor panel: a file head naming `quicksort.loom` over a specimen of the loom's source. A prose line in that source reads muted, a step down from the code around it.
+The hero is the first screen: a meta line, then two columns. On the left is the pitch — the headline and the install rows beneath it; on the right, a short statement of what Loom is, a lead line and four points each marked with the loom mark, the calls to action beneath. The two columns align at the top, so the statement starts level with the headline. The headline is set large in the display serif, and one word of it rotates — swapping on a blur-and-slide transition — with a blinking caret after it. Below a set width the two columns fall into one, the statement below the pitch.
 
 =>
 
@@ -159,26 +150,15 @@ The example is a small editor panel: a file head naming `quicksort.loom` over a 
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 48px;
+  gap: 56px;
   align-items: start;
 }
 @media (max-width: 1080px) {
-  .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 44px; }
 }
 .hero-col {
   max-width: 680px;
 }
-.hero-example {
-  border: 1px solid var(--rule-2);
-  border-radius: 10px;
-  background: var(--bg-2);
-  overflow: hidden;
-}
-.hero-example .wspec {
-  margin: 0;
-  padding: 22px 26px 26px;
-}
-.wspec-prose { color: var(--fg-3); }
 
 .gutter-row {
   display: flex; align-items: baseline; gap: 18px;
@@ -196,12 +176,16 @@ The example is a small editor panel: a file head naming `quicksort.loom` over a 
   letter-spacing: 0.04em;
 }
 .meta-row .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--rule-2);
-  border-radius: 4px;
-  padding: 3px 8px;
+  border-radius: 6px;
+  padding: 6px 12px;
   color: var(--fg-2);
+  font-size: 13px;
 }
-.meta-row .pill .gh { color: var(--acc-mint); }
+.meta-row .pill .pill-mark { display: inline-flex; color: var(--acc-mint); }
 
 h1.loom-h {
   font-family: var(--display);
@@ -236,9 +220,39 @@ h1.loom-h .hl-3 { color: var(--acc-violet); }
 }
 @keyframes blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0; } }
 
+.hero-note {
+  max-width: 30em;
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--fg-2);
+}
+.hero-note p { margin: 0 0 18px; }
+.hero-note p:last-child { margin: 0; }
+.hero-note .hero-lead { color: var(--fg); }
+.hero-points {
+  list-style: none;
+  margin: 20px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.hero-points li { display: flex; gap: 12px; align-items: flex-start; }
+.hero-bullet { flex-shrink: 0; display: inline-flex; align-items: center; height: 1.7em; color: var(--acc-mint); }
+.hero-prim {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  color: var(--acc-cyan);
+  background: color-mix(in srgb, var(--acc-cyan) 12%, transparent);
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 ## The call to action
 
-Below the install rows sit the calls to action, a row of two buttons — read the docs, browse the source. A button is a quiet slate pill; the primary one wears the mint. The copy button, shared by the install rows above, flashes mint when it copies.
+Below the install rows sit the calls to action, a row of two buttons — read the docs, browse the source. A button is a quiet slate pill; the primary one wears the mint.
 
 =>
 
@@ -283,21 +297,9 @@ Below the install rows sit the calls to action, a row of two buttons — read th
   font-family: var(--mono); font-size: 11px;
 }
 
-.copy-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  margin-left: 6px;
-  background: var(--bg-3); color: var(--fg-2);
-  border: 1px solid var(--rule-2); border-radius: 4px;
-  padding: 6px 9px; font-family: var(--mono); font-size: 11px;
-  cursor: pointer; transition: background .15s ease, border-color .15s ease, color .15s ease;
-}
-.copy-btn:hover { color: var(--fg); border-color: var(--fg-4); background: var(--bg-4); }
-.copy-btn.copied { color: var(--acc-mint); border-color: color-mix(in srgb, var(--acc-mint) 60%, transparent); }
-.copy-btn svg { flex-shrink: 0; }
-
 ## The shared panel head
 
-A panel that frames a file wears a small head: a mint dot, the name of the file it holds, and a right-aligned slot for a label. The hero's quicksort example is one such panel. `panel-head` is the shared chrome, so every panel that wears it reads the same.
+Every panel on the page — the workspace config, the file tree, the step detail — frames itself the same way: a small head naming what it holds, a dot, and a right-aligned label. `panel-head` is that one shared chrome, so a reader learns to read a panel once.
 
 =>
 
@@ -358,117 +360,6 @@ section.s {
   max-width: 60ch;
   text-wrap: pretty;
 }
-
-## What Loom is — the story
-
-The what-loom-is section tells its story in prose and shows it in one specimen, the greeter. One run of prose fills the width in up to three columns — as many as the page allows, one on a phone — with the specimen set among the paragraphs in the mono face, kept whole in its column. A row of the remaining marks closes the section. Every mark — in the specimen and the row alike — carries a tooltip that a hover reveals, a small card holding its note. Each mark wears an accent, the six a reader types in colour and the structural parts muted, so a mark and its tooltip read as one.
-
-=>
-
-.wstory { margin-top: 8px; }
-
-.wspec {
-  margin: 2px 0 18px;
-  font-family: var(--mono);
-  font-size: 13px;
-  line-height: 1.9;
-  color: var(--fg-2);
-  break-inside: avoid;
-}
-.wspec-line { white-space: pre-wrap; }
-.wspec-line.gap { height: 0.5em; }
-
-.wprose {
-  columns: 18rem 3;
-  column-gap: 40px;
-  margin: 0 0 30px;
-}
-.wprose p {
-  font-family: var(--sans);
-  font-size: 16px;
-  line-height: 1.7;
-  color: var(--fg-2);
-  margin: 0 0 14px;
-  break-inside: avoid;
-}
-.wprose p:first-child { margin-top: 0; }
-
-.wrest {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.wmark {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border: 1px solid var(--rule-2);
-  border-radius: 8px;
-  font-family: var(--sans);
-  font-size: 13px;
-  color: var(--fg-2);
-  cursor: pointer;
-}
-.wmark-glyph {
-  font-family: var(--mono);
-  font-size: 12.5px;
-  color: var(--accent, var(--fg-2));
-}
-
-.tok {
-  position: relative;
-  cursor: pointer;
-  color: var(--accent, var(--fg-2));
-  border-bottom: 1px dotted color-mix(in srgb, var(--accent) 55%, transparent);
-}
-.tok.a-prose {
-  color: var(--fg-3);
-  border-bottom: none;
-}
-.tok.a-arrow,
-.tok.a-tilde { font-weight: 600; }
-
-.tip {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  z-index: 20;
-  width: max-content;
-  max-width: 260px;
-  padding: 9px 12px;
-  border: 1px solid var(--rule-2);
-  border-radius: 8px;
-  background: var(--bg-3);
-  color: var(--fg-2);
-  font-family: var(--sans);
-  font-size: 12.5px;
-  font-weight: 400;
-  font-style: normal;
-  line-height: 1.5;
-  white-space: normal;
-  letter-spacing: 0;
-  opacity: 0;
-  transform: translateY(-4px);
-  pointer-events: none;
-  transition: opacity .12s ease, transform .12s ease;
-}
-.tok:hover .tip,
-.wmark:hover .tip {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.a-front { --accent: var(--fg-3); }
-.a-head { --accent: var(--fg-2); }
-.a-prose { --accent: var(--fg-3); }
-.a-warp { --accent: var(--acc-amber); }
-.a-arrow { --accent: var(--acc-mint); }
-.a-tilde { --accent: var(--acc-cyan); }
-.a-anchor { --accent: var(--acc-violet); }
-.a-spec { --accent: var(--acc-rose); }
-.a-sink { --accent: var(--acc-grey); }
 
 ## How it works — the tabbed panel
 
@@ -560,19 +451,23 @@ The how-it-works section gives its width to one panel, an editor with three tabs
   align-items: center;
   gap: 8px;
   padding: 9px 18px;
-  border: 1px solid var(--acc-violet);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--acc-violet) 12%, var(--bg-3));
-  color: var(--acc-violet);
+  background: var(--acc-violet);
+  color: var(--bg);
   font-family: var(--sans);
   font-size: 13px;
+  font-weight: 500;
   letter-spacing: 0.01em;
-  transition: transform .16s ease, background .16s ease;
+  transition: background .16s ease;
 }
-.how-expand-label::after { content: '↓'; opacity: 0.7; }
 .how-expand:hover .how-expand-label {
-  transform: translateY(-2px);
-  background: color-mix(in srgb, var(--acc-violet) 20%, var(--bg-3));
+  background: #fff;
+  animation: expandNudge 0.5s ease-out;
+}
+@keyframes expandNudge {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
 }
 .ex-icon { display: inline-flex; }
 .ex-icon.white { color: var(--fg); }
@@ -963,7 +858,7 @@ Beneath the steps sits a command palette that searches the book — type and the
 
 ## The install rows
 
-Under the headline sits the install: one row per runtime, then the `loom init` step set a little apart. The rows are a plain stack in the mono face — no frame around them, no dividers between them. Each row leads with the runtime's logo, gives the install command room to run, and ends with its copy button. The init step sits below a gap and carries a plain-language line, aligned under the command.
+Under the headline sits the install: one row per runtime. The rows are a plain stack in the mono face — no frame around them, no dividers between them. Each row is a button, sized to its content: it leads with the runtime's logo, gives the install command room to run, and ends with a copy icon that stays hidden until the row is hovered. The pressed row turns that copy icon into a mint check.
 
 =>
 
@@ -974,8 +869,30 @@ Under the headline sits the install: one row per runtime, then the `loom init` s
 }
 .install-row {
   display: flex; align-items: center; gap: 14px;
-  padding: 7px 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 7px 10px;
+  margin-left: -10px;
+  appearance: none;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s ease;
 }
+.install-row:hover { background: var(--bg-3); }
+.rt-copy {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center;
+  color: var(--fg-3);
+  opacity: 0;
+  transition: opacity .12s ease, color .12s ease;
+}
+.install-row:hover .rt-copy { opacity: 1; }
+.rt-copy.copied { opacity: 1; color: var(--acc-mint); }
 .rt-mark {
   flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
@@ -983,18 +900,9 @@ Under the headline sits the install: one row per runtime, then the `loom init` s
 }
 .rt-logo { display: inline-flex; }
 .rt-mark svg { display: block; width: 18px; height: 18px; }
-.rt-mark.then { color: var(--fg-4); }
 .rt-cmd {
-  flex: 1;
   color: var(--fg); font-size: 13px;
-  white-space: nowrap; overflow-x: auto;
-}
-.rt-cmd::-webkit-scrollbar { display: none; }
-.init-row { margin-top: 12px; }
-.rt-note {
-  padding: 4px 0 0 32px;
-  color: var(--fg-3);
-  font-family: var(--sans); font-size: 12.5px;
+  white-space: nowrap;
 }
 
 ## The footer
@@ -1049,7 +957,7 @@ footer.foot {
 
 ## The stylesheet {Tangle}[landing.css]
 
-The stylesheet is the tokens and base, then each region top to bottom: the window chrome, the hero and its call to action, the shared panel head, the numbered sections, the what-loom-is story, how-it-works and the palette, get-started, and the footer.
+The stylesheet is the tokens and base, then each region top to bottom: the window chrome, the hero and its call to action, the shared panel head, the numbered sections, how-it-works and the palette, the install rows, and the footer.
 
 =>
 
@@ -1064,8 +972,6 @@ The stylesheet is the tokens and base, then each region top to bottom: the windo
 ::[The shared panel head]
 
 ::[The numbered sections]
-
-::[What Loom is — the story]
 
 ::[How it works — the tabbed panel]
 

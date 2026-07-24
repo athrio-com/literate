@@ -1,158 +1,12 @@
 ---
-Part XIV, Chapter 5: What Loom is, and how it works
+Part XIV, Chapter 5: An example of a program in Loom
 Package: design/src/
 Language: TypeScript
 ---
 
-# What Loom is, and how it works
+# An example of a program in Loom
 
-The middle of the page makes the case for Loom and then shows it working. It opens by saying what Loom is — a language for writing a program the way you reason about it — and names the few marks that language lays over Markdown.
-
-Then it opens a real loom, a game of Gomoku, three ways. One tab reads it as a rendered document, with a switch to its raw source and an outline to jump by; a second shows the TypeScript it tangles to; a third lets the reader play it. Every view reads the same woven loom, so what a reader sees is the loom itself, never a copy.
-
-## What Loom is
-
-This section is the page's opening argument: what Loom is, shown in the smallest program that runs. The view draws on Foldkit's `h`, the `Array` module, and the marks toolkit from the local components — the `tip` and `specimenView` helpers, and the marks themselves.
-
-=>
-
-import { Array } from 'effect'
-import type { Html } from 'foldkit/html'
-import {
-  anchor,
-  arrow,
-  frontmatter,
-  heading,
-  type Mark,
-  preamble,
-  sink,
-  specifier,
-  specimenView,
-  tilde,
-  tip,
-  warp,
-} from './components'
-import { h } from './model'
-
-~
-
-Only the eyebrow and the heading stand apart. Beneath them one run of prose flows through the columns — what Loom is, the greeter set among the paragraphs, the three marks that carry it, and why the words outweigh the code — and a row of the remaining marks closes it.
-
-=>
-
-const whatLoomIs = (): Html =>
-  h.section(
-    [h.Class('s'), h.Id('what')],
-    [
-      h.div(
-        [h.Class('wrap')],
-        [
-          h.div(
-            [h.Class('sec-head')],
-            [
-              h.div(
-                [h.Class('sec-num')],
-                [h.span([h.Class('arrow')], ['▸']), ' 01 · WHAT LOOM IS'],
-              ),
-              h.h2([h.Class('sec-h')], ['Written in the order you think.']),
-            ],
-          ),
-          h.div(
-            [h.Class('wstory')],
-            [
-              h.div(
-                [h.Class('wprose')],
-                [
-                  h.p(
-                    [],
-                    [
-                      'Loom is a small compositional language for writing a program in the order you reason about it — a narrative order, often the opposite of what a compiler wants.',
-                    ],
-                  ),
-                  specimen(),
-                  h.p(
-                    [],
-                    [
-                      'The greeter is a whole program, and about the smallest one. Three marks carry it: a heading opens the section, an arrow turns prose into code, and a sink names the file it tangles to — its language read from the extension.',
-                    ],
-                  ),
-                  h.p(
-                    [],
-                    [
-                      'Notice the balance. The prose outweighs the code, and across a real loom it runs about three to one. That is the intent, not an accident.',
-                    ],
-                  ),
-                  h.p(
-                    [],
-                    [
-                      'Prose and code are equal citizens here, but the prose carries what the code cannot. It is the definition of what the code does — it specifies the code, and holds its meaning and context for whoever reads the loom next, a person or an AI.',
-                    ],
-                  ),
-                  h.p(
-                    [],
-                    [
-                      'Everything past the greeter is a handful more marks, and they compose looms into whole programs.',
-                    ],
-                  ),
-                ],
-              ),
-              h.div([h.Class('wrest')], Array.map(REST, restMark)),
-            ],
-          ),
-        ],
-      ),
-    ],
-  )
-
-## The marks of a loom
-
-The specimen and the row of chips both draw on the marks toolkit, each mark with the accent it wears and the note a hover reveals. The specimen shows a few marks at work. The chips show the rest.
-
-The specimen is the greeter itself, laid out line by line. Its three marks — the heading, the arrow, the sink — carry tooltips, and so does its one line of prose, the preamble. A blank line leaves a gap, the way it does in the source.
-
-=>
-
-const SPECIMEN: ReadonlyArray<ReadonlyArray<Html | string>> = [
-  [tip(heading, '# Hi there!'), ' ', tip(sink, '[mini.ts]')],
-  [],
-  [tip(preamble, 'This is the simplest Loom program, written in TypeScript.')],
-  [],
-  [tip(arrow, '=>')],
-  [],
-  ['console.log("Hi there!")'],
-]
-
-const specimen = (): Html => specimenView(SPECIMEN)
-
-~
-
-The remaining marks — the ones the greeter has no need for yet — sit in a row beneath the reflection. Each is a chip that shows a glyph and a name, and, on hover, the same note. The anchor's glyph opens with two colons and a bracket, built from pieces so this corpus holds no bare one of its own.
-
-=>
-
-type Chip = {
-  readonly mark: Mark
-  readonly glyph: string
-  readonly name: string
-}
-
-const REST: ReadonlyArray<Chip> = [
-  { mark: frontmatter, glyph: '---', name: 'Frontmatter' },
-  { mark: warp, glyph: '{{ }}', name: 'Warp' },
-  { mark: anchor, glyph: '::' + '[ ]', name: 'Anchor' },
-  { mark: tilde, glyph: '~', name: 'Tilde' },
-  { mark: specifier, glyph: '{ }', name: 'Specifier' },
-]
-
-const restMark = (chip: Chip): Html =>
-  h.span(
-    [h.Class(`wmark a-${chip.mark.accent}`)],
-    [
-      h.span([h.Class('wmark-glyph')], [chip.glyph]),
-      chip.name,
-      h.span([h.Class('tip')], [chip.mark.note]),
-    ],
-  )
+The middle of the page shows Loom working: a real loom — a game of Gomoku — opened three ways. One tab reads it as a rendered document, with a switch to its raw source and an outline to jump by; a second shows the TypeScript it tangles to; a third lets the reader play it. Every view reads the same woven loom, so what a reader sees is the loom itself, never a copy.
 
 ## A real loom, opened
 
@@ -160,11 +14,13 @@ Weaving a loom turns it into JSON: a page of blocks, where a block is a heading,
 
 =>
 
-import { Match, Option, pipe } from 'effect'
+import { Array, Match, Option, pipe } from 'effect'
+import type { Html } from 'foldkit/html'
 import { marked } from 'marked'
 import {
   ExpandedExample,
   GotGameMessage,
+  h,
   type Message,
   type Model,
   MovedFocus,
@@ -174,7 +30,7 @@ import {
   Typed,
 } from './model'
 import * as Gomoku from '../../examples/gomoku/gomoku'
-import { loomIcon, playIcon } from './components'
+import { downIcon, loomIcon, playIcon } from './components'
 import wovenCorpus from './gomoku.woven.json'
 import highlighted from './gomoku.highlighted.json'
 
@@ -394,7 +250,7 @@ const tabBody = (model: Model): Html =>
 const expandOverlay = (): Html =>
   h.button(
     [h.Class('how-expand'), h.OnClick(ExpandedExample())],
-    [h.span([h.Class('how-expand-label')], ['See full example'])],
+    [h.span([h.Class('how-expand-label')], ['See full example', downIcon()])],
   )
 
 const examplePanel = (model: Model): Html => {
@@ -544,9 +400,9 @@ const palette = (model: Model): Html => {
   )
 }
 
-## The how-it-works section
+## The example section
 
-The section heads with its number and words, then gives the whole width to the example panel.
+The section heads with its eyebrow and heading, then gives the whole width to the example panel.
 
 =>
 
@@ -562,22 +418,15 @@ const howItWorks = (model: Model): Html =>
             [
               h.div(
                 [h.Class('sec-num')],
-                [h.span([h.Class('arrow')], ['▸']), ' 02 · HOW IT WORKS'],
+                [h.span([h.Class('arrow')], ['▸']), ' EXAMPLE OF A PROGRAM IN LOOM'],
               ),
               h.div(
                 [],
                 [
-                  h.h2([h.Class('sec-h')], ['Built for reading by people.']),
+                  h.h2([h.Class('sec-h')], ['Literate programming with Loom.']),
                   h.p(
                     [h.Class('sec-lede')],
-                    [
-                      'A ',
-                      h.code(
-                        [h.Style({ fontFamily: 'var(--mono)', color: 'var(--acc-cyan)', fontSize: '0.92em' })],
-                        ['.loom'],
-                      ),
-                      ' corpus is a set of files read in order, like chapters in a book. Open one and read it top to bottom: each section explains a piece in prose, then shows the code that piece becomes. The sections compose by name, and tangle resolves them into real source.',
-                    ],
+                    ['An example of what a program looks like in Loom.'],
                   ),
                 ],
               ),
@@ -589,18 +438,13 @@ const howItWorks = (model: Model): Html =>
     ],
   )
 
-export const middle = (model: Model): Html =>
-  h.div([], [whatLoomIs(), howItWorks(model)])
+export const middle = (model: Model): Html => howItWorks(model)
 
 ## The module {Tangle}[middle.ts]
 
-The module opens with what Loom is and the marks a loom is written in, then the woven example, the rendered loom and its outline, the three tabs that switch the view, the reserved book search, and the two sections that give them their place.
+The module reads the woven example, renders the loom and its outline, wears the three tabs that switch the view, holds the reserved book search, and gives the example its place on the page.
 
 =>
-
-::[What Loom is]
-
-::[The marks of a loom]
 
 ::[A real loom, opened]
 
@@ -612,4 +456,4 @@ The module opens with what Loom is and the marks a loom is written in, then the 
 
 ::[The palette, wired]
 
-::[The how-it-works section]
+::[The example section]
