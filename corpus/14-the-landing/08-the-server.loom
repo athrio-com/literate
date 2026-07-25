@@ -49,13 +49,14 @@ const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 ## The page
 
-The page starts from the built shell and gains two things: the rendered body in place of the empty `#root`, and, in the head, the capture script and the model inlined as JSON for hydration. The seed is the landing at rest — no section jumped to, the rotator unstarted, the version standing at the workspace's own until the render fetches the latest.
+The page starts from the built shell and gains two things: the rendered body in place of the empty `#root`, and, in the head, the capture script and the model inlined as JSON for hydration. The seed is the landing at rest — the dark theme, no section jumped to, the rotator unstarted, the version standing at the workspace's own until the render fetches the latest.
 
 {{ version = ${version} }}
 
 =>
 
 const seed: Model = {
+  theme: 'dark',
   rotatorIndex: 0,
   rotatorPhase: 'normal',
   activeSection: '',

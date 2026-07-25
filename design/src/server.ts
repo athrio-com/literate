@@ -18,6 +18,7 @@ import * as Gomoku from '../../examples/gomoku/gomoku'
 const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 const seed: Model = {
+  theme: 'dark',
   rotatorIndex: 0,
   rotatorPhase: 'normal',
   activeSection: '',

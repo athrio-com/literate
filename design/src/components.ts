@@ -98,6 +98,17 @@ export const downIcon = (): Html =>
 export const checkIcon = (): Html =>
   strokeIcon('13', [strokePath('M20 6 9 17l-5-5')])
 
+export const sunIcon = (): Html =>
+  strokeIcon('15', [
+    strokePath('M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8Z'),
+    strokePath(
+      'M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M19.1 4.9l-1.4 1.4 M6.3 17.7l-1.4 1.4',
+    ),
+  ])
+
+export const moonIcon = (): Html =>
+  strokeIcon('15', [strokePath('M21 12.8A8.5 8.5 0 1 1 11.2 3 6.6 6.6 0 0 0 21 12.8Z')])
+
 export const playIcon = (): Html =>
   h.svg(
     [h.Width('12'), h.Height('12'), h.ViewBox('0 0 24 24'), h.Fill('currentColor'), h.AriaHidden(true)],
@@ -133,7 +144,19 @@ export const denoIcon = (): Html => svgMark(logos.deno)
 export const npmIcon = (): Html => svgMark(logos.npm)
 export const pnpmIcon = (): Html => svgMark(logos.pnpm)
 
-export const titlebar = (version: string): Html =>
+import { ToggledTheme, type Model } from './model'
+
+const themeSwitch = (theme: Model['theme']): Html =>
+  h.button(
+    [
+      h.Class('theme-switch'),
+      h.AriaLabel(theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'),
+      h.OnClick(ToggledTheme()),
+    ],
+    [theme === 'dark' ? sunIcon() : moonIcon()],
+  )
+
+export const titlebar = (theme: Model['theme']): Html =>
   h.div(
     [h.Class('titlebar'), h.Role('banner')],
     [
@@ -152,8 +175,7 @@ export const titlebar = (version: string): Html =>
         [h.Class('right')],
         [
           h.span([h.Class('live-dot'), h.Title('tangled')], []),
-          h.span([], [`v${version}`]),
-          h.span([], [h.kbd([], ['⌘']), ' ', h.kbd([], ['K'])]),
+          themeSwitch(theme),
         ],
       ),
     ],
@@ -166,13 +188,25 @@ const NAV = [
   { label: 'devtools', href: '#' },
 ]
 
-export const tabbar = (): Html =>
+const barEnd = (version: string): Html =>
+  h.div(
+    [h.Class('right')],
+    [
+      h.span([], [`v${version}`]),
+      h.span([], [h.kbd([], ['⌘']), ' ', h.kbd([], ['K'])]),
+    ],
+  )
+
+export const tabbar = (version: string): Html =>
   h.nav(
     [h.Class('tabbar'), h.AriaLabel('Site')],
-    Array.map(NAV, (link) =>
-      h.a(
-        [h.Class(link.here ? 'tab active' : 'tab'), h.Href(link.href)],
-        [h.span([h.Class('dot')], []), link.label],
+    [
+      ...Array.map(NAV, (link) =>
+        h.a(
+          [h.Class(link.here ? 'tab active' : 'tab'), h.Href(link.href)],
+          [h.span([h.Class('dot')], []), link.label],
+        ),
       ),
-    ),
+      barEnd(version),
+    ],
   )

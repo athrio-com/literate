@@ -10,7 +10,7 @@ The landing is built from small pieces the sections share — a set of line icon
 
 ## The icons
 
-The icons are the line drawings the buttons carry — a copy glyph, an open book, an external arrow, a forward arrow, a down chevron, a check. Each is an inline SVG drawn in the current text colour, so it takes the colour of the button around it.
+The icons are the line drawings the buttons carry — a copy glyph, an open book, an external arrow, a forward arrow, a down chevron, a check, and the sun and moon the theme switch wears. Each is an inline SVG drawn in the current text colour, so it takes the colour of the button around it.
 
 =>
 
@@ -114,6 +114,17 @@ export const downIcon = (): Html =>
 export const checkIcon = (): Html =>
   strokeIcon('13', [strokePath('M20 6 9 17l-5-5')])
 
+export const sunIcon = (): Html =>
+  strokeIcon('15', [
+    strokePath('M12 8a4 4 0 1 0 0 8 4 4 0 1 0 0-8Z'),
+    strokePath(
+      'M12 2v2 M12 20v2 M2 12h2 M20 12h2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M19.1 4.9l-1.4 1.4 M6.3 17.7l-1.4 1.4',
+    ),
+  ])
+
+export const moonIcon = (): Html =>
+  strokeIcon('15', [strokePath('M21 12.8A8.5 8.5 0 1 1 11.2 3 6.6 6.6 0 0 0 21 12.8Z')])
+
 export const playIcon = (): Html =>
   h.svg(
     [h.Width('12'), h.Height('12'), h.ViewBox('0 0 24 24'), h.Fill('currentColor'), h.AriaHidden(true)],
@@ -157,11 +168,23 @@ export const pnpmIcon = (): Html => svgMark(logos.pnpm)
 
 ## The title bar
 
-The title bar is the window's top edge: the loom mark, a breadcrumb trail to the open file, and on the right a live dot, the version, and the search shortcut. The version comes in from the model, the same latest release the hero's pill names, so the two never disagree.
+The title bar is the window's top edge: the loom mark, a breadcrumb trail to the open file, and on the right a live dot beside the theme switch. The switch turns the page between its dark and light palettes. It shows the theme a click would bring — the sun to move into the light, the moon to return to the dark.
 
 =>
 
-export const titlebar = (version: string): Html =>
+import { ToggledTheme, type Model } from './model'
+
+const themeSwitch = (theme: Model['theme']): Html =>
+  h.button(
+    [
+      h.Class('theme-switch'),
+      h.AriaLabel(theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'),
+      h.OnClick(ToggledTheme()),
+    ],
+    [theme === 'dark' ? sunIcon() : moonIcon()],
+  )
+
+export const titlebar = (theme: Model['theme']): Html =>
   h.div(
     [h.Class('titlebar'), h.Role('banner')],
     [
@@ -180,8 +203,7 @@ export const titlebar = (version: string): Html =>
         [h.Class('right')],
         [
           h.span([h.Class('live-dot'), h.Title('tangled')], []),
-          h.span([], [`v${version}`]),
-          h.span([], [h.kbd([], ['⌘']), ' ', h.kbd([], ['K'])]),
+          themeSwitch(theme),
         ],
       ),
     ],
@@ -189,7 +211,9 @@ export const titlebar = (version: string): Html =>
 
 ## The site menu
 
-Below the title bar sits the site's menu, styled as a row of open tabs to match the window it belongs to. Each entry names a page and carries a coloured dot; the current page — the landing — wears the active tab's look, so a reader always sees where they are.
+Below the title bar sits the site's menu, styled as a row of open tabs to match the window it belongs to. Each entry names a page and carries a coloured dot. The current page — the landing — wears the active tab's look, so a reader always sees where they are.
+
+At the right end of the same bar sit the version and the search shortcut. The version is the latest release the server reads from npm, the same value the hero's pill shows, so the two never disagree. The shortcut is the ⌘K that opens the book search.
 
 =>
 
@@ -200,15 +224,27 @@ const NAV = [
   { label: 'devtools', href: '#' },
 ]
 
-export const tabbar = (): Html =>
+const barEnd = (version: string): Html =>
+  h.div(
+    [h.Class('right')],
+    [
+      h.span([], [`v${version}`]),
+      h.span([], [h.kbd([], ['⌘']), ' ', h.kbd([], ['K'])]),
+    ],
+  )
+
+export const tabbar = (version: string): Html =>
   h.nav(
     [h.Class('tabbar'), h.AriaLabel('Site')],
-    Array.map(NAV, (link) =>
-      h.a(
-        [h.Class(link.here ? 'tab active' : 'tab'), h.Href(link.href)],
-        [h.span([h.Class('dot')], []), link.label],
+    [
+      ...Array.map(NAV, (link) =>
+        h.a(
+          [h.Class(link.here ? 'tab active' : 'tab'), h.Href(link.href)],
+          [h.span([h.Class('dot')], []), link.label],
+        ),
       ),
-    ),
+      barEnd(version),
+    ],
   )
 
 ## The module {Tangle}[components.ts]

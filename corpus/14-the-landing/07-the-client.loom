@@ -31,6 +31,7 @@ import {
   SectionScrolled,
   SelectedSection,
   SpottedSection,
+  ThemeApplied,
 } from './model'
 import * as Gomoku from '../../examples/gomoku/gomoku'
 
@@ -81,9 +82,22 @@ const ScrollToSection = define('ScrollToSection', { id: S.String }, SectionScrol
     ),
 )
 
+## Applying the theme
+
+The theme is a field in the model, but the palette it names takes effect on the document's root element, where the stylesheet's light rules look for it. `ApplyTheme` puts it there: it sets a `data-theme` attribute on the root, then reports back with `ThemeApplied`. Writing to the document is a side effect, so it runs from a command and leaves the update pure.
+
+=>
+
+const ApplyTheme = define('ApplyTheme', { theme: S.Literals(['dark', 'light']) }, ThemeApplied)(
+  ({ theme }) =>
+    Effect.sync(() => document.documentElement.setAttribute('data-theme', theme)).pipe(
+      Effect.as(ThemeApplied()),
+    ),
+)
+
 ## The update
 
-Most messages set one field: the query, the focus clamped to the results, the loom tab's view, whether the example stands at full height. Switching the example tab sets it too, with one exception — clicking the Play tab while it is already open starts a fresh game, running the component's own reset. The embedded game otherwise runs its own update; the panel keeps the board it returns and lifts the game's commands — the one that thinks out the computer's move, and the one that arms a new game's bombs — into its own, so they run. Selecting a section sets the active one and asks the preview to scroll to it. A section spotted while the reader scrolls sets the active one too, but runs nothing, so the outline follows the scroll rather than fighting it. Copying flashes the pressed button and runs its reset. The rotator's three messages move it through its phases and hand off to the next command.
+Most messages set one field: the query, the focus clamped to the results, the loom tab's view, whether the example stands at full height. Toggling the theme flips it between dark and light and asks a command to write the new one to the page. That command's answer runs nothing. Switching the example tab sets it too, with one exception — clicking the Play tab while it is already open starts a fresh game, running the component's own reset. The embedded game otherwise runs its own update; the panel keeps the board it returns and lifts the game's commands — the one that thinks out the computer's move, and the one that arms a new game's bombs — into its own, so they run. Selecting a section sets the active one and asks the preview to scroll to it. A section spotted while the reader scrolls sets the active one too, but runs nothing, so the outline follows the scroll rather than fighting it. Copying flashes the pressed button and runs its reset. The rotator's three messages move it through its phases and hand off to the next command.
 
 =>
 
@@ -94,6 +108,11 @@ const update = (model: Model, message: Message): Step =>
   Match.value(message).pipe(
     Match.withReturnType<Step>(),
     Match.tagsExhaustive({
+      ToggledTheme: () => {
+        const theme = model.theme === 'dark' ? 'light' : 'dark'
+        return [{ ...model, theme }, [ApplyTheme({ theme })]]
+      },
+      ThemeApplied: () => [model, []],
       SelectedTab: ({ tab }) => {
         const replay = tab === 'play' && model.exampleTab === 'play'
         if (!replay) {
@@ -187,6 +206,7 @@ import '@fontsource/ia-writer-quattro'
 import './landing.css'
 
 const emptyModel: Model = {
+  theme: 'dark',
   rotatorIndex: 0,
   rotatorPhase: 'normal',
   activeSection: '',
@@ -233,6 +253,8 @@ Runtime.run(application)
 ::[The timed commands]
 
 ::[Jumping to a section]
+
+::[Applying the theme]
 
 ::[The update]
 

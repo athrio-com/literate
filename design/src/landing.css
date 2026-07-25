@@ -18,10 +18,33 @@
   --acc-grey:   #8A92A6;
 
   --primary:   var(--acc-mint);
+  --shadow:    #000000B0;
 
   --display: 'Newsreader', Georgia, serif;
   --sans:    'iA Writer Quattro', 'iA Writer Quattro S', system-ui, -apple-system, sans-serif;
   --mono:    'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+
+:root[data-theme="light"] {
+  --bg:        #F2E5BC;
+  --bg-2:      #EBDBB2;
+  --bg-3:      #D5C4A1;
+  --bg-4:      #BDAE93;
+  --rule:      #3C38361A;
+  --rule-2:    #3C383633;
+  --fg:        #3C3836;
+  --fg-2:      #504945;
+  --fg-3:      #665C54;
+  --fg-4:      #928374;
+
+  --acc-cyan:   #076678;
+  --acc-mint:   #427B58;
+  --acc-violet: #8F3F71;
+  --acc-amber:  #B57614;
+  --acc-rose:   #9D0006;
+  --acc-grey:   #7C6F64;
+
+  --shadow:    #79695033;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -59,7 +82,8 @@ main, header, footer { position: relative; }
   margin-left: auto; display: flex; gap: 18px; align-items: center;
   color: var(--fg-3);
 }
-.titlebar .right kbd {
+.titlebar .right kbd,
+.tabbar .right kbd {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--fg-3);
@@ -68,6 +92,19 @@ main, header, footer { position: relative; }
   border-radius: 4px;
   background: var(--bg-3);
 }
+.theme-switch {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px;
+  padding: 0;
+  border: 1px solid var(--rule-2);
+  border-radius: 6px;
+  background: var(--bg-3);
+  color: var(--fg-3);
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.theme-switch:hover { color: var(--fg); border-color: var(--fg-4); background: var(--bg-4); }
+.theme-switch svg { display: block; }
 .live-dot {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--acc-mint);
@@ -113,6 +150,11 @@ main, header, footer { position: relative; }
 .tab:nth-child(2) .dot { background: var(--acc-violet); }
 .tab:nth-child(3) .dot { background: var(--acc-amber); }
 .tab:nth-child(4) .dot { background: var(--acc-mint); }
+.tabbar .right {
+  margin-left: auto; display: flex; gap: 18px; align-items: center;
+  padding: 0 14px;
+  color: var(--fg-3);
+}
 
 .hero {
   padding: 96px 0 64px;
@@ -408,7 +450,7 @@ section.s {
   transition: background .16s ease;
 }
 .how-expand:hover .how-expand-label {
-  background: #fff;
+  background: color-mix(in srgb, var(--acc-violet) 70%, #fff);
   animation: expandNudge 0.5s ease-out;
 }
 @keyframes expandNudge {
@@ -551,6 +593,19 @@ section.s {
   background: color-mix(in srgb, var(--acc-cyan) 12%, transparent);
   padding: 1px 5px;
   border-radius: 4px;
+}
+
+.shiki,
+.shiki span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style, inherit);
+  font-weight: var(--shiki-dark-font-weight, inherit);
+}
+:root[data-theme="light"] .shiki,
+:root[data-theme="light"] .shiki span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style, inherit);
+  font-weight: var(--shiki-light-font-weight, inherit);
 }
 
 .how-code {
@@ -741,7 +796,7 @@ section.s {
   max-width: 720px;
   margin-left: auto;
   margin-right: auto;
-  box-shadow: 0 30px 80px -30px #000000B0;
+  box-shadow: 0 30px 80px -30px var(--shadow);
 }
 .cmd-input-wrap {
   display: flex; align-items: center; gap: 10px;

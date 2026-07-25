@@ -4,6 +4,7 @@ import { m } from 'foldkit/message'
 import * as Gomoku from '../../examples/gomoku/gomoku'
 
 export const Model = S.Struct({
+  theme: S.Literals(['dark', 'light']),
   rotatorIndex: S.Number,
   rotatorPhase: S.Literals(['normal', 'out', 'in-start']),
   activeSection: S.String,
@@ -18,6 +19,8 @@ export const Model = S.Struct({
 })
 export type Model = typeof Model.Type
 
+export const ToggledTheme = m('ToggledTheme')
+export const ThemeApplied = m('ThemeApplied')
 export const SelectedTab = m('SelectedTab', { tab: S.Literals(['loom', 'tangled', 'play']) })
 export const SelectedLoomView = m('SelectedLoomView', { view: S.Literals(['preview', 'source']) })
 export const ExpandedExample = m('ExpandedExample')
@@ -34,6 +37,8 @@ export const RotatedIn = m('RotatedIn')
 export const RotatorSettled = m('RotatorSettled')
 
 export const Message = S.Union([
+  ToggledTheme,
+  ThemeApplied,
   SelectedTab,
   SelectedLoomView,
   ExpandedExample,

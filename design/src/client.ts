@@ -15,6 +15,7 @@ import {
   SectionScrolled,
   SelectedSection,
   SpottedSection,
+  ThemeApplied,
 } from './model'
 import * as Gomoku from '../../examples/gomoku/gomoku'
 
@@ -53,6 +54,13 @@ const ScrollToSection = define('ScrollToSection', { id: S.String }, SectionScrol
     ),
 )
 
+const ApplyTheme = define('ApplyTheme', { theme: S.Literals(['dark', 'light']) }, ThemeApplied)(
+  ({ theme }) =>
+    Effect.sync(() => document.documentElement.setAttribute('data-theme', theme)).pipe(
+      Effect.as(ThemeApplied()),
+    ),
+)
+
 const clamp = (value: number, max: number): number =>
   Math.max(0, Math.min(max, value))
 
@@ -60,6 +68,11 @@ const update = (model: Model, message: Message): Step =>
   Match.value(message).pipe(
     Match.withReturnType<Step>(),
     Match.tagsExhaustive({
+      ToggledTheme: () => {
+        const theme = model.theme === 'dark' ? 'light' : 'dark'
+        return [{ ...model, theme }, [ApplyTheme({ theme })]]
+      },
+      ThemeApplied: () => [model, []],
       SelectedTab: ({ tab }) => {
         const replay = tab === 'play' && model.exampleTab === 'play'
         if (!replay) {
@@ -139,6 +152,7 @@ import '@fontsource/ia-writer-quattro'
 import './landing.css'
 
 const emptyModel: Model = {
+  theme: 'dark',
   rotatorIndex: 0,
   rotatorPhase: 'normal',
   activeSection: '',

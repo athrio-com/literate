@@ -80,6 +80,30 @@ const loomTheme = {
   ],
 }
 
+const loomThemeLight = {
+  name: 'loom-light',
+  type: 'light',
+  colors: { 'editor.background': '#F2E5BC', 'editor.foreground': '#3C3836' },
+  settings: [
+    { scope: ['comment'], settings: { foreground: '#928374', fontStyle: 'italic' } },
+    { scope: ['keyword', 'storage', 'storage.type', 'keyword.control', 'keyword.operator.new'], settings: { foreground: '#8F3F71' } },
+    { scope: ['string', 'string.template', 'punctuation.definition.string'], settings: { foreground: '#79740E' } },
+    { scope: ['constant.numeric', 'constant.language'], settings: { foreground: '#B57614' } },
+    { scope: ['entity.name.function', 'support.function', 'meta.function-call'], settings: { foreground: '#076678' } },
+    { scope: ['entity.name.type', 'support.type', 'entity.name.class', 'support.class'], settings: { foreground: '#076678' } },
+    { scope: ['variable', 'meta.definition.variable', 'variable.other'], settings: { foreground: '#3C3836' } },
+    { scope: ['keyword.operator'], settings: { foreground: '#7C6F64' } },
+    { scope: ['punctuation', 'meta.brace'], settings: { foreground: '#665C54' } },
+    { scope: ['keyword.other.anchor.loom'], settings: { foreground: '#8F3F71', fontStyle: 'bold' } },
+    { scope: ['markup.heading.loom'], settings: { foreground: '#282828', fontStyle: 'bold' } },
+    { scope: ['punctuation.definition.heading.loom'], settings: { foreground: '#427B58' } },
+    { scope: ['keyword.control.specifier.loom'], settings: { foreground: '#B57614' } },
+    { scope: ['string.other.sink.loom'], settings: { foreground: '#076678' } },
+    { scope: ['keyword.operator.arrow.loom', 'keyword.operator.tilde.loom'], settings: { foreground: '#427B58', fontStyle: 'bold' } },
+    { scope: ['meta.frontmatter.loom'], settings: { foreground: '#665C54' } },
+  ],
+}
+
 type OutlineEntry = {
   readonly id: string
   readonly label: string
@@ -127,7 +151,7 @@ const outlineOf = (
   pipe(source.split('\n'), Array.map(entry), Array.getSomes)
 
 const example = '../examples/gomoku'
-const theme = 'loom-dark'
+const themes = { light: 'loom-light', dark: 'loom-dark' }
 
 type Block = { readonly type: string; readonly code?: string }
 type Woven = { readonly pages: ReadonlyArray<{ readonly blocks: ReadonlyArray<Block> }> }
@@ -144,24 +168,28 @@ const program = Effect.gen(function* () {
   const woven: Woven = JSON.parse(yield* read('src/gomoku.woven.json'))
 
   const highlighter = yield* Effect.tryPromise(() =>
-    createHighlighter({ langs: [loomGrammar, loomCodeGrammar, 'typescript'], themes: [loomTheme] }),
+    createHighlighter({ langs: [loomGrammar, loomCodeGrammar, 'typescript'], themes: [loomTheme, loomThemeLight] }),
   )
 
   const codeHtml = pipe(
     woven.pages[0].blocks,
     Array.filter((block) => block.type === 'code'),
-    Array.map((block) => highlighter.codeToHtml(block.code ?? '', { lang: 'loomcode', theme })),
+    Array.map((block) =>
+      highlighter.codeToHtml(block.code ?? '', { lang: 'loomcode', themes, defaultColor: false }),
+    ),
   )
 
   const data = {
     loomHtml: highlighter.codeToHtml(loomSource, {
       lang: 'loom',
-      theme,
+      themes,
+      defaultColor: false,
       transformers: [lineIds('loom-')],
     }),
     tangledHtml: highlighter.codeToHtml(tangledSource, {
       lang: 'typescript',
-      theme,
+      themes,
+      defaultColor: false,
       transformers: [lineIds('ts-')],
     }),
     sourceOutline: outlineOf(loomSource, headingLine('loom-')),

@@ -94,8 +94,8 @@ const page = (model: Model): Html =>
   h.div(
     [],
     [
-      titlebar(model.version),
-      tabbar(),
+      titlebar(model.theme),
+      tabbar(model.version),
       h.main([], [hero(model), middle(model)]),
       footer(),
     ],
