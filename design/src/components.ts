@@ -136,6 +136,21 @@ export const loomIcon = (): Html =>
     ],
   )
 
+export const githubIcon = (): Html =>
+  h.svg(
+    [h.Width('15'), h.Height('15'), h.ViewBox('0 0 24 24'), h.Fill('currentColor'), h.AriaHidden(true)],
+    [
+      h.path(
+        [
+          h.D(
+            'M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12',
+          ),
+        ],
+        [],
+      ),
+    ],
+  )
+
 const svgMark = (svg: string): Html =>
   h.span([h.Class('rt-logo'), h.InnerHTML(svg)], [])
 
@@ -160,44 +175,35 @@ export const titlebar = (theme: Model['theme']): Html =>
   h.div(
     [h.Class('titlebar'), h.Role('banner')],
     [
-      h.span([h.Class('title-mark')], [loomIcon()]),
-      h.div(
-        [h.Class('crumbs')],
-        [
-          h.span([], ['loom']),
-          h.span([h.Class('sep')], ['/']),
-          h.span([], ['greeter']),
-          h.span([h.Class('sep')], ['/']),
-          h.span([h.Class('file')], ['a-first-loom.loom']),
-        ],
+      h.a(
+        [h.Class('title-logo'), h.Href('#'), h.AriaLabel('Loom')],
+        [h.span([h.Class('title-mark')], [loomIcon()]), h.span([h.Class('title-word')], ['loom'])],
       ),
-      h.div(
-        [h.Class('right')],
-        [
-          h.span([h.Class('live-dot'), h.Title('tangled')], []),
-          themeSwitch(theme),
-        ],
-      ),
+      h.div([h.Class('right')], [themeSwitch(theme)]),
     ],
   )
 
 const NAV = [
   { label: 'landing', href: '#', here: true },
   { label: 'docs', href: '#' },
-  { label: 'annotations', href: '#' },
+  { label: 'source', href: '#' },
   { label: 'devtools', href: '#' },
 ]
 
-const barEnd = (version: string): Html =>
+const REPO_URL = 'https://github.com/athrio-com/loom'
+
+const barEnd = (): Html =>
   h.div(
     [h.Class('right')],
     [
-      h.span([], [`v${version}`]),
-      h.span([], [h.kbd([], ['⌘']), ' ', h.kbd([], ['K'])]),
+      h.a(
+        [h.Class('bar-github'), h.Href(REPO_URL), h.AriaLabel('The project on GitHub')],
+        [githubIcon()],
+      ),
     ],
   )
 
-export const tabbar = (version: string): Html =>
+export const tabbar = (): Html =>
   h.nav(
     [h.Class('tabbar'), h.AriaLabel('Site')],
     [
@@ -207,6 +213,71 @@ export const tabbar = (version: string): Html =>
           [h.span([h.Class('dot')], []), link.label],
         ),
       ),
-      barEnd(version),
+      barEnd(),
+    ],
+  )
+
+import { SelectedAccent, SelectedTitleColors, type Accent, type TitleColors } from './model'
+
+type AccentOption = {
+  readonly id: Accent
+  readonly label: string
+  readonly swatches: ReadonlyArray<string>
+}
+
+const ACCENTS: ReadonlyArray<AccentOption> = [
+  { id: 'rust', label: 'Rust', swatches: ['#913C30', '#915430', '#918430', '#913044', '#769130', '#7B6D65'] },
+  { id: 'duo', label: 'Rust Duo', swatches: ['#913C30', '#699130', '#918430', '#913044', '#769130', '#7B6D65'] },
+  { id: 'ochre', label: 'Ochre', swatches: ['#916630', '#917E30', '#749130', '#914730', '#4C9130', '#7B7765'] },
+  { id: 'olive', label: 'Olive', swatches: ['#917C30', '#8E9130', '#5E9130', '#915E30', '#359130', '#7B7B65'] },
+  { id: 'moss', label: 'Moss', swatches: ['#309139', '#309151', '#309181', '#479130', '#307991', '#657B6C'] },
+  { id: 'fuchsia', label: 'Fuchsia', swatches: ['#AD1F8E', '#AD1F6B', '#AD1F23', '#9F1FAD', '#AD551F', '#825E71'] },
+  { id: 'electric', label: 'Electric', swatches: ['#1F96AD', '#1F72AD', '#1F2AAD', '#1FAD98', '#4E1FAD', '#5E7382'] },
+  { id: 'grape', label: 'Grape', swatches: ['#471FAD', '#6B1FAD', '#AD1FA9', '#1F23AD', '#AD1F6D', '#715E82'] },
+]
+
+const swatchRow = (colours: ReadonlyArray<string>): Html =>
+  h.span(
+    [h.Class('tweaks-sw')],
+    Array.map(colours, (colour) => h.span([h.Class('tweaks-dot'), h.Style({ background: colour })], [])),
+  )
+
+const accentOption = (active: Accent) => (option: AccentOption): Html =>
+  h.button(
+    [
+      h.Class(option.id === active ? 'tweaks-opt active' : 'tweaks-opt'),
+      h.OnClick(SelectedAccent({ accent: option.id })),
+    ],
+    [h.span([h.Class('tweaks-label')], [option.label]), swatchRow(option.swatches)],
+  )
+
+type TitleOption = {
+  readonly id: TitleColors
+  readonly label: string
+  readonly swatches: ReadonlyArray<string>
+}
+
+const TITLES: ReadonlyArray<TitleOption> = [
+  { id: 'three', label: 'Three', swatches: ['var(--fg)', 'var(--acc-mint)', 'var(--acc-violet)'] },
+  { id: 'two', label: 'Two', swatches: ['var(--fg)', 'var(--acc-mint)'] },
+]
+
+const titleOption = (active: TitleColors) => (option: TitleOption): Html =>
+  h.button(
+    [
+      h.Class(option.id === active ? 'tweaks-opt active' : 'tweaks-opt'),
+      h.OnClick(SelectedTitleColors({ titleColors: option.id })),
+    ],
+    [h.span([h.Class('tweaks-label')], [option.label]), swatchRow(option.swatches)],
+  )
+
+export const tweaksPanel = (accent: Accent, titleColors: TitleColors): Html =>
+  h.div(
+    [h.Class('tweaks')],
+    [
+      h.div([h.Class('tweaks-head')], ['Light accents']),
+      h.div([h.Class('tweaks-opts')], Array.map(ACCENTS, accentOption(accent))),
+      h.div([h.Class('tweaks-head')], ['Hero title']),
+      h.div([h.Class('tweaks-opts')], Array.map(TITLES, titleOption(titleColors))),
     ],
   )

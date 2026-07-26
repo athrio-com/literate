@@ -1,7 +1,7 @@
 import { Array, Effect, Option, pipe } from 'effect'
 import { BunRuntime } from '@effect/platform-bun'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { createHighlighter, type ShikiTransformer } from 'shiki'
+import { addClassToHast, createHighlighter, type ShikiTransformer } from 'shiki'
 
 const loomGrammar = {
   name: 'loom',
@@ -118,6 +118,16 @@ const lineIds = (prefix: string): ShikiTransformer => ({
   },
 })
 
+const outlineMarks = (lines: ReadonlySet<number>): ShikiTransformer => ({
+  name: 'outline-marks',
+  line(node, line) {
+    if (lines.has(line)) {
+      addClassToHast(node, 'outline-anchor')
+    }
+    return node
+  },
+})
+
 const cleanTitle = (title: string): string =>
   title
     .replace(/\s*\{[^}]*\}/g, '')
@@ -150,6 +160,9 @@ const outlineOf = (
 ): ReadonlyArray<OutlineEntry> =>
   pipe(source.split('\n'), Array.map(entry), Array.getSomes)
 
+const outlineLineSet = (entries: ReadonlyArray<OutlineEntry>, prefix: string): ReadonlySet<number> =>
+  new Set(Array.map(entries, (entry) => Number(entry.id.slice(prefix.length))))
+
 const example = '../examples/gomoku'
 const themes = { light: 'loom-light', dark: 'loom-dark' }
 
@@ -179,21 +192,24 @@ const program = Effect.gen(function* () {
     ),
   )
 
+  const sourceOutline = outlineOf(loomSource, headingLine('loom-'))
+  const tangledOutline = outlineOf(tangledSource, symbolLine('ts-'))
+
   const data = {
     loomHtml: highlighter.codeToHtml(loomSource, {
       lang: 'loom',
       themes,
       defaultColor: false,
-      transformers: [lineIds('loom-')],
+      transformers: [lineIds('loom-'), outlineMarks(outlineLineSet(sourceOutline, 'loom-'))],
     }),
     tangledHtml: highlighter.codeToHtml(tangledSource, {
       lang: 'typescript',
       themes,
       defaultColor: false,
-      transformers: [lineIds('ts-')],
+      transformers: [lineIds('ts-'), outlineMarks(outlineLineSet(tangledOutline, 'ts-'))],
     }),
-    sourceOutline: outlineOf(loomSource, headingLine('loom-')),
-    tangledOutline: outlineOf(tangledSource, symbolLine('ts-')),
+    sourceOutline,
+    tangledOutline,
     codeHtml,
   }
 

@@ -5,6 +5,8 @@ import { ssrHydration } from '@athrio/foldkit-hydration'
 import { view } from './view'
 import { ROTATOR_WORDS } from './hero'
 import {
+  Accent,
+  AccentApplied,
   CopyReset,
   GotGameMessage,
   type Message,
@@ -16,6 +18,8 @@ import {
   SelectedSection,
   SpottedSection,
   ThemeApplied,
+  TitleColors,
+  TitleColorsApplied,
 } from './model'
 import * as Gomoku from '../../examples/gomoku/gomoku'
 
@@ -54,10 +58,27 @@ const ScrollToSection = define('ScrollToSection', { id: S.String }, SectionScrol
     ),
 )
 
+const THEME_KEY = 'loom-theme'
+
 const ApplyTheme = define('ApplyTheme', { theme: S.Literals(['dark', 'light']) }, ThemeApplied)(
   ({ theme }) =>
     Effect.sync(() => document.documentElement.setAttribute('data-theme', theme)).pipe(
+      Effect.andThen(Effect.try(() => localStorage.setItem(THEME_KEY, theme)).pipe(Effect.ignore)),
       Effect.as(ThemeApplied()),
+    ),
+)
+
+const ApplyAccent = define('ApplyAccent', { accent: Accent }, AccentApplied)(
+  ({ accent }) =>
+    Effect.sync(() => document.documentElement.setAttribute('data-accent', accent)).pipe(
+      Effect.as(AccentApplied()),
+    ),
+)
+
+const ApplyTitleColors = define('ApplyTitleColors', { titleColors: TitleColors }, TitleColorsApplied)(
+  ({ titleColors }) =>
+    Effect.sync(() => document.documentElement.setAttribute('data-title', titleColors)).pipe(
+      Effect.as(TitleColorsApplied()),
     ),
 )
 
@@ -73,6 +94,16 @@ const update = (model: Model, message: Message): Step =>
         return [{ ...model, theme }, [ApplyTheme({ theme })]]
       },
       ThemeApplied: () => [model, []],
+      SelectedAccent: ({ accent }) => [
+        { ...model, accent, theme: 'light' },
+        [ApplyTheme({ theme: 'light' }), ApplyAccent({ accent })],
+      ],
+      AccentApplied: () => [model, []],
+      SelectedTitleColors: ({ titleColors }) => [
+        { ...model, titleColors },
+        [ApplyTitleColors({ titleColors })],
+      ],
+      TitleColorsApplied: () => [model, []],
       SelectedTab: ({ tab }) => {
         const replay = tab === 'play' && model.exampleTab === 'play'
         if (!replay) {
@@ -114,15 +145,16 @@ const update = (model: Model, message: Message): Step =>
     }),
   )
 
-const SPY_OFFSET = 96
+const SPY_OFFSET = 100
+const SPY_TARGETS = '.how-file-title, .how-section-h, .shiki-scroll .line.outline-anchor'
 
 const activeSectionId = (): Option.Option<string> => {
-  const headings = Array.fromIterable(
-    document.querySelectorAll<HTMLElement>('.how-file-title, .how-section-h'),
+  const targets = Array.fromIterable(
+    document.querySelectorAll<HTMLElement>(SPY_TARGETS),
   )
   return pipe(
-    Array.last(Array.filter(headings, (el) => el.getBoundingClientRect().top <= SPY_OFFSET)),
-    Option.orElse(() => Array.head(headings)),
+    Array.last(Array.filter(targets, (el) => el.getBoundingClientRect().top <= SPY_OFFSET)),
+    Option.orElse(() => Array.head(targets)),
     Option.map((el) => el.id),
     Option.filter((id) => id.length > 0),
   )
@@ -130,13 +162,13 @@ const activeSectionId = (): Option.Option<string> => {
 
 const subscriptions = Subscription.make<Model, Message>()((entry) => ({
   sectionSpy: entry(
-    { previewing: S.Boolean },
+    { spying: S.Boolean },
     {
       modelToDependencies: (model) => ({
-        previewing: model.exampleTab === 'loom' && model.loomView === 'preview',
+        spying: model.exampleTab !== 'play',
       }),
-      dependenciesToStream: ({ previewing }) =>
-        previewing
+      dependenciesToStream: ({ spying }) =>
+        spying
           ? Subscription.fromEventFilterMap<Event, Message>({
               target: window,
               type: 'scroll',
@@ -152,12 +184,14 @@ import '@fontsource/ia-writer-quattro'
 import './landing.css'
 
 const emptyModel: Model = {
-  theme: 'dark',
+  theme: 'light',
+  accent: 'duo',
+  titleColors: 'three',
   rotatorIndex: 0,
   rotatorPhase: 'normal',
   activeSection: '',
   exampleTab: 'loom',
-  loomView: 'preview',
+  loomView: 'source',
   exampleExpanded: false,
   game: Gomoku.newGame(),
   version: '0.0.9',
@@ -166,14 +200,27 @@ const emptyModel: Model = {
   copied: '',
 }
 
-const flags: Effect.Effect<Model> = Effect.sync(() => {
+const readStoredTheme: Effect.Effect<Option.Option<Model['theme']>> =
+  Effect.try(() => localStorage.getItem(THEME_KEY)).pipe(
+    Effect.catchCause(() => Effect.succeed(null)),
+    Effect.map((raw) =>
+      Option.filter(
+        Option.fromNullishOr(raw),
+        (value): value is Model['theme'] => value === 'dark' || value === 'light',
+      ),
+    ),
+  )
+
+const flags: Effect.Effect<Model> = Effect.gen(function* () {
   const inlined = Option.fromNullishOr(
     document.getElementById('foldkit-model')?.textContent,
   )
-  return Option.match(inlined, {
+  const base = Option.match(inlined, {
     onSome: (text) => S.decodeUnknownSync(Model)(JSON.parse(text)),
     onNone: () => emptyModel,
   })
+  const stored = yield* readStoredTheme
+  return { ...base, theme: Option.getOrElse(stored, () => base.theme) }
 })
 
 const application = Runtime.makeApplication({

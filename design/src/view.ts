@@ -1,6 +1,6 @@
 import { Array } from 'effect'
 import type { Document, Html } from 'foldkit/html'
-import { tabbar, titlebar } from './components'
+import { loomIcon, tabbar, titlebar } from './components'
 import { hero } from './hero'
 import { middle } from './middle'
 import { h, type Model } from './model'
@@ -37,13 +37,11 @@ const footer = (): Html =>
                 [
                   h.a(
                     [h.Class('brand'), h.Href('#')],
-                    [h.span([h.Class('b-mark')], ['~']), h.span([], ['loom'])],
+                    [h.span([h.Class('b-mark')], [loomIcon()]), h.span([], ['loom'])],
                   ),
                   h.p(
                     [h.Class('tag')],
-                    [
-                      'A literate programming framework in Effect-TS. Prose and code, woven into one source — then tangled into the real thing.',
-                    ],
+                    ['Literate programming framework for AI-assisted engineering.'],
                   ),
                 ],
               ),
@@ -73,7 +71,7 @@ const page = (model: Model): Html =>
     [],
     [
       titlebar(model.theme),
-      tabbar(model.version),
+      tabbar(),
       h.main([], [hero(model), middle(model)]),
       footer(),
     ],

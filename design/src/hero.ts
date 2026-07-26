@@ -120,14 +120,13 @@ const whatLoom = (): Html =>
     ],
   )
 
-const metaRow = (version: string): Html =>
+const heroLogo = (version: string): Html =>
   h.div(
-    [h.Class('meta-row')],
+    [h.Class('hero-logo')],
     [
-      h.span(
-        [h.Class('pill')],
-        [h.span([h.Class('pill-mark')], [loomIcon()]), `loom · v${version}`],
-      ),
+      h.span([h.Class('hero-logo-mark')], [loomIcon()]),
+      h.span([h.Class('hero-logo-word')], ['loom']),
+      h.span([h.Class('hero-logo-ver')], [`v${version}`]),
     ],
   )
 
@@ -150,7 +149,7 @@ export const hero = (model: Model): Html =>
       h.div(
         [h.Class('wrap')],
         [
-          metaRow(model.version),
+          heroLogo(model.version),
           h.div([h.Class('hero-grid')], [pitch(model), whatLoom()]),
         ],
       ),

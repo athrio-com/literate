@@ -13,9 +13,11 @@ The landing dresses itself as a code editor. Its palette is a deep editor slate 
 
 The tokens name the palette and the faces. The backgrounds layer the page from the darkest surface up. The foregrounds ramp from bright text to the faintest label. The accents are the syntax colours — a cyan, a mint, a violet, an amber, a rose — and the mint is the primary, the colour a selection and a live mark wear. A shadow token holds the drop a raised panel casts.
 
-The page carries a second palette in Gruvbox Light Soft. A `data-theme` attribute set to light on the root swaps every colour token to its light value — a warm cream ground, ink foregrounds, and the accents in gruvbox's own muted hues — while the faces stay the same. Because every rule reads a token, the whole page turns on that one attribute.
+The page carries a second palette for the light theme. A `data-theme` attribute set to light on the root swaps every colour token to its light value — a warm Gruvbox cream ground, ink foregrounds, and accents in a rust-and-olive duo — while the faces stay the same. Because every rule reads a token, the whole page turns on that one attribute.
 
-The base sets the page in the mono face on the slate.
+The light theme leads with a rust duo — a warm terracotta set led by an olive-green primary — the default the base rule sets. Seven more families sit behind a `data-accent` attribute the tweaks panel switches. Four are earthy, one warm-to-green arc at a muted tone: a terracotta rust, a golden ochre, a khaki olive, and a green moss. Three break that calm on purpose: a hot fuchsia, an electric blue, and a vivid grape. Each family overrides only the six accent tokens, so the ground and the text hold still while the accents change.
+
+The base sets the page in the mono face on the slate. Every face ends in Noto Color Emoji, so an emoji the page shows — the game's bomb, its blast — renders the same on every client rather than in each platform's own set.
 
 =>
 
@@ -41,9 +43,9 @@ The base sets the page in the mono face on the slate.
   --primary:   var(--acc-mint);
   --shadow:    #000000B0;
 
-  --display: 'Newsreader', Georgia, serif;
-  --sans:    'iA Writer Quattro', 'iA Writer Quattro S', system-ui, -apple-system, sans-serif;
-  --mono:    'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --display: 'Newsreader', Georgia, 'Noto Color Emoji', serif;
+  --sans:    'iA Writer Quattro', 'iA Writer Quattro S', system-ui, -apple-system, 'Noto Color Emoji', sans-serif;
+  --mono:    'JetBrains Mono', ui-monospace, Menlo, 'Noto Color Emoji', monospace;
 }
 
 :root[data-theme="light"] {
@@ -58,14 +60,71 @@ The base sets the page in the mono face on the slate.
   --fg-3:      #665C54;
   --fg-4:      #928374;
 
-  --acc-cyan:   #076678;
-  --acc-mint:   #427B58;
-  --acc-violet: #8F3F71;
-  --acc-amber:  #B57614;
-  --acc-rose:   #9D0006;
-  --acc-grey:   #7C6F64;
+  --acc-cyan:   #913C30;
+  --acc-mint:   #699130;
+  --acc-violet: #918430;
+  --acc-amber:  #913044;
+  --acc-rose:   #769130;
+  --acc-grey:   #7B6D65;
 
   --shadow:    #79695033;
+}
+
+:root[data-theme="light"][data-accent="rust"] {
+  --acc-cyan:   #913C30;
+  --acc-mint:   #915430;
+  --acc-violet: #918430;
+  --acc-amber:  #913044;
+  --acc-rose:   #769130;
+  --acc-grey:   #7B6D65;
+}
+:root[data-theme="light"][data-accent="ochre"] {
+  --acc-cyan:   #916630;
+  --acc-mint:   #917E30;
+  --acc-violet: #749130;
+  --acc-amber:  #914730;
+  --acc-rose:   #4C9130;
+  --acc-grey:   #7B7765;
+}
+:root[data-theme="light"][data-accent="olive"] {
+  --acc-cyan:   #917C30;
+  --acc-mint:   #8E9130;
+  --acc-violet: #5E9130;
+  --acc-amber:  #915E30;
+  --acc-rose:   #359130;
+  --acc-grey:   #7B7B65;
+}
+:root[data-theme="light"][data-accent="moss"] {
+  --acc-cyan:   #309139;
+  --acc-mint:   #309151;
+  --acc-violet: #309181;
+  --acc-amber:  #479130;
+  --acc-rose:   #307991;
+  --acc-grey:   #657B6C;
+}
+:root[data-theme="light"][data-accent="fuchsia"] {
+  --acc-cyan:   #AD1F8E;
+  --acc-mint:   #AD1F6B;
+  --acc-violet: #AD1F23;
+  --acc-amber:  #9F1FAD;
+  --acc-rose:   #AD551F;
+  --acc-grey:   #825E71;
+}
+:root[data-theme="light"][data-accent="electric"] {
+  --acc-cyan:   #1F96AD;
+  --acc-mint:   #1F72AD;
+  --acc-violet: #1F2AAD;
+  --acc-amber:  #1FAD98;
+  --acc-rose:   #4E1FAD;
+  --acc-grey:   #5E7382;
+}
+:root[data-theme="light"][data-accent="grape"] {
+  --acc-cyan:   #471FAD;
+  --acc-mint:   #6B1FAD;
+  --acc-violet: #AD1FA9;
+  --acc-amber:  #1F23AD;
+  --acc-rose:   #AD1F6D;
+  --acc-grey:   #715E82;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -86,27 +145,32 @@ main, header, footer { position: relative; }
 
 ## The window chrome
 
-The page wears a window's chrome. A title bar runs across the top: the loom mark, a breadcrumb trail, and on the right a live dot beside the theme switch. Below it a tab bar carries the site's menu as a row of open tabs, with the version and the search shortcut at its right end. Both bars stay sticky, so the chrome holds while the content scrolls.
+The page wears a window's chrome. A title bar runs across the top: the Loom logo on the left — its woven mark beside the wordmark — and the theme switch on the right. Below it a tab bar carries the site's menu as a row of open tabs, drawn on the page's own colour so the tabs read as tabs, with a link to the source at its right end. Both bars stay sticky, so the chrome holds while the content scrolls.
 
 =>
 
 .titlebar {
-  height: 36px;
+  height: 44px;
   border-bottom: 1px solid var(--rule);
   background: var(--bg-2);
   display: flex; align-items: center;
-  padding: 0 14px;
+  padding: 0 16px;
   font-family: var(--mono);
   font-size: 12px;
   color: var(--fg-3);
   position: sticky; top: 0; z-index: 60;
 }
-.title-mark { display: inline-flex; margin-right: 14px; color: var(--acc-mint); }
-.titlebar .crumbs { display: flex; align-items: center; gap: 8px; }
-.titlebar .crumbs .sep { color: var(--fg-4); }
-.titlebar .crumbs .file { color: var(--fg); }
+.title-logo { display: inline-flex; align-items: center; gap: 9px; color: var(--fg); }
+.title-mark { display: inline-flex; color: var(--acc-mint); }
+.title-mark svg { width: 22px; height: 22px; }
+.title-word {
+  font-family: var(--mono);
+  font-size: 16px; font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
 .titlebar .right {
-  margin-left: auto; display: flex; gap: 18px; align-items: center;
+  margin-left: auto; display: flex; gap: 14px; align-items: center;
   color: var(--fg-3);
 }
 .titlebar .right kbd,
@@ -132,44 +196,30 @@ The page wears a window's chrome. A title bar runs across the top: the loom mark
 }
 .theme-switch:hover { color: var(--fg); border-color: var(--fg-4); background: var(--bg-4); }
 .theme-switch svg { display: block; }
-.live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--acc-mint);
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--acc-mint) 60%, transparent);
-  animation: pulse 2s ease-in-out infinite;
-}
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--acc-mint) 50%, transparent); }
-  50%      { box-shadow: 0 0 0 6px transparent; }
-}
 
 .tabbar {
   display: flex; align-items: stretch;
-  background: var(--bg-2);
+  background: var(--bg);
   border-bottom: 1px solid var(--rule);
-  height: 34px;
+  height: 40px;
   font-family: var(--mono); font-size: 12px;
-  position: sticky; top: 36px; z-index: 55;
+  position: sticky; top: 44px; z-index: 55;
 }
 .tab {
   display: flex; align-items: center; gap: 8px;
-  padding: 0 14px;
+  padding: 0 16px;
   color: var(--fg-3);
   text-decoration: none;
-  border-right: 1px solid var(--rule);
   cursor: pointer;
   position: relative;
-  transition: color .15s ease, background .15s ease;
+  box-shadow: inset 0 -2px 0 0 transparent;
+  transition: color .15s ease, background .15s ease, box-shadow .15s ease;
 }
 .tab.active {
   color: var(--fg);
-  background: var(--bg);
+  box-shadow: inset 0 -2px 0 0 var(--primary);
 }
-.tab.active::after {
-  content: ""; position: absolute; left: 0; right: 0; bottom: -1px;
-  height: 1px; background: var(--bg);
-}
-.tab:hover:not(.active) { color: var(--fg-2); background: var(--bg-3); }
+.tab:hover:not(.active) { color: var(--fg-2); background: color-mix(in srgb, var(--fg) 6%, transparent); }
 .tab .dot {
   width: 6px; height: 6px; border-radius: 50%;
   background: var(--acc-cyan);
@@ -182,10 +232,15 @@ The page wears a window's chrome. A title bar runs across the top: the loom mark
   padding: 0 14px;
   color: var(--fg-3);
 }
+.tabbar .right .bar-github {
+  display: inline-flex; align-items: center;
+  transition: color .15s ease;
+}
+.tabbar .right .bar-github:hover { color: var(--fg); }
 
 ## The hero and its rotating headline
 
-The hero is the first screen: a meta line, then two columns. On the left is the pitch — the headline and the install rows beneath it; on the right, a short statement of what Loom is, a lead line and four points each marked with the loom mark, the calls to action beneath. The two columns align at the top, so the statement starts level with the headline. The headline is set large in the display serif, and one word of it rotates — swapping on a blur-and-slide transition — with a blinking caret after it. Below a set width the two columns fall into one, the statement below the pitch.
+The hero is the first screen: the Loom logo set large, then two columns. On the left is the pitch — the headline and the install rows beneath it; on the right, a short statement of what Loom is, a lead line and four points each marked with the loom mark, the calls to action beneath. The two columns align at the top, so the statement starts level with the headline. The headline is set large in the display serif, and one word of it rotates — swapping on a blur-and-slide transition — with a blinking caret after it. Its three lines carry three colours: plain text, then mint, then violet on the rotating line. A `data-title` of two folds that to two colours, the rotating line taking the mint. Below a set width the two columns fall into one, the statement below the pitch.
 
 =>
 
@@ -214,24 +269,29 @@ The hero is the first screen: a meta line, then two columns. On the left is the 
 }
 .gutter { color: var(--fg-4); width: 22px; text-align: right; user-select: none; flex-shrink: 0; }
 
-.meta-row {
+.hero-logo {
   display: flex; align-items: center; gap: 14px;
+  margin-bottom: 40px;
+}
+.hero-logo-mark { display: inline-flex; color: var(--acc-mint); }
+.hero-logo-mark svg { width: 46px; height: 46px; }
+.hero-logo-word {
+  font-family: var(--display);
+  font-weight: 300;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+.hero-logo-ver {
+  align-self: center;
+  font-family: var(--mono);
+  font-size: 12px;
   color: var(--fg-3);
-  font-family: var(--mono); font-size: 11px;
-  margin-bottom: 36px;
-  letter-spacing: 0.04em;
-}
-.meta-row .pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   border: 1px solid var(--rule-2);
-  border-radius: 6px;
-  padding: 6px 12px;
-  color: var(--fg-2);
-  font-size: 13px;
+  border-radius: 999px;
+  padding: 3px 9px;
 }
-.meta-row .pill .pill-mark { display: inline-flex; color: var(--acc-mint); }
 
 h1.loom-h {
   font-family: var(--display);
@@ -246,6 +306,7 @@ h1.loom-h {
 h1.loom-h .hl-1 { color: var(--fg); }
 h1.loom-h .hl-2 { color: var(--acc-mint); }
 h1.loom-h .hl-3 { color: var(--acc-violet); }
+:root[data-title="two"] h1.loom-h .hl-3 { color: var(--acc-mint); }
 .rotator-host {
   display: inline-block;
   position: relative;
@@ -285,7 +346,7 @@ h1.loom-h .hl-3 { color: var(--acc-violet); }
   gap: 14px;
 }
 .hero-points li { display: flex; gap: 12px; align-items: flex-start; }
-.hero-bullet { flex-shrink: 0; display: inline-flex; align-items: center; height: 1.7em; color: var(--acc-mint); }
+.hero-bullet { flex-shrink: 0; display: inline-flex; align-items: center; height: 1.7em; color: var(--acc-amber); }
 .hero-prim {
   font-family: var(--mono);
   font-size: 0.86em;
@@ -298,7 +359,7 @@ h1.loom-h .hl-3 { color: var(--acc-violet); }
 
 ## The call to action
 
-Below the install rows sit the calls to action, a row of two buttons — read the docs, browse the source. A button is a quiet slate pill; the primary one wears the mint.
+Below the install rows sit the calls to action, a row of two buttons — read the docs, browse the source. Each is a quiet slate pill, the primary one in mint. A hard shadow in a darker shade of the button's own colour lifts it off the page to the lower right, the way an old desktop button stood proud of its surface. Hovering presses the button toward that shadow, and the shadow shrinks to meet it.
 
 =>
 
@@ -316,18 +377,20 @@ Below the install rows sit the calls to action, a row of two buttons — read th
   font-family: var(--mono);
   font-size: 13px;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+  --btn-shadow: color-mix(in srgb, var(--bg-3) 72%, #000);
+  box-shadow: 2px 2px 0 0 var(--btn-shadow);
+  transition: background .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
 }
-.btn:hover { background: var(--bg-4); border-color: var(--fg-4); }
+.btn:hover { background: var(--bg-4); border-color: var(--fg-4); transform: translate(1px, 1px); box-shadow: 1px 1px 0 0 var(--btn-shadow); }
+.btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 0 var(--btn-shadow); }
 .btn.primary {
   background: var(--acc-mint);
   color: var(--bg);
   border-color: var(--acc-mint);
   font-weight: 500;
+  --btn-shadow: color-mix(in srgb, var(--acc-mint) 72%, #000);
 }
 .btn.primary:hover { background: color-mix(in srgb, var(--acc-mint) 90%, white); }
-.btn .arrow { transition: transform .2s ease; }
-.btn:hover .arrow { transform: translateX(2px); }
 .keys {
   color: var(--fg-3);
   font-family: var(--mono); font-size: 12px;
@@ -409,7 +472,7 @@ section.s {
 
 ## How it works — the tabbed panel
 
-The how-it-works section gives its width to one panel, an editor with three tabs: the loom, the tangled TypeScript, and the playable game. The loom tab reads as a rendered document or, at the flick of a switch, as its raw source. Every document view sets its canvas beside an outline that stays in view as the page scrolls: the preview lists the example's headings, the raw source the loom's own, the tangle the symbols it exports behind a muted chip for each one's kind. A row in any of them jumps to its target and lifts to mint. The tangle tab holds the whole file, coloured at build time in both of the landing's palettes so the code turns light or dark with the page. The panel grows to the height of whatever it shows, so the page carries the scroll and nothing nests inside; only the game keeps a fixed height, a square board that stays in reach. Prose reads as prose, code keeps its syntax colour, and an anchor the loom has not resolved stays violet. The prose holds a measure of a hundred characters, so a line stays readable instead of running the full width of the pane.
+The how-it-works section gives its width to one panel, an editor with three tabs: the loom, the tangled TypeScript, and the playable game. The loom tab reads as its raw source or, at the flick of a switch, as a rendered document. Every document view sets its canvas beside an outline that stays in view as the page scrolls: the preview lists the example's headings, the raw source the loom's own, the tangle the symbols it exports behind a muted chip for each one's kind. A row in any of them jumps to its target and lifts to mint. The tangle tab holds the whole file, coloured at build time in both of the landing's palettes so the code turns light or dark with the page. The panel grows to the height of whatever it shows, so the page carries the scroll and nothing nests inside; only the game keeps a fixed height, a square board that stays in reach. The board tells the two sides apart by colour. The reader plays the violet stones and the engine the mint, and the light theme returns both to plain black and white. Prose reads as prose, code keeps its syntax colour, and an anchor the loom has not resolved stays violet. The prose holds a measure of a hundred characters, so a line stays readable instead of running the full width of the pane.
 
 =>
 
@@ -573,9 +636,9 @@ The how-it-works section gives its width to one panel, an editor with three tabs
 }
 .how-outline {
   position: sticky;
-  top: 84px;
+  top: 96px;
   align-self: start;
-  max-height: calc(100vh - 104px);
+  max-height: calc(100vh - 116px);
   overflow-y: auto;
   padding: 40px 16px 24px;
   font-family: var(--mono);
@@ -606,7 +669,7 @@ The how-it-works section gives its width to one panel, an editor with three tabs
   line-height: 1.15;
   letter-spacing: -0.015em;
   margin: 0 0 14px;
-  scroll-margin-top: 84px;
+  scroll-margin-top: 96px;
   color: var(--fg);
 }
 .how-section-h {
@@ -616,7 +679,7 @@ The how-it-works section gives its width to one panel, an editor with three tabs
   line-height: 1.2;
   letter-spacing: -0.01em;
   margin: 36px 0 12px;
-  scroll-margin-top: 84px;
+  scroll-margin-top: 96px;
   color: var(--fg);
   transition: color .15s ease;
 }
@@ -787,6 +850,16 @@ The how-it-works section gives its width to one panel, an editor with three tabs
   --glow: var(--acc-mint);
   background: radial-gradient(circle at 36% 30%, var(--acc-mint), color-mix(in srgb, var(--acc-mint) 52%, black) 88%);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+:root[data-theme="light"] .gomoku-cell.black::after {
+  --glow: #3C3836;
+  background: radial-gradient(circle at 36% 30%, #6A6560, #1B1A18 88%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+:root[data-theme="light"] .gomoku-cell.white::after {
+  --glow: #BDAE93;
+  background: radial-gradient(circle at 36% 30%, #FFFFFF, #ECE6D6 88%);
+  box-shadow: inset 0 0 0 1px rgba(60, 56, 54, 0.18), 0 1px 2px rgba(0, 0, 0, 0.22);
 }
 .gomoku-cell.win {
   z-index: 2;
@@ -1005,18 +1078,74 @@ footer.foot {
   margin-top: 16px;
 }
 .brand {
-  display: inline-flex; align-items: baseline; gap: 8px;
+  display: inline-flex; align-items: center; gap: 7px;
   font-family: var(--mono);
-  font-size: 16px; font-weight: 500;
+  font-size: 19px; font-weight: 500;
   color: var(--fg);
 }
 .brand .b-mark {
+  display: inline-flex;
   color: var(--acc-mint);
+}
+.brand .b-mark svg { width: 20px; height: 20px; }
+
+## The tweaks panel
+
+The tweaks panel is the small control that tries the light theme's accent families and the hero title's colour count. It sits fixed in the lower-right corner, above the page, dressed in the same tokens as the chrome so it reads at home in either theme. Its options fall into two groups under their own headings — the accent families, then the title. Each row names an option beside a strip of its colours, and the one in play wears a raised, bordered look. A swatch carries a faint inner ring, so a pale colour still shows its edge. The panel scrolls within its own height when the options outrun the screen.
+
+=>
+
+.tweaks {
+  position: fixed;
+  right: 18px; bottom: 18px;
+  z-index: 200;
+  width: 208px;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+  padding: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--rule-2);
+  border-radius: 10px;
+  box-shadow: 0 20px 50px -20px var(--shadow);
+  font-family: var(--mono);
+}
+.tweaks-head {
+  margin: 2px 4px 8px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-4);
+}
+.tweaks-opts + .tweaks-head { margin-top: 14px; }
+.tweaks-opts { display: flex; flex-direction: column; gap: 4px; }
+.tweaks-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: none;
+  color: var(--fg-2);
+  font: inherit; font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.tweaks-opt:hover { background: var(--bg-3); color: var(--fg); }
+.tweaks-opt.active {
+  background: var(--bg-3);
+  border-color: var(--rule-2);
+  color: var(--fg);
+}
+.tweaks-sw { display: inline-flex; gap: 3px; }
+.tweaks-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px #0000001A;
 }
 
 ## The stylesheet {Tangle}[landing.css]
 
-The stylesheet is the tokens and base, then each region top to bottom: the window chrome, the hero and its call to action, the shared panel head, the numbered sections, how-it-works and the palette, the install rows, and the footer.
+The stylesheet is the tokens and base, then each region top to bottom: the window chrome, the hero and its call to action, the shared panel head, the numbered sections, how-it-works and the palette, the install rows, the footer, and the tweaks panel.
 
 =>
 
@@ -1039,3 +1168,5 @@ The stylesheet is the tokens and base, then each region top to bottom: the windo
 ::[The install rows]
 
 ::[The footer]
+
+::[The tweaks panel]

@@ -21,6 +21,8 @@ import { ssrHydration } from '@athrio/foldkit-hydration'
 import { view } from './view'
 import { ROTATOR_WORDS } from './hero'
 import {
+  Accent,
+  AccentApplied,
   CopyReset,
   GotGameMessage,
   type Message,
@@ -32,6 +34,8 @@ import {
   SelectedSection,
   SpottedSection,
   ThemeApplied,
+  TitleColors,
+  TitleColorsApplied,
 } from './model'
 import * as Gomoku from '../../examples/gomoku/gomoku'
 
@@ -82,22 +86,39 @@ const ScrollToSection = define('ScrollToSection', { id: S.String }, SectionScrol
     ),
 )
 
-## Applying the theme
+## Applying the palette
 
-The theme is a field in the model, but the palette it names takes effect on the document's root element, where the stylesheet's light rules look for it. `ApplyTheme` puts it there: it sets a `data-theme` attribute on the root, then reports back with `ThemeApplied`. Writing to the document is a side effect, so it runs from a command and leaves the update pure.
+The theme, the accent, and the hero's title colours are fields in the model, but the look they name takes effect on the document's root element, where the stylesheet's rules look for it. `ApplyTheme` sets a `data-theme` attribute on the root, `ApplyAccent` a `data-accent`, and `ApplyTitleColors` a `data-title`, each reporting back when it is done. `ApplyTheme` also writes the theme to `localStorage`, so a refresh or a later visit opens on the palette the reader last chose. Writing to the document is a side effect, so all three run from commands and leave the update pure.
 
 =>
+
+const THEME_KEY = 'loom-theme'
 
 const ApplyTheme = define('ApplyTheme', { theme: S.Literals(['dark', 'light']) }, ThemeApplied)(
   ({ theme }) =>
     Effect.sync(() => document.documentElement.setAttribute('data-theme', theme)).pipe(
+      Effect.andThen(Effect.try(() => localStorage.setItem(THEME_KEY, theme)).pipe(Effect.ignore)),
       Effect.as(ThemeApplied()),
+    ),
+)
+
+const ApplyAccent = define('ApplyAccent', { accent: Accent }, AccentApplied)(
+  ({ accent }) =>
+    Effect.sync(() => document.documentElement.setAttribute('data-accent', accent)).pipe(
+      Effect.as(AccentApplied()),
+    ),
+)
+
+const ApplyTitleColors = define('ApplyTitleColors', { titleColors: TitleColors }, TitleColorsApplied)(
+  ({ titleColors }) =>
+    Effect.sync(() => document.documentElement.setAttribute('data-title', titleColors)).pipe(
+      Effect.as(TitleColorsApplied()),
     ),
 )
 
 ## The update
 
-Most messages set one field: the query, the focus clamped to the results, the loom tab's view, whether the example stands at full height. Toggling the theme flips it between dark and light and asks a command to write the new one to the page. That command's answer runs nothing. Switching the example tab sets it too, with one exception — clicking the Play tab while it is already open starts a fresh game, running the component's own reset. The embedded game otherwise runs its own update; the panel keeps the board it returns and lifts the game's commands — the one that thinks out the computer's move, and the one that arms a new game's bombs — into its own, so they run. Selecting a section sets the active one and asks the preview to scroll to it. A section spotted while the reader scrolls sets the active one too, but runs nothing, so the outline follows the scroll rather than fighting it. Copying flashes the pressed button and runs its reset. The rotator's three messages move it through its phases and hand off to the next command.
+Most messages set one field: the query, the focus clamped to the results, the loom tab's view, whether the example stands at full height. Toggling the theme flips it between dark and light and asks a command to write the new one to the page. Picking an accent sets it and drops the theme to light so the choice shows, then writes both to the page. Setting the hero's title colours writes them as well. Those commands' answers run nothing. Switching the example tab sets it too, with one exception — clicking the Play tab while it is already open starts a fresh game, running the component's own reset. The embedded game otherwise runs its own update; the panel keeps the board it returns and lifts the game's commands — the one that thinks out the computer's move, and the one that arms a new game's bombs — into its own, so they run. Selecting a section sets the active one and asks the preview to scroll to it. A section spotted while the reader scrolls sets the active one too, but runs nothing, so the outline follows the scroll rather than fighting it. Copying flashes the pressed button and runs its reset. The rotator's three messages move it through its phases and hand off to the next command.
 
 =>
 
@@ -113,6 +134,16 @@ const update = (model: Model, message: Message): Step =>
         return [{ ...model, theme }, [ApplyTheme({ theme })]]
       },
       ThemeApplied: () => [model, []],
+      SelectedAccent: ({ accent }) => [
+        { ...model, accent, theme: 'light' },
+        [ApplyTheme({ theme: 'light' }), ApplyAccent({ accent })],
+      ],
+      AccentApplied: () => [model, []],
+      SelectedTitleColors: ({ titleColors }) => [
+        { ...model, titleColors },
+        [ApplyTitleColors({ titleColors })],
+      ],
+      TitleColorsApplied: () => [model, []],
       SelectedTab: ({ tab }) => {
         const replay = tab === 'play' && model.exampleTab === 'play'
         if (!replay) {
@@ -156,19 +187,20 @@ const update = (model: Model, message: Message): Step =>
 
 ## Spotting the section on scroll
 
-The outline should follow the reader, not only lead them. While the preview shows, a subscription watches the window scroll: it finds the heading nearest the top of the view — the section the reader is in — and lifts that row in the outline. `activeSectionId` reads the rendered headings, keeps the ones scrolled up past a small offset, and takes the last; when none has reached the offset yet, it falls back to the first. The subscription runs only while the loom tab shows its preview, the one time those headings are on the page.
+The outline should follow the reader, not only lead them. Whenever a view carries an outline — the rendered preview, the loom source, or the tangle — a subscription watches the window scroll: it finds the target nearest the top of the view and lifts that row in the outline. `activeSectionId` reads whatever targets the current view shows, the preview's headings or the source and tangle's flagged lines, keeps the ones scrolled up past a small offset, and takes the last; when none has reached the offset yet, it falls back to the first. Only the play tab, a game rather than a document, leaves the scroll alone.
 
 =>
 
-const SPY_OFFSET = 96
+const SPY_OFFSET = 100
+const SPY_TARGETS = '.how-file-title, .how-section-h, .shiki-scroll .line.outline-anchor'
 
 const activeSectionId = (): Option.Option<string> => {
-  const headings = Array.fromIterable(
-    document.querySelectorAll<HTMLElement>('.how-file-title, .how-section-h'),
+  const targets = Array.fromIterable(
+    document.querySelectorAll<HTMLElement>(SPY_TARGETS),
   )
   return pipe(
-    Array.last(Array.filter(headings, (el) => el.getBoundingClientRect().top <= SPY_OFFSET)),
-    Option.orElse(() => Array.head(headings)),
+    Array.last(Array.filter(targets, (el) => el.getBoundingClientRect().top <= SPY_OFFSET)),
+    Option.orElse(() => Array.head(targets)),
     Option.map((el) => el.id),
     Option.filter((id) => id.length > 0),
   )
@@ -176,13 +208,13 @@ const activeSectionId = (): Option.Option<string> => {
 
 const subscriptions = Subscription.make<Model, Message>()((entry) => ({
   sectionSpy: entry(
-    { previewing: S.Boolean },
+    { spying: S.Boolean },
     {
       modelToDependencies: (model) => ({
-        previewing: model.exampleTab === 'loom' && model.loomView === 'preview',
+        spying: model.exampleTab !== 'play',
       }),
-      dependenciesToStream: ({ previewing }) =>
-        previewing
+      dependenciesToStream: ({ spying }) =>
+        spying
           ? Subscription.fromEventFilterMap<Event, Message>({
               target: window,
               type: 'scroll',
@@ -196,7 +228,7 @@ const subscriptions = Subscription.make<Model, Message>()((entry) => ({
 
 ## Booting
 
-The client boots from a model — the one the server inlined on a real load, or a default in development. The default names the workspace version, since no server has fetched the latest release. It starts the rotator's loop in `init`, after its first turn. Importing the stylesheet here, in the browser entry, keeps it out of the server's path.
+The client boots from a model — the one the server inlined on a real load, or a default in development. That default leads with the light theme and names the workspace version, since no server has fetched the latest release. Either way, the boot then reads the theme the reader saved in `localStorage` and prefers it, so a refresh holds the palette they last chose. It starts the rotator's loop in `init`, after its first turn. Importing the stylesheet here, in the browser entry, keeps it out of the server's path.
 
 {{ version = ${version} }}
 
@@ -206,12 +238,14 @@ import '@fontsource/ia-writer-quattro'
 import './landing.css'
 
 const emptyModel: Model = {
-  theme: 'dark',
+  theme: 'light',
+  accent: 'duo',
+  titleColors: 'three',
   rotatorIndex: 0,
   rotatorPhase: 'normal',
   activeSection: '',
   exampleTab: 'loom',
-  loomView: 'preview',
+  loomView: 'source',
   exampleExpanded: false,
   game: Gomoku.newGame(),
   version: '::[version]',
@@ -220,14 +254,27 @@ const emptyModel: Model = {
   copied: '',
 }
 
-const flags: Effect.Effect<Model> = Effect.sync(() => {
+const readStoredTheme: Effect.Effect<Option.Option<Model['theme']>> =
+  Effect.try(() => localStorage.getItem(THEME_KEY)).pipe(
+    Effect.catchCause(() => Effect.succeed(null)),
+    Effect.map((raw) =>
+      Option.filter(
+        Option.fromNullishOr(raw),
+        (value): value is Model['theme'] => value === 'dark' || value === 'light',
+      ),
+    ),
+  )
+
+const flags: Effect.Effect<Model> = Effect.gen(function* () {
   const inlined = Option.fromNullishOr(
     document.getElementById('foldkit-model')?.textContent,
   )
-  return Option.match(inlined, {
+  const base = Option.match(inlined, {
     onSome: (text) => S.decodeUnknownSync(Model)(JSON.parse(text)),
     onNone: () => emptyModel,
   })
+  const stored = yield* readStoredTheme
+  return { ...base, theme: Option.getOrElse(stored, () => base.theme) }
 })
 
 const application = Runtime.makeApplication({
@@ -254,7 +301,7 @@ Runtime.run(application)
 
 ::[Jumping to a section]
 
-::[Applying the theme]
+::[Applying the palette]
 
 ::[The update]
 

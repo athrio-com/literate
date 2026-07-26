@@ -189,8 +189,8 @@ const loomPane = (model: Model): Html =>
       h.div(
         [h.Class('loom-toggle')],
         [
-          loomToggleButton('preview', 'Preview', model.loomView),
           loomToggleButton('source', 'Source', model.loomView),
+          loomToggleButton('preview', 'Preview', model.loomView),
         ],
       ),
       loomBody(model),
@@ -372,12 +372,12 @@ const howItWorks = (model: Model): Html =>
             [
               h.div(
                 [h.Class('sec-num')],
-                [h.span([h.Class('arrow')], ['▸']), ' EXAMPLE OF A PROGRAM IN LOOM'],
+                [h.span([h.Class('arrow')], ['▸']), ' LITERATE PROGRAMMING WITH LOOM'],
               ),
               h.div(
                 [],
                 [
-                  h.h2([h.Class('sec-h')], ['Literate programming with Loom.']),
+                  h.h2([h.Class('sec-h')], ['Example of a program in Loom.']),
                   h.p(
                     [h.Class('sec-lede')],
                     ['An example of what a program looks like in Loom.'],

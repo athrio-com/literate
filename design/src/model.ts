@@ -3,8 +3,16 @@ import { html } from 'foldkit/html'
 import { m } from 'foldkit/message'
 import * as Gomoku from '../../examples/gomoku/gomoku'
 
+export const Accent = S.Literals(['rust', 'duo', 'ochre', 'olive', 'moss', 'fuchsia', 'electric', 'grape'])
+export type Accent = typeof Accent.Type
+
+export const TitleColors = S.Literals(['three', 'two'])
+export type TitleColors = typeof TitleColors.Type
+
 export const Model = S.Struct({
   theme: S.Literals(['dark', 'light']),
+  accent: Accent,
+  titleColors: TitleColors,
   rotatorIndex: S.Number,
   rotatorPhase: S.Literals(['normal', 'out', 'in-start']),
   activeSection: S.String,
@@ -21,6 +29,10 @@ export type Model = typeof Model.Type
 
 export const ToggledTheme = m('ToggledTheme')
 export const ThemeApplied = m('ThemeApplied')
+export const SelectedAccent = m('SelectedAccent', { accent: Accent })
+export const AccentApplied = m('AccentApplied')
+export const SelectedTitleColors = m('SelectedTitleColors', { titleColors: TitleColors })
+export const TitleColorsApplied = m('TitleColorsApplied')
 export const SelectedTab = m('SelectedTab', { tab: S.Literals(['loom', 'tangled', 'play']) })
 export const SelectedLoomView = m('SelectedLoomView', { view: S.Literals(['preview', 'source']) })
 export const ExpandedExample = m('ExpandedExample')
@@ -39,6 +51,10 @@ export const RotatorSettled = m('RotatorSettled')
 export const Message = S.Union([
   ToggledTheme,
   ThemeApplied,
+  SelectedAccent,
+  AccentApplied,
+  SelectedTitleColors,
+  TitleColorsApplied,
   SelectedTab,
   SelectedLoomView,
   ExpandedExample,

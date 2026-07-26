@@ -18,12 +18,14 @@ import * as Gomoku from '../../examples/gomoku/gomoku'
 const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 const seed: Model = {
-  theme: 'dark',
+  theme: 'light',
+  accent: 'duo',
+  titleColors: 'three',
   rotatorIndex: 0,
   rotatorPhase: 'normal',
   activeSection: '',
   exampleTab: 'loom',
-  loomView: 'preview',
+  loomView: 'source',
   exampleExpanded: false,
   game: Gomoku.newGame(),
   version: '0.0.9',

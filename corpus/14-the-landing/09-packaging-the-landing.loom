@@ -10,7 +10,7 @@ The landing is a small web application: a page the browser loads, a client that 
 
 ## The page {Tangle}[index.html]
 
-The page is the shell the application fills. It loads two type families from Google — a serif for display, a mono for code — while the prose sans, iA Writer Quattro, rides in with the client bundle. It carries an empty `#root` for the view to mount into, and the module that boots the client. The server rewrites two spots: the `#root` it fills with the rendered body, and the head where it inlines the model, so the strings `<div id="root"></div>` and `</head>` matter as much as the markup.
+The page is the shell the application fills. It loads three type families from Google — a serif for display, a mono for code, and Noto Color Emoji for the emoji the page shows — while the prose sans, iA Writer Quattro, rides in with the client bundle. It carries an empty `#root` for the view to mount into, and the module that boots the client. A small script in the head runs before the first paint: it reads the reader's saved theme, or falls back to the light one, and sets it on the root so the page never flashes the wrong palette. The server rewrites two spots: the `#root` it fills with the rendered body, and the head where it inlines the model, so the strings `<div id="root"></div>` and `</head>` matter as much as the markup.
 
 =>
 
@@ -20,10 +20,20 @@ The page is the shell the application fills. It loads two type families from Goo
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>loom — programs written to be read</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('loom-theme')
+          document.documentElement.setAttribute('data-theme', stored === 'dark' ? 'dark' : 'light')
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      })()
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&display=swap"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=Noto+Color+Emoji&display=swap"
       rel="stylesheet"
     />
     <script type="module" src="/src/client.ts"></script>
