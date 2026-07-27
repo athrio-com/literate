@@ -180,7 +180,7 @@ const spanFrom = (
 
 ## Building the frontmatter
 
-`makeFrontmatter` gathers a file's frontmatter wefts into one `LoomFrontmatter`, or nothing when the file opened with no block. The membership comes from up to two lines — the part from one, the chapter from the other — and each is numbered or not: a part carries a number and a name, or a name alone; a chapter a number and a title, or a title alone. The `Status` and `Priority` fields join the `Package` and `Language` ones, each read by name.
+`makeFrontmatter` gathers a file's frontmatter wefts into one `LoomFrontmatter`, or nothing when the file opened with no block. The membership comes from up to two lines — the part from one, the chapter from the other — and each is numbered or not: a part carries a number and a name, or a name alone; a chapter a number and a title, or a title alone. The `Language`, `Status`, and `Priority` fields join the tangle target, each read by name. The target answers to `Target`, or to `Package` — the older spelling it is replacing, still honoured so a file may use either during the move.
 
 =>
 
@@ -216,7 +216,11 @@ const makeFrontmatter = (
       health: okHealth,
       ...partFields,
       ...chapterFields,
-      package: Option.getOrUndefined(frontmatterField(wefts, 'Package')),
+      package: Option.getOrUndefined(
+        Option.orElse(frontmatterField(wefts, 'Target'), () =>
+          frontmatterField(wefts, 'Package'),
+        ),
+      ),
       language: Option.getOrUndefined(frontmatterField(wefts, 'Language')),
       status: Option.getOrUndefined(frontmatterField(wefts, 'Status')),
       priority: Option.getOrUndefined(frontmatterField(wefts, 'Priority')),
@@ -226,7 +230,7 @@ const makeFrontmatter = (
 
 ~
 
-`frontmatterField` reads a `key: value` field's value by name — the `Package` a `{Tangle}` section writes to, the `Language` its sections inherit, or the `Status` and `Priority` a roadmap reads — lifting the missing case to `Option` at the `.find`.
+`frontmatterField` reads a `key: value` field's value by name — the `Target` (or `Package`) a `{Tangle}` section writes to, the `Language` its sections inherit, or the `Status` and `Priority` a roadmap reads — lifting the missing case to `Option` at the `.find`.
 
 =>
 

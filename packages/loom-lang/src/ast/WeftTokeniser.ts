@@ -159,7 +159,7 @@ const tokeniseFrontmatter = (weft: FrontmatterWeft): LoomWeft => {
   return buildFrontmatterField(weft, line, key, value)
 }
 
-const frontmatterFields = new Set(['Package', 'Language', 'Status', 'Priority'])
+const frontmatterFields = new Set(['Target', 'Package', 'Language', 'Status', 'Priority'])
 
 const buildFrontmatterField = (
   weft: FrontmatterWeft,

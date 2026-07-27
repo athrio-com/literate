@@ -208,7 +208,11 @@ const makeFrontmatter = (
       health: okHealth,
       ...partFields,
       ...chapterFields,
-      package: Option.getOrUndefined(frontmatterField(wefts, 'Package')),
+      package: Option.getOrUndefined(
+        Option.orElse(frontmatterField(wefts, 'Target'), () =>
+          frontmatterField(wefts, 'Package'),
+        ),
+      ),
       language: Option.getOrUndefined(frontmatterField(wefts, 'Language')),
       status: Option.getOrUndefined(frontmatterField(wefts, 'Status')),
       priority: Option.getOrUndefined(frontmatterField(wefts, 'Priority')),
