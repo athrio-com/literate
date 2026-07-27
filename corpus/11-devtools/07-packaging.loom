@@ -119,7 +119,9 @@ The Bun configuration checks everything that runs under Bun: the Vite plugin, th
 
 The overlay's styles are Tailwind. The input pulls in the framework and points it at the overlay source, so the build compiles exactly the utilities the view uses and nothing more.
 
-The input also defines the theme the overlay wears, taken from the design catalog: the dark surfaces `bg` through `bg-4`, the foregrounds `fg` through `fg-4`, the mint, cyan, violet, and amber accents, and the mono and sans type. The view names these directly, in classes like the `bg-mint` background and the `text-fg-3` foreground, so the overlay and the catalog read as one look.
+The input also defines the theme the overlay wears, taken from the design catalog: the dark surfaces `bg` through `bg-4`, the foregrounds `fg` through `fg-4`, the mint, cyan, violet, and amber accents, two hairline `line` borders, and the mono and sans type. The view names these directly, in classes like the `bg-mint` background and the `text-fg-3` foreground, so the overlay and the catalog read as one look.
+
+The overlay follows its host page between dark and light. A `:host([data-theme="light"])` block restates every surface, foreground, accent, and border in light values — a cream ground and ink text — and the mount sets that attribute on the host from the page's own theme. Because the tokens live on the host, the light values cascade to every utility inside the shadow root, so the whole overlay turns with the page.
 
 One base rule earns its place. Tailwind draws a border's style from a `--tw-border-style` variable it registers with `@property`, defaulting it to `solid`. That registration does not reach inside a shadow root, so the variable resolves to nothing and every `border` utility collapses to no line at all. Setting the variable to `solid` on every element restores the outlines the overlay depends on — the card, the bar, the dividers between notes.
 
@@ -150,8 +152,27 @@ One base rule earns its place. Tailwind draws a border's style from a `--tw-bord
   --color-cyan: #6cc7e0;
   --color-violet: #b59bf1;
   --color-amber: #e8b86c;
+  --color-line: #ffffff1f;
+  --color-line-2: #ffffff12;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+:host([data-theme="light"]) {
+  --color-bg: #f2e5bc;
+  --color-bg-2: #ebdbb2;
+  --color-bg-3: #d5c4a1;
+  --color-bg-4: #bdae93;
+  --color-fg: #3c3836;
+  --color-fg-2: #504945;
+  --color-fg-3: #665c54;
+  --color-fg-4: #928374;
+  --color-mint: #3f7a52;
+  --color-cyan: #2b6e82;
+  --color-violet: #7a4a86;
+  --color-amber: #9a6b14;
+  --color-line: #3c383624;
+  --color-line-2: #3c383617;
 }
 
 ## The build {Tangle}[build.ts]
