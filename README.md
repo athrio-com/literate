@@ -135,7 +135,7 @@ was written in:
 Install the command-line tool (Node.js 18 or newer):
 
 ```sh
-npm install -g @athrio/loom-cli
+npm install -g @athrio/loom
 ```
 
 It gives you three commands:
