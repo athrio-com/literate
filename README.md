@@ -9,10 +9,10 @@
 ╚══════╝ ╚═════╝  ╚═════╝ ╚═╝     ╚═╝
 </pre>
 
-**A literate programming framework — prose and code as one source of truth, in any language.**
+**Literate programming framework for AI-assisted engineering.**
 
 [![npm](https://img.shields.io/npm/v/@athrio/loom-cli.svg?color=14b8a6&label=%40athrio%2Floom-cli)](https://www.npmjs.com/package/@athrio/loom-cli)
-![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)
+![license](https://img.shields.io/badge/license-MIT%20AND%20Apache--2.0-blue.svg)
 ![status](https://img.shields.io/badge/status-pre--release-f59e0b.svg)
 [![Telegram](https://img.shields.io/badge/Telegram-athrio-26A5E4?logo=telegram&logoColor=white)](https://t.me/athrio)
 
