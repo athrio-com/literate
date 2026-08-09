@@ -19,14 +19,12 @@ import {
   type Target,
   ToggledNotes,
   ToggledPicker,
-  WentTo,
   h,
 } from './model'
 import {
   broadSeam,
   carpetMark,
   devtoolsCarpet,
-  docsCarpet,
   downIcon,
   noteIcon,
   pickerIcon,
@@ -264,21 +262,6 @@ const wovenSample = (): Html =>
     ],
   )
 
-const docsCard = (): Html =>
-  h.a(
-    [h.Class('dt-docs'), h.Href('/docs'), h.OnClick(WentTo({ route: 'docs' }))],
-    [
-      carpetMark(docsCarpet, '38px'),
-      h.span(
-        [h.Class('lines')],
-        [
-          h.span([h.Class('eyebrow')], ['Docs']),
-          h.span([h.Class('dt-docs-title')], ['Read the docs']),
-        ],
-      ),
-    ],
-  )
-
 const noteRow = (note: Note): Html =>
   h.div(
     [h.Class('dt-note')],
@@ -476,7 +459,6 @@ export const devtools = (model: Model): Html =>
                 [model.barCollapsed ? handle(model) : bar(model)],
               ),
               wovenSample(),
-              docsCard(),
             ],
           ),
         ],

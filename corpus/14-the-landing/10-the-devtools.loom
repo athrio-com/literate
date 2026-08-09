@@ -45,14 +45,12 @@ import {
   type Target,
   ToggledNotes,
   ToggledPicker,
-  WentTo,
   h,
 } from './model'
 import {
   broadSeam,
   carpetMark,
   devtoolsCarpet,
-  docsCarpet,
   downIcon,
   noteIcon,
   pickerIcon,
@@ -300,7 +298,7 @@ const panelOpen = (model: Model): boolean =>
 
 ## The two columns
 
-The left column is what a reader reads: the paragraph that says what the three kinds of note are. The right column is the working half — the bar, a fragment stamped as woven Loom for the picker to aim at, and, once a reader has finished with both, a link on to the documentation. That link wears no card: the mark, an eyebrow and a line, coloured and spaced exactly as the pager's are at the foot of the page, so the two read as the same kind of thing. Reading and aiming are two different things to be doing, so the section gives each its own side rather than mixing them down both. Below a thousand pixels the two columns stack; below six hundred and forty they become a row a reader swipes, like the marks and the commands above them, since a devtools bar squeezed into a phone's width is a bar nobody can aim with.
+The left column is what a reader reads: the paragraph that says what the three kinds of note are. The right column is the working half — the bar, and a fragment stamped as woven Loom for the picker to aim at. Nothing else stands in that column, since the section asks a reader to try one thing and a way onward would only invite them to leave before they had. Reading and aiming are two different things to be doing, so the section gives each its own side rather than mixing them down both. The two columns hold until nine hundred pixels, where they become a row a reader swipes, like the marks and the commands above them. Reading and aiming stay side by side as long as the window allows it, because a devtools bar squeezed into a phone's width is a bar nobody can aim with.
 
 The stamped fragment is not a mock. It carries the same two attributes a real weave writes, and the picker reads them by the same rule it uses on the reading website, which is why aiming at it produces a chapter and a section rather than a `div`.
 
@@ -337,21 +335,6 @@ const wovenSample = (): Html =>
         h.span([h.Class('tok-keyword')], ['const']),
         ' foo = (n: number): string => "bar"',
       ]),
-    ],
-  )
-
-const docsCard = (): Html =>
-  h.a(
-    [h.Class('dt-docs'), h.Href('/docs'), h.OnClick(WentTo({ route: 'docs' }))],
-    [
-      carpetMark(docsCarpet, '38px'),
-      h.span(
-        [h.Class('lines')],
-        [
-          h.span([h.Class('eyebrow')], ['Docs']),
-          h.span([h.Class('dt-docs-title')], ['Read the docs']),
-        ],
-      ),
     ],
   )
 
@@ -584,7 +567,6 @@ export const devtools = (model: Model): Html =>
                 [model.barCollapsed ? handle(model) : bar(model)],
               ),
               wovenSample(),
-              docsCard(),
             ],
           ),
         ],
