@@ -1,7 +1,0 @@
-export * from './theme'
-export * from './presentational'
-export * from './interactive'
-export * from './chrome'
-export * from './code'
-export * as CopyButton from './copyButton'
-export * as CommandPalette from './commandPalette'

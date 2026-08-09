@@ -9,4 +9,4 @@ RUN bunx --bun vite build
 
 ENV PORT=4321
 EXPOSE 4321
-CMD ["bun", "src/server/server.ts"]
+CMD ["bun", "src/server.ts"]

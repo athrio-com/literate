@@ -1,0 +1,371 @@
+---
+Part X, Chapter 12: The documentation shell
+Package: site/src/
+Language: TypeScript
+---
+
+# The documentation shell
+
+The documentation reads nothing it was given by hand. Its own corpus of prose sits beside this one, `loom weave` renders that corpus to JSON before the site builds, and this chapter draws the result.
+
+Because the corpus supplies the content, the shell only has to supply the frame — and the frame is three columns. A rail down the left names every chapter. The article holds the one on show. An outline down the right lists the headings inside it, so a reader can see the shape of a page as well as its text.
+
+The frame is not the page. The documentation and the source are separate pages over separate corpora — one is the manual, the other is Loom's own book — and each keeps its own chapter, its own weave and its own route. What they share is this machinery: a rail built from a corpus's parts, an article built from a page's blocks, an outline built from its headings. So every function here takes the corpus it should read, and the page that calls it decides which one that is.
+
+## The woven corpus, read
+
+A weave is data, so the shell begins by saying what shape that data has. A page is a list of blocks, and a block is either a heading — carrying its depth, its title and the slug to link at — or a run of prose carrying Markdown.
+
+The types are declared here rather than imported because the weave is a build artifact: the JSON arrives typed as whatever it literally contains, which is too narrow to hold a second chapter and too wide to be worth reading.
+
+=>
+
+import { Array, Match, Option, pipe } from 'effect'
+import { marked } from 'marked'
+import type { Html } from 'foldkit/html'
+import { ClosedDrawer, OpenedChapter, SelectedSection, h, type Model } from './model'
+import { docsPager } from './chrome'
+import { loomMark } from './components'
+import wovenDocs from './docs.woven.json'
+
+type HeadingBlock = {
+  readonly type: 'heading'
+  readonly level: number
+  readonly title: string
+  readonly id: string
+}
+
+type ProseBlock = {
+  readonly type: 'prose'
+  readonly markdown: string
+}
+
+type Block = HeadingBlock | ProseBlock
+
+type Chapter = {
+  readonly number: string
+  readonly title: string
+  readonly slug: string
+}
+
+type Part = {
+  readonly number: string
+  readonly name: string
+  readonly chapters: ReadonlyArray<Chapter>
+}
+
+type Page = {
+  readonly slug: string
+  readonly title: string
+  readonly blocks: ReadonlyArray<Block>
+}
+
+export type Corpus = {
+  readonly nav: ReadonlyArray<Part>
+  readonly pages: ReadonlyArray<Page>
+}
+
+export const docsCorpus = wovenDocs as unknown as Corpus
+
+~
+
+Two lookups serve the whole chapter. One finds the page a slug names, the other finds the part that page belongs to, and both answer with an `Option` so that a slug naming nothing stays a value rather than a crash.
+
+Where no chapter is named the shell opens the first one in the corpus, which is what a reader arriving at the documentation root expects.
+
+=>
+
+export const firstSlugOf = (corpus: Corpus): string =>
+  pipe(
+    Option.fromNullishOr(corpus.pages[0]),
+    Option.map((page) => page.slug),
+    Option.getOrElse(() => ''),
+  )
+
+const pageOf = (corpus: Corpus, slug: string): Option.Option<Page> =>
+  Array.findFirst(corpus.pages, (page) => page.slug === slug)
+
+const partOf = (corpus: Corpus, slug: string): Option.Option<Part> =>
+  Array.findFirst(corpus.nav, (part) =>
+    Array.some(part.chapters, (chapter) => chapter.slug === slug),
+  )
+
+## The rail of every chapter
+
+The rail is the corpus's own table of contents. Each part becomes a group under its name, and each chapter beneath it becomes a link.
+
+The chapter on show wears a marker down its left edge and a faint wash, and it sits two pixels further in than its neighbours — the inset shadow that draws the marker occupies that space, so without the compensation the current row's text would slide out of line with the rest.
+
+The rail sticks as the article scrolls, from just under the bar, and it scrolls within itself when there are more chapters than window. Its offset follows the bar: when the bar slides away the rail rises into the space, so the two never leave a gap between them.
+
+The groups come out of a function of their own, because the drawer draws exactly the same list — a reader who opens the drawer should find the rail they already know, current marker included, not a second navigation that merely resembles it.
+
+=>
+
+const railRow = (chapter: Chapter, here: boolean): Html =>
+  h.button(
+    [
+      h.Class(here ? 'rail-item here' : 'rail-item'),
+      h.Type('button'),
+      h.OnClick(OpenedChapter({ slug: chapter.slug })),
+    ],
+    [chapter.title],
+  )
+
+const railGroups = (corpus: Corpus, current: string): ReadonlyArray<Html> =>
+  Array.map(corpus.nav, (part) =>
+    h.div(
+      [h.Class('rail-group')],
+      [
+        h.span([h.Class('rail-label')], [part.name]),
+        h.div(
+          [h.Class('rail-items')],
+          Array.map(part.chapters, (chapter) => railRow(chapter, chapter.slug === current)),
+        ),
+      ],
+    ),
+  )
+
+export const rail = (corpus: Corpus, current: string): Html =>
+  h.nav(
+    [h.Class('docs-rail'), h.AriaLabel('Chapters')],
+    [h.div([h.Class('rail-sticky thin-scroll')], railGroups(corpus, current))],
+  )
+
+## Where a reader is
+
+Above the article a single line says where the page sits: the documentation, the part that holds it, and the chapter itself. It is the one piece of the shell assembled from the corpus rather than drawn from it.
+
+=>
+
+const breadcrumb = (corpus: Corpus, root: string, page: Page): Html =>
+  h.div(
+    [h.Class('docs-crumbs')],
+    [
+      h.span([], [root]),
+      h.span([h.Class('sep'), h.AriaHidden(true)], ['/']),
+      h.span(
+        [],
+        [
+          pipe(
+            partOf(corpus, page.slug),
+            Option.map((part) => part.name.toLowerCase()),
+            Option.getOrElse(() => 'reference'),
+          ),
+        ],
+      ),
+      h.span([h.Class('sep'), h.AriaHidden(true)], ['/']),
+      h.span([h.Class('here')], [page.title.toLowerCase()]),
+    ],
+  )
+
+## The article
+
+A block becomes one of two things and never a third, so the match closes: a heading renders at its own depth carrying the slug an outline link jumps to, and a run of prose renders as the Markdown it is.
+
+Markdown becomes HTML here rather than at weave time, because the weave should stay a description of the document and not a description of a web page. Anything else reading that JSON gets the Markdown intact.
+
+=>
+
+const headingOf = (block: HeadingBlock): Html =>
+  Match.value(block.level).pipe(
+    Match.when(1, () => h.h1([h.Id(block.id)], [block.title])),
+    Match.when(2, () => h.h2([h.Id(block.id)], [block.title])),
+    Match.orElse(() => h.h3([h.Id(block.id)], [block.title])),
+  )
+
+const blockOf = (block: Block): Html =>
+  Match.value(block).pipe(
+    Match.when({ type: 'heading' }, (heading) => headingOf(heading)),
+    Match.when({ type: 'prose' }, (prose) =>
+      h.div(
+        [h.Class('docs-prose'), h.InnerHTML(marked.parse(prose.markdown) as string)],
+        [],
+      ),
+    ),
+    Match.exhaustive,
+  )
+
+const article = (corpus: Corpus, root: string, page: Page): Html =>
+  h.article(
+    [h.Class('docs-article')],
+    [breadcrumb(corpus, root, page), ...Array.map(page.blocks, blockOf)],
+  )
+
+## On this page
+
+The outline is the article's own headings, one level down only — a page's title already stands above it, and a third level would turn a list into a tree for no gain.
+
+The heading a reader has scrolled to wears the current treatment. That is the same idea the landing uses to follow a reader down its example, so both read the active heading from one field of the model.
+
+=>
+
+const sectionsOf = (page: Page): ReadonlyArray<HeadingBlock> =>
+  pipe(
+    page.blocks,
+    Array.filter((block): block is HeadingBlock => block.type === 'heading'),
+    Array.filter((heading) => heading.level === 2),
+  )
+
+const outline = (page: Page, active: string): Html =>
+  h.aside(
+    [h.Class('docs-outline'), h.AriaLabel('On this page')],
+    [
+      h.span([h.Class('outline-label')], ['On this page']),
+      h.div(
+        [h.Class('outline-links')],
+        Array.map(sectionsOf(page), (heading) =>
+          h.button(
+            [
+              h.Class(heading.id === active ? 'outline-link here' : 'outline-link'),
+              h.Type('button'),
+              h.OnClick(SelectedSection({ id: heading.id })),
+            ],
+            [heading.title],
+          ),
+        ),
+      ),
+    ],
+  )
+
+## The drawer, where the rail will not fit
+
+Below the width that holds a rail beside an article, the same rail arrives in a drawer instead. It slides in from the left over a scrim, and it carries the wordmark again at its head so a reader knows what they opened.
+
+Its body is the rail's own groups — the identical list, marked with the identical current chapter — because a drawer that showed a second, similar navigation would be a second thing to keep in step.
+
+Both the scrim and the panel stay in the document whether the drawer is open or shut, and open is a class rather than a condition. That is what lets them animate: an element that appears only when open has nothing to slide in from.
+
+=>
+
+const closeIcon = (): Html =>
+  h.svg(
+    [
+      h.Width('15'),
+      h.Height('15'),
+      h.ViewBox('0 0 24 24'),
+      h.Fill('none'),
+      h.Stroke('currentColor'),
+      h.StrokeWidth('2'),
+      h.StrokeLinecap('round'),
+      h.AriaHidden(true),
+    ],
+    [
+      h.line([h.X1('5'), h.Y1('5'), h.X2('19'), h.Y2('19')], []),
+      h.line([h.X1('19'), h.Y1('5'), h.X2('5'), h.Y2('19')], []),
+    ],
+  )
+
+const drawer = (corpus: Corpus, model: Model, current: string): Html =>
+  h.div(
+    [h.Class(model.drawerOpen ? 'docs-drawer open' : 'docs-drawer')],
+    [
+      h.div(
+        [h.Class('drawer-head')],
+        [
+          loomMark('paper', 0.495),
+          h.span([h.Class('bar-word-text')], ['Loom']),
+          h.button(
+            [
+              h.Class('drawer-close'),
+              h.Type('button'),
+              h.AriaLabel('Close menu'),
+              h.OnClick(ClosedDrawer()),
+            ],
+            [closeIcon()],
+          ),
+        ],
+      ),
+      h.div([h.Class('drawer-body thin-scroll')], railGroups(corpus, current)),
+    ],
+  )
+
+const scrim = (open: boolean): Html =>
+  h.div(
+    [
+      h.Class(open ? 'docs-scrim open' : 'docs-scrim'),
+      h.AriaHidden(true),
+      h.OnClick(ClosedDrawer()),
+    ],
+    [],
+  )
+
+## The three columns
+
+The shell puts the rail, the article, the outline and the pager into one grid, over whichever corpus it is handed. The pager takes the second row of the middle column, which is why the side columns each span both rows — it belongs to the article, not to the page. The documentation binds its own weave to it and answers on `docs`; a second page can bind another corpus and answer somewhere else without a line of this changing. The rail and the outline each span both rows, so a pager placed under the article later sits inside the middle column rather than under the whole page.
+
+A short chapter may have no headings under its title, and then there is nothing to outline. Rather than stand an empty label in a quarter of the window, the shell drops the third column and gives the width back to the article.
+
+A slug naming no chapter falls back to the first, so the documentation always has something to show.
+
+=>
+
+const shellClass = (model: Model, outlined: boolean): string => {
+  const base = outlined ? 'docs-shell' : 'docs-shell alone'
+  return model.navHidden ? `${base} bar-hidden` : base
+}
+
+const shellFor = (corpus: Corpus, root: string, model: Model, page: Page): Html =>
+  pipe(
+    sectionsOf(page),
+    Array.match({
+      onEmpty: () =>
+        h.div(
+          [h.Class(shellClass(model, false))],
+          [rail(corpus, page.slug), article(corpus, root, page), docsPager(model.route)],
+        ),
+      onNonEmpty: () =>
+        h.div(
+          [h.Class(shellClass(model, true))],
+          [
+            rail(corpus, page.slug),
+            article(corpus, root, page),
+            outline(page, model.activeSection),
+            docsPager(model.route),
+          ],
+        ),
+    }),
+  )
+
+export const wovenPage = (corpus: Corpus, root: string, model: Model): Html => {
+  const slug = model.chapter === '' ? firstSlugOf(corpus) : model.chapter
+  return pipe(
+    pageOf(corpus, slug),
+    Option.orElse(() => Option.fromNullishOr(corpus.pages[0])),
+    Option.match({
+      onNone: () => h.div([h.Class('docs-shell')], []),
+      onSome: (page) =>
+        h.div(
+          [h.Class('docs-page')],
+          [
+            shellFor(corpus, root, model, page),
+            scrim(model.drawerOpen),
+            drawer(corpus, model, page.slug),
+          ],
+        ),
+    }),
+  )
+}
+
+export const documentationPage = (model: Model): Html =>
+  wovenPage(docsCorpus, 'docs', model)
+
+## The module {Tangle}[docs-page.ts]
+
+The module reads the weave, then draws the rail, the breadcrumb, the article, the outline and the drawer, and closes with the grid that holds them.
+
+=>
+
+::[The woven corpus, read]
+
+::[The rail of every chapter]
+
+::[Where a reader is]
+
+::[The article]
+
+::[On this page]
+
+::[The drawer, where the rail will not fit]
+
+::[The three columns]

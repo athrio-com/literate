@@ -1,31 +1,142 @@
 ---
 Part X, Chapter 5: The page
-Package: site/index.html
-Language: HTML
+Package: site/src/
+Language: TypeScript
 ---
 
 # The page
 
-The page is the shell the app mounts into. It holds an empty root, loads the built module, and gives the document its height. Nothing else lives here: the stylesheet brings its own fonts through an `@import`, and the app draws everything below `body`.
+Five pages share one document. This chapter is the part that decides which of them a reader is looking at, and wraps it in the chrome they all wear.
 
-The one rule the shell must set is height. The app is a full-height flex column — a top bar over a scrolling body — so the root, the body, and the document all stretch to the window. Without that, a docs page has no height for its columns to fill.
+The decision is a single match on the route, closed so that adding a page to the site cannot compile until this chapter has somewhere to put it. That is the point of closing it: a route with no page is a broken link, and the compiler is a better place to find one than the browser.
 
-## The shell {Tangle}
+## Two kinds of page
+
+The site divides in two. The marketing pages — the landing, the argument, the community — wear the centred nav and range their sections down one column. The documentation wears its own sticky bar and lays a rail beside its article.
+
+Both end on the same pager and the same footer, and both can raise the same palette. So each kind is a small wrapper, and the pages themselves only supply what goes in the middle.
 
 =>
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Loom</title>
-    <style>
-      html, body, #root { margin: 0; padding: 0; height: 100%; }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/client/main.ts"></script>
-  </body>
-</html>
+import { Match } from 'effect'
+import type { Document, Html } from 'foldkit/html'
+import { docsBar, footer, nav, pager, palette } from './chrome'
+import { devtools } from './devtools'
+import { example } from './example'
+import { documentationPage } from './docs-page'
+import { hero } from './hero'
+import { fromInitToEject } from './operations'
+import { vocabulary } from './vocabulary'
+import { h, type Model, type Route } from './model'
+
+const overlay = (model: Model): ReadonlyArray<Html> =>
+  model.searchOpen ? [palette(model)] : []
+
+const marketingPage = (model: Model, sections: ReadonlyArray<Html>): Html =>
+  h.div(
+    [],
+    [nav(model), h.main([], [...sections, pager(model.route)]), footer(), ...overlay(model)],
+  )
+
+const documentation = (model: Model): Html =>
+  h.div(
+    [],
+    [docsBar(model), h.main([], [documentationPage(model)]), footer(), ...overlay(model)],
+  )
+
+## The page a route names
+
+Two routes are built. The landing runs the hero, the example, the vocabulary, the commands and the devtools down one column; the documentation draws its own corpus.
+
+The remaining three are scaffolded rather than faked. Each says plainly that it is being written, because a page that quietly showed something else would send a reader somewhere they did not ask to go — and because the match is closed, each one is a single branch to replace when its chapter lands.
+
+=>
+
+const beingWritten = (title: string, line: string): Html =>
+  h.div(
+    [h.Class('section')],
+    [
+      h.div(
+        [h.Class('section-head')],
+        [
+          h.div(
+            [h.Class('lines')],
+            [
+              h.span([h.Class('eyebrow')], ['Being written']),
+              h.h2([], [title]),
+            ],
+          ),
+        ],
+      ),
+      h.p([h.Class('prose')], [line]),
+    ],
+  )
+
+const pageFor = (model: Model): Html =>
+  Match.value(model.route).pipe(
+    Match.when('home', () =>
+      marketingPage(model, [
+        hero(model),
+        example(model),
+        vocabulary(),
+        fromInitToEject(model),
+        devtools(model),
+      ]),
+    ),
+    Match.when('docs', () => documentation(model)),
+    Match.when('why-loom', () =>
+      marketingPage(model, [
+        beingWritten(
+          'Why Loom',
+          'The case for writing the document first, against the three approaches it replaces.',
+        ),
+      ]),
+    ),
+    Match.when('community', () =>
+      marketingPage(model, [
+        beingWritten('Community', 'The people, the corpora in the wild, and where to ask.'),
+      ]),
+    ),
+    Match.when('source', () =>
+      marketingPage(model, [
+        beingWritten(
+          'Source',
+          'Loom’s own book, read the way Loom renders one. It weaves to more than a megabyte, so this page fetches a chapter at a time rather than shipping the whole corpus to the browser.',
+        ),
+      ]),
+    ),
+    Match.exhaustive,
+  )
+
+## What the tab says
+
+A document needs a title, and the title should say which page it is rather than repeat the site's name five times. Each route names itself, and the landing keeps the line that says what Loom is.
+
+=>
+
+const titleOf = (route: Route): string =>
+  Match.value(route).pipe(
+    Match.when('home', () => 'Loom — literate programming for AI-assisted engineering'),
+    Match.when('docs', () => 'Docs — Loom'),
+    Match.when('why-loom', () => 'Why Loom'),
+    Match.when('community', () => 'Community — Loom'),
+    Match.when('source', () => 'Source — Loom'),
+    Match.exhaustive,
+  )
+
+export const view = (model: Model): Document => ({
+  title: titleOf(model.route),
+  body: pageFor(model),
+})
+
+## The module {Tangle}[view.ts]
+
+The module is the two kinds of page, the route that picks one, and the title that names it.
+
+=>
+
+::[Two kinds of page]
+
+::[The page a route names]
+
+::[What the tab says]

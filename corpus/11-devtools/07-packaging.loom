@@ -119,7 +119,7 @@ The Bun configuration checks everything that runs under Bun: the Vite plugin, th
 
 The overlay's styles are Tailwind. The input pulls in the framework and points it at the overlay source, so the build compiles exactly the utilities the view uses and nothing more.
 
-The input also defines the theme the overlay wears, taken from the design catalog: the dark surfaces `bg` through `bg-4`, the foregrounds `fg` through `fg-4`, the mint, cyan, violet, and amber accents, two hairline `line` borders, and the mono and sans type. The view names these directly, in classes like the `bg-mint` background and the `text-fg-3` foreground, so the overlay and the catalog read as one look.
+The input also defines the theme the overlay wears: the dark surfaces `bg` through `bg-4`, the foregrounds `fg` through `fg-4`, the mint, cyan, violet, and amber accents, two hairline `line` borders, and the mono and sans type. The view names these directly, in classes like the `bg-mint` background and the `text-fg-3` foreground, so every surface of the overlay reads as one look.
 
 The overlay follows its host page between dark and light. A `:host([data-theme="light"])` block restates every surface, foreground, accent, and border in light values — a cream ground and ink text — and the mount sets that attribute on the host from the page's own theme. Because the tokens live on the host, the light values cascade to every utility inside the shadow root, so the whole overlay turns with the page.
 

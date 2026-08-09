@@ -1,0 +1,456 @@
+---
+Part X, Chapter 3: The marks and the pieces
+Package: site/src/
+Language: TypeScript
+---
+
+# The marks and the pieces
+
+Every page of the site wears the same small set of parts: Loom's own woven mark, a handful of line icons, and the runtime logos the install rows lead with. This chapter draws each one once, and the pages that follow compose them.
+
+The mark and the four command illustrations are not drawn here at all. They are vendored SVGs — the design draws them, and this chapter only says how they are placed and at what size. Each carries its own animation in SMIL, so none of them asks the model for a clock.
+
+## The woven carpet
+
+Loom's mark is a woven carpet, and the site draws it at every size — seventeen pixels beside a page's name in the search palette, forty-two at the head of a section, and the whole pill in the hero and the footer. A carpet is a small square grid of coloured cells. Rows of glyphs say where each thread runs, and a key says what colour each glyph stands for: a dot is always the navy ground, a `p` is always paper, and the remaining letters name whatever colours that particular mark is woven from.
+
+One row becomes one horizontal gradient with a hard stop at every cell boundary, and the rows stack into a square by background position. Drawn this way a carpet needs no image file and no element per cell: seven gradients paint a seven-by-seven mark, and it stays sharp at any size the page asks for.
+
+Gradient stops that meet exactly leave a hairline seam wherever the browser rounds a fraction of a pixel. So every layer bleeds a little past its own row, and at larger sizes each cell reaches a little into the next.
+
+A fine seam covers a mark a few pixels across — the seventeen-pixel glyphs in the search palette need nothing more. A mark drawn at forty-two pixels or above shows that rounding, so it takes a broader bleed and holds the whole carpet a pixel inside its own box, painting into the content edge rather than the border edge. Without that inset the widened bleed would spill past the mark.
+
+=>
+
+import { Array, Match, Option, pipe } from 'effect'
+import type { Html } from 'foldkit/html'
+import { h } from './model'
+
+const NAVY = '#14204A'
+const PAPER = '#F2EFE6'
+
+export type Carpet = {
+  readonly rows: ReadonlyArray<string>
+  readonly threads: Record<string, string>
+}
+
+export type Seam = {
+  readonly bleed: number
+  readonly overlap: number
+  readonly inset: number
+}
+
+export const fineSeam: Seam = { bleed: 0.5, overlap: 0, inset: 0 }
+export const broadSeam: Seam = { bleed: 0.8, overlap: 0.2, inset: 1 }
+
+~
+
+A row turns into its gradient one cell at a time. Each cell claims the slice of the width its position gives it, and paints it in the colour its glyph names — falling back to the navy ground for any glyph the key does not mention.
+
+=>
+
+const pct = (value: number): string => `${Number(value.toFixed(4))}%`
+
+const rowStops = (row: string, threads: Record<string, string>, overlap: number): string =>
+  pipe(
+    row.split(''),
+    Array.map((glyph, cell) => {
+      const colour = pipe(
+        Option.fromNullishOr(threads[glyph]),
+        Option.getOrElse(() => NAVY),
+      )
+      const from = (cell * 100) / row.length
+      const upTo = Math.min(100, ((cell + 1) * 100) / row.length + overlap)
+      return `${colour} ${pct(from)} ${pct(upTo)}`
+    }),
+    Array.join(', '),
+  )
+
+~
+
+The carpet's style gathers those rows into one background: a gradient per row, a position per row, and a row height of one seventh of the mark plus the seam's bleed.
+
+=>
+
+const insetBox = (inset: number): Record<string, string> =>
+  inset === 0
+    ? {}
+    : {
+        padding: `${inset}px`,
+        backgroundOrigin: 'content-box',
+        backgroundClip: 'content-box',
+      }
+
+export const carpetStyle = (carpet: Carpet, seam: Seam): Record<string, string> => ({
+  ...insetBox(seam.inset),
+  backgroundRepeat: 'no-repeat',
+  backgroundSize: `100% calc(100% / ${carpet.rows.length} + ${seam.bleed}px)`,
+  backgroundPosition: pipe(
+    carpet.rows,
+    Array.map((_, row) => `0 ${pct((row * 100) / (carpet.rows.length - 1))}`),
+    Array.join(', '),
+  ),
+  backgroundImage: pipe(
+    carpet.rows,
+    Array.map((row) => `linear-gradient(90deg, ${rowStops(row, carpet.threads, seam.overlap)})`),
+    Array.join(', '),
+  ),
+})
+
+~
+
+A mark is that style on an empty square. It carries no text and says nothing a reader needs, so it is hidden from anything reading the page aloud.
+
+=>
+
+export const carpetMark = (carpet: Carpet, size: string, seam: Seam = fineSeam): Html =>
+  h.span(
+    [
+      h.AriaHidden(true),
+      h.Style({
+        ...carpetStyle(carpet, seam),
+        display: 'block',
+        flex: 'none',
+        width: size,
+        height: size,
+      }),
+    ],
+    [],
+  )
+
+## The marks a page wears
+
+Four pages carry a mark of their own, and each is woven from the colours that page answers to. Docs is a blue letter form. Why Loom is a diamond that runs amber through green to a magenta centre, the three approaches meeting Loom's own colour. Community is a blue square held inside a violet one. Source crosses blue against orange.
+
+=>
+
+export const docsCarpet: Carpet = {
+  rows: ['.......', '.aaaaa.', '.a...a.', '.aaa.a.', '.a...a.', '.aaaap.', '.......'],
+  threads: { '.': NAVY, p: PAPER, a: '#2E6FF2' },
+}
+
+export const whyLoomCarpet: Carpet = {
+  rows: ['...a...', '..aba..', '.abpba.', 'abpcpba', '.abpba.', '..aba..', '...a...'],
+  threads: { '.': NAVY, p: PAPER, a: '#FFC53D', b: '#00B37E', c: '#E8318A' },
+}
+
+export const communityCarpet: Carpet = {
+  rows: ['.......', '.aaaaa.', '.a.b.a.', '.abpba.', '.a.b.a.', '.aaaaa.', '.......'],
+  threads: { '.': NAVY, p: PAPER, a: '#8B5CF6', b: '#2E6FF2' },
+}
+
+export const sourceCarpet: Carpet = {
+  rows: ['.......', '..a.a..', '.a...a.', 'b.....b', '.a...a.', '..a.a..', '.......'],
+  threads: { '.': NAVY, p: PAPER, a: '#2E6FF2', b: '#FF6A3D' },
+}
+
+## The marks the landing's sections wear
+
+Each section of the landing opens on a carpet of its own, and each is a little picture rather than a letter form. A seedling of green threads climbs through an orange bloom where the example sits; a magenta block meets green where the vocabulary is; the operations grow a violet flower on a green stem; and the devtools repeat the example's shape in blue, because they are the same idea seen through a tool.
+
+They are read from the same eight threads as everything else, so a section mark can never introduce a colour the page does not already use.
+
+=>
+
+export const exampleCarpet: Carpet = {
+  rows: ['....g.g', '...gg..', 'g..g...', '.gooo..', '.goyo.g', '..ooo.v', '.g.....'],
+  threads: { '.': NAVY, p: PAPER, g: '#00B37E', o: '#FF6A3D', y: '#FFC53D', v: '#8B5CF6' },
+}
+
+export const vocabularyCarpet: Carpet = {
+  rows: ['....gg.', '...g...', '..g....', 'mmmggg.', 'mym.gg.', 'mmmg.gg', '...o...'],
+  threads: { '.': NAVY, p: PAPER, g: '#00B37E', m: '#E8318A', y: '#FFC53D', o: '#FF6A3D' },
+}
+
+export const operationsCarpet: Carpet = {
+  rows: ['....g..', 'gg.....', 'g..vvv.', '.g.vpv.', '..gvvv.', '...g...', 'o...g.g'],
+  threads: { '.': NAVY, p: PAPER, g: '#00B37E', v: '#8B5CF6', o: '#FF6A3D' },
+}
+
+export const devtoolsCarpet: Carpet = {
+  rows: ['....b.b', '...bb..', 'b..b...', '.booo..', '.boyo.b', '..ooo.v', '.b.....'],
+  threads: { '.': NAVY, p: PAPER, b: '#2E6FF2', o: '#FF6A3D', y: '#FFC53D', v: '#8B5CF6' },
+}
+
+## The Loom mark
+
+Loom's full mark is a pill with two carets on it, and it is the one piece of the site that moves. The carets blink, glance together, and a woven quilt drifts up behind them before fading out — a loop of twelve and four fifths seconds that runs on nothing but itself.
+
+It is a vendored SVG, drawn in the design and applied here untouched. Two grounds, one mark: the paper copy for the hero and the documentation's bar, and a copy for the footer's single dark ground.
+
+The mark is served as a file rather than written into the page. At forty kilobytes each the two would be a third of the document if they were inlined, and they gain nothing from being there — the mark carries no text, so it needs none of the page's type, and its animation runs inside an image as happily as in the document. The three command illustrations go the other way for exactly that reason: they set their file names in live text, and text in an image cannot reach the fonts the page loaded.
+
+The pill is a hundred and twelve by forty-eight at its natural size, and every use scales from there — the hero at one and a fifth, the footer at a little over three quarters, the documentation's bar at just under a half. The wordmark beside it says `Loom` in text, so the image itself is decorative and carries no alternative of its own.
+
+=>
+
+export type MarkGround = 'paper' | 'dark'
+
+const MARK_WIDTH = 112
+const MARK_HEIGHT = 48
+
+export const loomMark = (ground: MarkGround, scale: number): Html =>
+  h.img([
+    h.Class('loom-mark'),
+    h.Src(ground === 'dark' ? '/mark-dark.svg' : '/mark.svg'),
+    h.Alt(''),
+    h.Width(String(Math.round(MARK_WIDTH * scale))),
+    h.Height(String(Math.round(MARK_HEIGHT * scale))),
+  ])
+
+## The icons
+
+The icons are the small marks the chrome and its buttons wear — a copy glyph, an open book, an external arrow, a forward arrow, a down chevron and an up one, a check, a burger that opens the documentation's drawer, the GitHub octocat, and the two the devtools bar wears: a crosshair for the picker and a speech bubble for the notes. Each is an inline SVG drawn in the current text colour, so it takes the colour of whatever sits around it.
+
+The two chevrons point opposite ways for the same reason. A bar that collapses points down, towards where it is going, and the handle it leaves behind points up, towards where it came from.
+
+The octocat comes in two drawings. The one below is traced on a sixteen-unit grid, and it is the copy every inline link wears. The palette's pill carries a different tracing on a twenty-four-unit grid, baked into a data URI with its fill fixed, because a background image cannot follow the text colour around it.
+
+=>
+
+import logos from './logos.json'
+
+const strokeIcon = (size: string, paths: ReadonlyArray<Html>): Html =>
+  h.svg(
+    [
+      h.Width(size),
+      h.Height(size),
+      h.ViewBox('0 0 24 24'),
+      h.Fill('none'),
+      h.Stroke('currentColor'),
+      h.StrokeWidth('2'),
+      h.StrokeLinecap('round'),
+      h.StrokeLinejoin('round'),
+    ],
+    paths,
+  )
+
+const strokePath = (d: string): Html => h.path([h.D(d)], [])
+
+export const copyIcon = (): Html =>
+  strokeIcon('13', [
+    h.rect([h.X('9'), h.Y('9'), h.Width('11'), h.Height('11'), h.Rx('2')], []),
+    strokePath('M5 15V5a2 2 0 0 1 2-2h10'),
+  ])
+
+export const bookIcon = (): Html =>
+  h.svg(
+    [
+      h.Class('arrow'),
+      h.Width('14'),
+      h.Height('14'),
+      h.ViewBox('0 0 24 24'),
+      h.Fill('none'),
+      h.Stroke('currentColor'),
+      h.StrokeWidth('2'),
+      h.StrokeLinecap('round'),
+      h.StrokeLinejoin('round'),
+      h.AriaHidden(true),
+    ],
+    [
+      strokePath('M12 7v14'),
+      strokePath(
+        'M3 18a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z',
+      ),
+    ],
+  )
+
+export const externalIcon = (): Html =>
+  h.svg(
+    [
+      h.Width('13'),
+      h.Height('13'),
+      h.ViewBox('0 0 24 24'),
+      h.Fill('none'),
+      h.Stroke('currentColor'),
+      h.StrokeWidth('2'),
+      h.StrokeLinecap('round'),
+      h.StrokeLinejoin('round'),
+      h.AriaHidden(true),
+    ],
+    [
+      strokePath('M15 3h6v6'),
+      strokePath('M10 14 21 3'),
+      strokePath('M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6'),
+    ],
+  )
+
+export const arrowIcon = (): Html =>
+  h.svg(
+    [
+      h.Class('arrow'),
+      h.Width('14'),
+      h.Height('14'),
+      h.ViewBox('0 0 14 14'),
+      h.Fill('none'),
+      h.AriaHidden(true),
+    ],
+    [
+      h.path(
+        [
+          h.D('M3 7h8M7 3l4 4-4 4'),
+          h.Stroke('currentColor'),
+          h.StrokeWidth('1.6'),
+          h.StrokeLinecap('round'),
+          h.StrokeLinejoin('round'),
+        ],
+        [],
+      ),
+    ],
+  )
+
+export const downIcon = (): Html =>
+  strokeIcon('16', [strokePath('M6 9l6 6 6-6')])
+
+export const upIcon = (): Html =>
+  strokeIcon('16', [strokePath('M18 15l-6-6-6 6')])
+
+export const checkIcon = (): Html =>
+  strokeIcon('13', [strokePath('M20 6 9 17l-5-5')])
+
+export const burgerIcon = (): Html =>
+  strokeIcon('16', [
+    h.line([h.X1('3'), h.Y1('6'), h.X2('21'), h.Y2('6')], []),
+    h.line([h.X1('3'), h.Y1('12'), h.X2('21'), h.Y2('12')], []),
+    h.line([h.X1('3'), h.Y1('18'), h.X2('21'), h.Y2('18')], []),
+  ])
+
+export const pickerIcon = (): Html =>
+  strokeIcon('14', [
+    h.circle([h.Cx('12'), h.Cy('12'), h.R('8')], []),
+    strokePath('M12 2v3 M12 19v3 M2 12h3 M19 12h3'),
+  ])
+
+export const noteIcon = (): Html =>
+  strokeIcon('14', [
+    strokePath('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
+  ])
+
+~
+
+The player's transport wears five more. They are drawn filled rather than stroked, because a transport control reads as a solid shape at fourteen pixels where an outline reads as a smudge — the exception is the replay arrow, which is a circle a stroke can draw and a fill cannot.
+
+Back and skip are the same triangle with a bar beside it, mirrored: the bar stands where the playhead would come to rest.
+
+=>
+
+const solidIcon = (width: string, height: string, box: string, parts: ReadonlyArray<Html>): Html =>
+  h.svg(
+    [h.Width(width), h.Height(height), h.ViewBox(box), h.Fill('currentColor'), h.AriaHidden(true)],
+    parts,
+  )
+
+export const backIcon = (): Html =>
+  solidIcon('14', '12', '0 0 14 12', [
+    h.path([h.D('M13 1.1v9.8a.6.6 0 0 1-.93.5l-7.2-4.9a.6.6 0 0 1 0-1L12.07.6a.6.6 0 0 1 .93.5z')], []),
+    h.rect([h.X('0.8'), h.Y('0.6'), h.Width('2.2'), h.Height('10.8'), h.Rx('1.1')], []),
+  ])
+
+export const skipIcon = (): Html =>
+  solidIcon('14', '12', '0 0 14 12', [
+    h.path([h.D('M1 1.1v9.8a.6.6 0 0 0 .93.5l7.2-4.9a.6.6 0 0 0 0-1L1.93.6A.6.6 0 0 0 1 1.1z')], []),
+    h.rect([h.X('11'), h.Y('0.6'), h.Width('2.2'), h.Height('10.8'), h.Rx('1.1')], []),
+  ])
+
+export const playTriangle = (): Html =>
+  solidIcon('13', '15', '0 0 13 15', [
+    h.path([h.D('M1 1.1v12.8a.7.7 0 0 0 1.08.59l9.6-6.4a.7.7 0 0 0 0-1.17L2.08.52A.7.7 0 0 0 1 1.1z')], []),
+  ])
+
+export const pauseIcon = (): Html =>
+  solidIcon('12', '14', '0 0 12 14', [
+    h.rect([h.X('1'), h.Y('0.5'), h.Width('3.4'), h.Height('13'), h.Rx('1')], []),
+    h.rect([h.X('7.6'), h.Y('0.5'), h.Width('3.4'), h.Height('13'), h.Rx('1')], []),
+  ])
+
+export const replayIcon = (): Html =>
+  h.svg(
+    [
+      h.Width('15'),
+      h.Height('15'),
+      h.ViewBox('0 0 16 16'),
+      h.Fill('none'),
+      h.Stroke('currentColor'),
+      h.StrokeWidth('1.8'),
+      h.StrokeLinecap('round'),
+      h.AriaHidden(true),
+    ],
+    [
+      strokePath('M2.6 8a5.4 5.4 0 1 0 1.9-4.1'),
+      h.polyline([h.Points('1.4 1.9 1.4 5.4 4.9 5.4')], []),
+    ],
+  )
+
+~
+
+Two more sit in the player's top corner, where a reader asks for the card to grow to the height of the window and then asks for it back. Each is four bare corners on a fourteen-pixel square, drawn with square caps so the elbows meet flush. The expand icon turns its corners outwards and the collapse icon turns the same four inwards, which is the whole difference a reader needs to read the button's state.
+
+=>
+
+const cornerIcon = (corners: ReadonlyArray<string>): Html =>
+  h.svg(
+    [
+      h.Width('14'),
+      h.Height('14'),
+      h.ViewBox('0 0 14 14'),
+      h.Fill('none'),
+      h.Stroke('currentColor'),
+      h.StrokeWidth('1.6'),
+      h.StrokeLinecap('square'),
+      h.AriaHidden(true),
+    ],
+    Array.map(corners, (points) => h.polyline([h.Points(points)], [])),
+  )
+
+export const expandIcon = (): Html =>
+  cornerIcon(['1,5 1,1 5,1', '9,1 13,1 13,5', '13,9 13,13 9,13', '5,13 1,13 1,9'])
+
+export const collapseIcon = (): Html =>
+  cornerIcon(['5,1 5,5 1,5', '13,5 9,5 9,1', '9,13 9,9 13,9', '1,9 5,9 5,13'])
+
+export const octocatIcon = (size: string): Html =>
+  h.svg(
+    [h.Width(size), h.Height(size), h.ViewBox('0 0 16 16'), h.Fill('currentColor'), h.AriaHidden(true)],
+    [
+      h.path(
+        [
+          h.D(
+            'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.88.51-1.08-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.4 7.4 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A7.995 7.995 0 0 0 16 8c0-4.42-3.58-8-8-8Z',
+          ),
+        ],
+        [],
+      ),
+    ],
+  )
+
+## The runtime marks
+
+The install rows each lead with the mark of a runtime — bun, deno, npm, pnpm — in the brand's own logo, not a redrawing. Each logo is the project's official SVG, vendored in `logos.json` and dropped into a span as inline markup, so the page carries no image file and the mark stays sharp at any size. Most keep their own colours: npm's red block, pnpm's yellow-and-grey squares, bun's cream mascot. Deno's dinosaur ships as a black silhouette, so the vendored copy draws in the current text colour instead — pale on the dark theme, dark on the light — to read on either.
+
+=>
+
+const svgMark = (svg: string): Html =>
+  h.span([h.Class('rt-logo'), h.InnerHTML(svg)], [])
+
+export const bunIcon = (): Html => svgMark(logos.bun)
+export const denoIcon = (): Html => svgMark(logos.deno)
+export const npmIcon = (): Html => svgMark(logos.npm)
+export const pnpmIcon = (): Html => svgMark(logos.pnpm)
+
+## The module {Tangle}[components.ts]
+
+The module opens with the woven carpet, since the small marks a page wears are woven from it. Then the full mark, the icons, and the runtime logos.
+
+=>
+
+::[The woven carpet]
+
+::[The marks a page wears]
+
+::[The marks the landing's sections wear]
+
+::[The Loom mark]
+
+::[The icons]
+
+::[The runtime marks]

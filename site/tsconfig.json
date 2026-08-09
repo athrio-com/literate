@@ -1,15 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
     "strict": true,
-    "exactOptionalPropertyTypes": false,
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
     "noEmit": true,
-    "types": []
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "target": "es2022",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": ["bun"],
+    "skipLibCheck": true
   },
-  "include": ["src/client"]
+  "include": ["src"],
+  "exclude": ["src/server.ts", "src/browser-globals.ts"]
 }

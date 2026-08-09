@@ -1,14 +1,15 @@
 import { defineConfig } from 'vite'
-import { foldkit } from '@foldkit/vite-plugin'
+import { fileURLToPath } from 'node:url'
 import { loomDevtools } from '@athrio/loom-devtools/vite'
 
 export default defineConfig({
   esbuild: { target: 'es2022' },
-  build: { target: 'es2022' },
-  plugins: [foldkit({ devToolsMcpPort: 9988 }), loomDevtools({ project: 'loom-website' })],
-  server: {
-    proxy: {
-      '/data': 'http://localhost:4321',
+  plugins: [loomDevtools({ project: 'loom-website' })],
+  build: {
+    target: 'es2022',
+    outDir: 'dist',
+    rollupOptions: {
+      input: { index: fileURLToPath(new URL('index.html', import.meta.url)) },
     },
   },
 })

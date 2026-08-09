@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
     "strict": true,
-    "exactOptionalPropertyTypes": false,
-    "lib": ["ESNext", "DOM"],
-    "skipLibCheck": true,
+    "noEmit": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "noEmit": true
+    "target": "es2022",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "types": ["bun"],
+    "skipLibCheck": true
   },
-  "include": ["src/server"]
+  "include": ["src/server.ts", "src/browser-globals.ts", "vite.config.ts"]
 }

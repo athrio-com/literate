@@ -1,0 +1,732 @@
+---
+Part X, Chapter 7: A Loom document, written out
+Package: site/src/
+Language: TypeScript
+---
+
+# A Loom document, written out
+
+Telling a reader what a Loom document looks like is weaker than showing one being written. This section types one out, character by character, on a stage that behaves like an editor: the caret moves, the line under it lights, and the document scrolls when the caret runs off the bottom.
+
+The card wears no poster. Before the first press the document stands on it whole and still, so a reader who only wants to read one has one in front of them; pressing play wipes it back to the first character and writes it out again.
+
+The document it types is about Loom, written in Loom. It opens with a heading, explains itself in prose, turns into code at an arrow, steps back to prose at a tilde, names a file in brackets, and composes itself from two anchors. By the end a reader has met every mark the vocabulary section then lists.
+
+When the typing finishes, two buttons appear — `$ loom tangle` and `$ loom weave` — and pressing either drops a panel showing the file that command writes. That is the whole claim of the framework in one section: this document, and these two files out of it.
+
+Nothing here is a recording. The replay is deterministic, driven off the clock, and the reader holds the transport.
+
+## The threads a line is written in
+
+A line of the document is a row of tokens, and a token is a piece of text with a colour, a weight, and — where it stands for one of Loom's marks — a wash behind it. The washes are the same colours the vocabulary section gives those marks, so a reader who meets `=>` here in green meets it in green again a screen later.
+
+A line also carries its height, whether its whitespace is kept, and a rest: a pause after it, measured in characters rather than milliseconds so that speeding the playback up shortens the pauses with it.
+
+=>
+
+import { Array, Match, Option, pipe } from 'effect'
+import type { Html } from 'foldkit/html'
+import {
+  h,
+  type Model,
+  type Player,
+  type PlayerOutput,
+  ReplayedDocument,
+  ShowedOutput,
+  SkippedToEnd,
+  ToggledFullHeight,
+  ToggledPlay,
+} from './model'
+import {
+  backIcon,
+  broadSeam,
+  carpetMark,
+  collapseIcon,
+  exampleCarpet,
+  expandIcon,
+  pauseIcon,
+  playTriangle,
+  replayIcon,
+  skipIcon,
+} from './components'
+
+const BLUE = '#2E6FF2'
+const VIOLET = '#8B5CF6'
+const GREEN = '#00996B'
+const ORANGE = '#E8501F'
+const GREY = '#7C6F64'
+const INK = '#14130F'
+
+type Token = {
+  readonly text: string
+  readonly colour: string
+  readonly wash: string
+  readonly padded: boolean
+  readonly bold: boolean
+}
+
+type Line = {
+  readonly tokens: ReadonlyArray<Token>
+  readonly tall: boolean
+  readonly kept: boolean
+  readonly rest: number
+}
+
+const WASH = {
+  blue: 'rgba(46, 111, 242, 0.10)',
+  violet: 'rgba(139, 92, 246, 0.10)',
+  green: 'rgba(0, 153, 107, 0.12)',
+  orange: 'rgba(232, 80, 31, 0.12)',
+  grey: 'rgba(124, 111, 100, 0.14)',
+  ink: 'rgba(20, 19, 15, 0.06)',
+}
+
+const plain = (text: string, colour: string = INK, bold: boolean = false): Token => ({
+  text,
+  colour,
+  wash: 'transparent',
+  padded: false,
+  bold,
+})
+
+const chip = (text: string, colour: string, wash: string, bold: boolean = true): Token => ({
+  text,
+  colour,
+  wash,
+  padded: true,
+  bold,
+})
+
+const line = (tokens: ReadonlyArray<Token>, kept: boolean, rest: number): Line => ({
+  tokens,
+  tall: true,
+  kept,
+  rest,
+})
+
+const gap: Line = { tokens: [], tall: false, kept: false, rest: 0 }
+
+## The document it types
+
+A beat is fourteen characters' worth of time, and every pause in the document is written as a count of beats. Measuring a pause in characters rather than in milliseconds is what keeps the two in proportion: the client turns the whole clock into seconds at one rate, so winding that rate up shortens the pauses along with the typing. The marks each get their own constructor, so the document below reads as the document rather than as a table of colours.
+
+=>
+
+const BEAT = 14
+
+const says = (tokens: ReadonlyArray<Token>, rest: number = 0): Line => line(tokens, false, rest)
+const prose = (text: string, rest: number = 0): Line => says([plain(text)], rest)
+const code = (text: string, rest: number = 0): Line => line([plain(text)], true, rest)
+const heading = (text: string, rest: number): Line =>
+  says([chip('#', BLUE, WASH.blue), plain(` ${text}`, BLUE, true)], rest)
+const part = (text: string, rest: number): Line =>
+  says([chip('##', BLUE, WASH.blue), plain(` ${text}`, BLUE, true)], rest)
+const opens = (rest: number): Line => says([chip('=>', GREEN, WASH.green)], rest)
+const closes = (rest: number): Line => says([chip('~', ORANGE, WASH.orange)], rest)
+const anchor = (name: string, rest: number): Line =>
+  line([chip(`::${'['}${name}]`, VIOLET, WASH.violet, false)], true, rest)
+
+~
+
+The document explains Loom in Loom, so the marks a reader is being taught are the marks doing the teaching. It says the three things that trip people up: prose comes first, a block of code runs on to the next heading unless a tilde closes it, and the brackets beside a heading name the file its anchors compose.
+
+=>
+
+const DOCUMENT: ReadonlyArray<Line> = [
+  heading('Loom, explained in Loom', 2 * BEAT),
+  gap,
+  prose('Prose first. You are writing for a person — the code lives inside the explanation.', 2 * BEAT),
+  gap,
+  part('Greeting', BEAT),
+  gap,
+  prose('Everything under a heading is prose, until an arrow opens the code.', 2 * BEAT),
+  gap,
+  opens(BEAT),
+  gap,
+  code('export function greet(who: string) {'),
+  code('  return `Hello, ${who}`'),
+  code('}', 2 * BEAT),
+  gap,
+  part('Run it', BEAT),
+  gap,
+  prose(
+    'Nothing closed that block — code runs on to the next heading. A tilde is only for stepping back into prose mid-section.',
+    2 * BEAT,
+  ),
+  gap,
+  opens(0),
+  gap,
+  code("console.log(greet('world'))", BEAT),
+  gap,
+  closes(BEAT),
+  gap,
+  prose('Like so.', 2 * BEAT),
+  gap,
+  says(
+    [chip('##', BLUE, WASH.blue), plain(' Assembling ', BLUE, true), chip('[hello.ts]', GREY, WASH.grey, false)],
+    2 * BEAT,
+  ),
+  gap,
+  prose(
+    'A file name in brackets becomes a target.\n\nCode after the arrow holds the composition order.',
+    2 * BEAT,
+  ),
+  gap,
+  opens(BEAT),
+  gap,
+  anchor('Greeting', BEAT),
+  anchor('Run it', BEAT),
+  gap,
+  closes(2 * BEAT),
+  gap,
+  says(
+    [
+      plain('Each anchor pulls in a section it names. '),
+      chip('loom tangle', INK, WASH.ink, false),
+      plain(' writes hello.ts in that order.'),
+    ],
+    2 * BEAT,
+  ),
+  gap,
+  prose("That's it."),
+]
+
+## A hand does not type evenly
+
+A constant rate reads as a machine. A hand does not: it reaches further for a bracket than for a vowel, breathes at a full stop, costs a little more on the first letter of a line, and now and then hesitates altogether. It also strikes two or three letters almost together and pays for them on the last one.
+
+So every character carries a cost measured in character-units rather than in time. The costs are jittered by a deterministic noise — the same document plays the same way every time, which is what makes it a document and not an animation.
+
+=>
+
+const noise = (index: number): number => {
+  const raw = Math.sin(index * 12.9898 + 78.233) * 43758.5453
+  return raw - Math.floor(raw)
+}
+
+const CLASSES: ReadonlyArray<readonly [string, number]> = [
+  [' ', 0.75],
+  ['.!?', 1.9],
+  [',;:', 1.8],
+  ['{}()[]<>$`~=#—', 1.9],
+]
+
+const reachOf = (char: string, opening: boolean): number =>
+  opening
+    ? 1.35
+    : pipe(
+        Array.findFirst(CLASSES, ([chars]) => chars.includes(char)),
+        Option.map(([, cost]) => cost),
+        Option.getOrElse(() => (char >= 'A' && char <= 'Z' ? 1.5 : 1)),
+      )
+
+~
+
+The scan walks the document once and leaves a cost behind every character struck. It carries three things as it goes: what a burst still owes, how many letters are left in the burst, and the raw total, which is what normalises the costs back so that the rate the client runs the clock at keeps meaning what it says.
+
+=>
+
+type Scan = {
+  readonly costs: ReadonlyArray<number>
+  readonly owed: number
+  readonly burst: number
+  readonly raw: number
+  readonly struck: number
+}
+
+const strike = (scan: Scan, char: string, opening: boolean): Scan => {
+  const index = scan.costs.length
+  const reach =
+    reachOf(char, opening) * (0.66 + noise(index) * 0.72) + (noise(index + 7) > 0.984 ? 5 : 0)
+  const owed = scan.owed + reach
+  const held = scan.burst > 1 && char !== ' '
+  return {
+    costs: [...scan.costs, held ? 0.02 : owed],
+    owed: held ? owed - 0.02 : 0,
+    burst: held ? scan.burst - 1 : 1 + Math.floor(noise(index + 31) * 3),
+    raw: scan.raw + reach,
+    struck: scan.struck + 1,
+  }
+}
+
+~
+
+Entering a line costs a keystroke too, and an expensive one. Every line but the first opens with a Return, and it lands on a beat of its own: the caret drops to the empty line, and only then does the first letter follow. A burst owes its cost to the character that ends it, and a Return ends any burst still running — so `enter` pays what the burst owed along with its own reach, and hands the next line a clean slate.
+
+=>
+
+const enter = (scan: Scan): Scan => {
+  const index = scan.costs.length
+  const reach = 2.4 * (0.72 + noise(index) * 0.56)
+  return {
+    costs: [...scan.costs, scan.owed + reach],
+    owed: 0,
+    burst: 1,
+    raw: scan.raw + reach,
+    struck: scan.struck + 1,
+  }
+}
+
+~
+
+A rest is already time, so each of its beats costs a flat unit rather than a reach. `rested` pays a line's whole rest one beat at a time, and pays nothing at all for the lines that have none — most of them, since every blank line in the document rests for nothing.
+
+=>
+
+const rest = (scan: Scan): Scan => ({ ...scan, costs: [...scan.costs, -1] })
+
+const rested = (scan: Scan, beats: number): Scan =>
+  beats <= 0 ? scan : rested(rest(scan), beats - 1)
+
+const scanLine = (scan: Scan, source: Line, index: number): Scan =>
+  pipe(
+    index === 0 ? scan : enter(scan),
+    (opened) =>
+      Array.reduce(
+        Array.flatMap(source.tokens, (token) => token.text.split('')),
+        opened,
+        (carried, char, at) => strike(carried, char, at === 0),
+      ),
+    (typed) => rested(typed, source.rest),
+  )
+
+const SCAN: Scan = Array.reduce(
+  DOCUMENT,
+  { costs: [], owed: 0, burst: 1, raw: 0, struck: 0 },
+  scanLine,
+)
+
+~
+
+The costs become a running clock: an array whose entry at any index is when that character lands. Playback then only has to ask which characters have been struck by a given point in the run, which a binary search over the clock answers.
+
+=>
+
+const NORM = SCAN.struck === 0 ? 1 : SCAN.struck / SCAN.raw
+
+export const CHARACTERS = SCAN.costs.length
+
+const CLOCK: ReadonlyArray<number> = Array.reduce(
+  SCAN.costs,
+  [0] as ReadonlyArray<number>,
+  (clock, cost) => [...clock, clock[clock.length - 1]! + (cost < 0 ? 1 : cost * NORM)],
+)
+
+export const RUN = CLOCK[CHARACTERS]!
+
+export const struckBy = (beat: number): number => {
+  const search = (low: number, high: number): number => {
+    if (low >= high) {
+      return low
+    }
+    const middle = (low + high) >> 1
+    return CLOCK[middle + 1]! <= beat ? search(middle + 1, high) : search(low, middle)
+  }
+  return search(0, CHARACTERS)
+}
+
+## The frame a moment shows
+
+A frame is the document cut off after however many characters have been struck. Lines before the cut show whole, the line at the cut shows part of itself and carries the caret, and nothing after it exists yet. Opening a line spends a character on its Return, which is why an empty line stands under the caret for a moment before its first letter arrives.
+
+While a line's rest is being paid the caret holds still and blinks, like a pen resting on the line just written. While letters are landing it stops blinking, because a caret that blinks mid-word reads as a fault.
+
+=>
+
+type Shown = {
+  readonly tokens: ReadonlyArray<Token>
+  readonly tall: boolean
+  readonly kept: boolean
+  readonly caret: boolean
+  readonly held: boolean
+  readonly lit: boolean
+}
+
+type Cut = {
+  readonly taken: ReadonlyArray<Token>
+  readonly left: number
+  readonly whole: boolean
+}
+
+const cutTokens = (tokens: ReadonlyArray<Token>, left: number): Cut =>
+  Array.reduce(tokens, { taken: [], left, whole: true } as Cut, (cut, token) => {
+    if (cut.left <= 0) {
+      return { ...cut, whole: false }
+    }
+    const take = Math.min(cut.left, token.text.length)
+    return {
+      taken: [...cut.taken, { ...token, text: token.text.slice(0, take) }],
+      left: cut.left - take,
+      whole: cut.whole && take === token.text.length,
+    }
+  })
+
+export const frameAt = (struck: number, playing: boolean): ReadonlyArray<Shown> => {
+  const walk = (index: number, left: number, out: ReadonlyArray<Shown>): ReadonlyArray<Shown> => {
+    if (index >= DOCUMENT.length || (left <= 0 && index > 0)) {
+      return out
+    }
+    const source = DOCUMENT[index]!
+    const opened = index === 0 ? left : left - 1
+    const cut = cutTokens(source.tokens, opened)
+    const after = cut.whole ? cut.left - source.rest : cut.left
+    const resting = playing && cut.whole && after <= 0 && source.tokens.length > 0
+    const shown: Shown = {
+      tokens: cut.taken,
+      tall: source.tall,
+      kept: source.kept,
+      caret: playing && after <= 0,
+      held: resting,
+      lit: playing && after <= 0,
+    }
+    return after <= 0 ? [...out, shown] : walk(index + 1, after, [...out, shown])
+  }
+  return walk(0, struck, [])
+}
+
+~
+
+Before the reader presses anything the stage is not blank, and it is not a poster either. It shows the whole document, standing still, clipped by the card and faded into the transport at the foot. A reader who came to read it can read it; a reader who came to watch it arrive presses play and the run starts over from the first character.
+
+=>
+
+export const wholeDocument = (): ReadonlyArray<Shown> => frameAt(CHARACTERS, false)
+
+## What the two commands write
+
+The panel under the buttons shows the file the pressed command writes. Tangling this document writes five lines of TypeScript — the greeting and the call, in the order the anchors named. Weaving it writes the corpus as data, which is what any site generator reads to render the document as a page.
+
+The woven JSON is coloured by a small pass over each line: a string before a colon is a key, a string anywhere else is a value, a number or a keyword is a literal, and everything else is punctuation.
+
+=>
+
+const TANGLED: ReadonlyArray<string> = [
+  'export function greet(who: string) {',
+  '  return `Hello, ${who}`',
+  '}',
+  '',
+  "console.log(greet('world'))",
+]
+
+const WOVEN: ReadonlyArray<string> = [
+  '{',
+  '  "nav": [],',
+  '  "loose": [',
+  '    { "number": "", "title": "Loom, explained in Loom", "slug": "hello" }',
+  '  ],',
+  '  "pages": [',
+  '    {',
+  '      "slug": "hello",',
+  '      "title": "Loom, explained in Loom",',
+  '      "blocks": [',
+  '        {',
+  '          "type": "heading",',
+  '          "source": { "chapter": "hello", "section": "greeting" },',
+  '          "level": 2,',
+  '          "title": "Greeting",',
+  '          "id": "greeting"',
+  '        },',
+  '        {',
+  '          "type": "prose",',
+  '          "source": { "chapter": "hello", "section": "greeting" },',
+  '          "markdown": "Prose runs until an arrow opens the code."',
+  '        },',
+  '        {',
+  '          "type": "code",',
+  '          "source": { "chapter": "hello", "section": "greeting" },',
+  '          "language": "typescript",',
+  '          "code": "export function greet(who: string) {\\n  return `Hello, ${who}`\\n}",',
+  '          "links": []',
+  '        }',
+  '      ]',
+  '    }',
+  '  ]',
+  '}',
+]
+
+const JSON_TOKEN = /("(?:[^"\\]|\\.)*")(\s*:)?|(-?\d+)|(true|false|null)|([^"\d]+)/g
+
+const jsonTokens = (source: string): ReadonlyArray<Token> =>
+  pipe(
+    Array.fromIterable(source.matchAll(JSON_TOKEN)),
+    Array.flatMap((match) =>
+      Match.value(match).pipe(
+        Match.when(
+          (found) => found[1] !== undefined && found[2] !== undefined,
+          (found) => [plain(found[1]!, BLUE), plain(found[2]!, GREY)],
+        ),
+        Match.when(
+          (found) => found[1] !== undefined,
+          (found) => [plain(found[1]!, GREEN)],
+        ),
+        Match.when(
+          (found) => found[3] !== undefined || found[4] !== undefined,
+          (found) => [plain(found[3] ?? found[4]!, VIOLET)],
+        ),
+        Match.orElse((found) => [plain(found[5] ?? '', GREY)]),
+      ),
+    ),
+  )
+
+const outputLines = (which: PlayerOutput): ReadonlyArray<ReadonlyArray<Token>> =>
+  Match.value(which).pipe(
+    Match.when('tangle', () => Array.map(TANGLED, (source) => [plain(source)])),
+    Match.when('weave', () => Array.map(WOVEN, jsonTokens)),
+    Match.exhaustive,
+  )
+
+const outputFile = (which: PlayerOutput): string =>
+  which === 'tangle' ? 'hello.ts' : 'hello.woven.json'
+
+const outputMeta = (which: PlayerOutput): string =>
+  which === 'tangle' ? '5 lines' : 'the corpus as data'
+
+## The stage
+
+The stage draws the frame. A line's own background lights while the caret is on it, and it bleeds past both edges of the column so the highlight reads as a row of the editor rather than as a box around the text.
+
+=>
+
+const tokenSpan = (token: Token): Html =>
+  h.span(
+    [
+      h.Class(token.padded ? 'pl-tok chip' : 'pl-tok'),
+      h.Style({
+        color: token.colour,
+        background: token.wash,
+        fontWeight: token.bold ? '600' : '400',
+      }),
+    ],
+    [token.text],
+  )
+
+const shownLine = (shown: Shown): Html =>
+  h.div(
+    [h.Class(shown.kept ? 'pl-line kept' : 'pl-line'), h.Style({ minHeight: shown.tall ? '1.4em' : '0.8em' })],
+    [
+      ...(shown.lit ? [h.span([h.AriaHidden(true), h.Class('pl-cur')], [])] : []),
+      ...Array.map(shown.tokens, tokenSpan),
+      ...(shown.caret
+        ? [h.span([h.AriaHidden(true), h.Class(shown.held ? 'pl-caret blink' : 'pl-caret')], [])]
+        : []),
+    ],
+  )
+
+~
+
+The two command buttons appear only once the document is finished, and each names both the command and the file it writes. Pressing one opens its panel; pressing it again closes it, so the two are a pair of drawers rather than a pair of tabs.
+
+=>
+
+const commandButton = (which: PlayerOutput, player: Player): Html =>
+  h.button(
+    [
+      h.Class(
+        Option.contains(player.output, which) ? `pl-out ${which} showing` : `pl-out ${which}`,
+      ),
+      h.Type('button'),
+      h.OnClick(ShowedOutput({ which })),
+    ],
+    [
+      h.span([h.Class('pl-out-cmd')], [`$ loom ${which}`]),
+      h.span([h.Class('pl-out-file')], [`writes ${outputFile(which)}`]),
+    ],
+  )
+
+const outputPanel = (which: PlayerOutput): Html =>
+  h.div(
+    [h.Class(`pl-result ${which}`)],
+    [
+      h.div(
+        [h.Class('pl-result-head')],
+        [
+          h.span([h.Class('pl-result-file')], [outputFile(which)]),
+          h.span([h.Class('pl-result-meta')], [outputMeta(which)]),
+        ],
+      ),
+      h.div(
+        [h.Class('pl-result-body')],
+        Array.map(outputLines(which), (tokens) =>
+          h.div([h.Class('pl-result-line')], Array.map(tokens, tokenSpan)),
+        ),
+      ),
+    ],
+  )
+
+## The transport, and the button that grows the card
+
+The transport is on the card from the first frame — back to the start, play or pause, skip to the end. Skipping hides itself at the end rather than moving, so the row does not reflow under the cursor.
+
+The button in the top corner grows the card to the height of the window and gives the page back again. It is the one control here that changes the card rather than the run, which is why it sits over the stage instead of in the transport.
+
+=>
+
+const fullTitle = (player: Player): string =>
+  player.full ? 'Leave full height' : 'Full height'
+
+const fullButton = (player: Player): Html =>
+  h.button(
+    [
+      h.Class('pl-full'),
+      h.Type('button'),
+      h.Title(fullTitle(player)),
+      h.AriaLabel(fullTitle(player)),
+      h.OnClick(ToggledFullHeight()),
+    ],
+    [player.full ? collapseIcon() : expandIcon()],
+  )
+
+const transport = (player: Player): Html =>
+  h.div(
+    [h.Class('pl-bar')],
+    [
+      h.button(
+        [h.Class('pl-back'), h.Type('button'), h.Title('Back to the start'), h.AriaLabel('Back to the start'), h.OnClick(ReplayedDocument())],
+        [backIcon()],
+      ),
+      h.button(
+        [h.Class('pl-play'), h.Type('button'), h.Title(playTitle(player)), h.AriaLabel(playTitle(player)), h.OnClick(ToggledPlay())],
+        [playGlyph(player)],
+      ),
+      h.button(
+        [
+          h.Class(finished(player) ? 'pl-skip gone' : 'pl-skip'),
+          h.Type('button'),
+          h.Title('Skip to the end'),
+          h.AriaLabel('Skip to the end'),
+          h.OnClick(SkippedToEnd()),
+        ],
+        [skipIcon()],
+      ),
+    ],
+  )
+
+~
+
+Three small questions get asked from more than one place, so they are answered once: whether the run has finished, what the play button should be called, and which of its three glyphs it should wear.
+
+=>
+
+const finished = (player: Player): boolean => player.struck >= CHARACTERS
+
+const playTitle = (player: Player): string =>
+  Match.value(player).pipe(
+    Match.when((state) => state.playing, () => 'Pause'),
+    Match.when(finished, () => 'Play it again'),
+    Match.orElse(() => 'Play'),
+  )
+
+const playGlyph = (player: Player): Html =>
+  Match.value(player).pipe(
+    Match.when((state) => state.playing, () => pauseIcon()),
+    Match.when(finished, () => replayIcon()),
+    Match.orElse(() => playTriangle()),
+  )
+
+## The section
+
+The progress bar lies along the foot of the card and carries how far the run has reached as its own width, so nothing on the stage has to give up room to a track.
+
+Three states the card can be in are written into its class. It runs while the document is being typed, which is what eases the bar between frames. It is open once the document has finished or the reader has grown it, and only then does the stage take the scroll back from the run — until then the caret is driving, and the reader would only fight it.
+
+The stage scrolls itself as the caret runs past the bottom, which is why the run needs the clock and not just a count: the reader can pause at any point and the document stands where it stood.
+
+The two commands are on offer once the document is finished. They are also on offer to a reader who has grown the card and paused partway, since the point of the extra height is to study what is there.
+
+=>
+
+const cardClass = (player: Player, done: boolean): string => {
+  const running = player.playing ? ' running' : ''
+  const open = done || player.full ? ' open' : ''
+  return `pl-card${running}${open}`
+}
+
+export const example = (model: Model): Html => {
+  const player = model.player
+  const shown =
+    player.struck === 0 && !player.playing ? wholeDocument() : frameAt(player.struck, player.playing)
+  const done = finished(player)
+  const progress = done ? 1 : Math.min(1, player.beat / RUN)
+  const offering = done || (player.full && !player.playing)
+  return h.div(
+    [h.Class('section'), h.Id('loom-example')],
+    [
+      h.div(
+        [h.Class('section-head')],
+        [
+          carpetMark(exampleCarpet, '42px', broadSeam),
+          h.div(
+            [h.Class('lines')],
+            [
+              h.span([h.Class('eyebrow')], ['Literate programming']),
+              h.h2([], ['A Loom document, written out']),
+            ],
+          ),
+        ],
+      ),
+      h.div(
+        [h.Class(player.full ? 'pl-hold full' : 'pl-hold'), h.Id('loom-card')],
+        [
+          h.div(
+            [
+              h.Class(cardClass(player, done)),
+              h.Style({ '--pl-run': `${Math.round(progress * 1000) / 10}%` }),
+            ],
+            [
+              fullButton(player),
+              h.span([h.AriaHidden(true), h.Class('pl-run')], []),
+              h.div(
+                [h.Class('pl-stage'), h.Id('loom-stage')],
+                [
+                  h.div(
+                    [h.Class('pl-column')],
+                    [
+                      ...Array.map(shown, shownLine),
+                      ...(offering
+                        ? [
+                            h.div(
+                              [h.Class('pl-outs')],
+                              [commandButton('tangle', player), commandButton('weave', player)],
+                            ),
+                          ]
+                        : []),
+                      ...Option.match(player.output, {
+                        onNone: (): ReadonlyArray<Html> => [],
+                        onSome: (which) => (offering ? [outputPanel(which)] : []),
+                      }),
+                    ],
+                  ),
+                  h.div([h.AriaHidden(true), h.Class('pl-tail')], []),
+                ],
+              ),
+              h.div([h.AriaHidden(true), h.Class('pl-fade')], []),
+              transport(player),
+            ],
+          ),
+        ],
+      ),
+    ],
+  )
+}
+
+## The module {Tangle}[example.ts]
+
+The module is the threads a line is written in, the document itself, the cost of typing it, the frame a moment shows, what the two commands write, the stage, the transport, and the section that holds them.
+
+=>
+
+::[The threads a line is written in]
+
+::[The document it types]
+
+::[A hand does not type evenly]
+
+::[The frame a moment shows]
+
+::[What the two commands write]
+
+::[The stage]
+
+::[The transport, and the button that grows the card]
+
+::[The section]

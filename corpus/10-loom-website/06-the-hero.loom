@@ -1,0 +1,225 @@
+---
+Part X, Chapter 6: The hero
+Package: site/src/
+Language: TypeScript
+---
+
+# The hero
+
+The hero is the first screen, and it has one job: say what Loom is, and put the command that installs it within reach. Nothing else.
+
+It opens with the mark and the wordmark at full size, then divides. On the left, the claim and the paragraph that unpacks it. On the right, the install line — one command, written for whichever package manager the reader actually has — and two links onward.
+
+Those two links carry no rule under them and no colour of their own. They are ink until the cursor arrives, and then each takes the colour of the page it opens — the documentation's blue, the source's orange — which is the same ink the pager gives those pages at the foot of every page on the site.
+
+The claim is a plain heading. It does not rotate a word, cycle a phrase or type itself out: a reader arriving on a page they have never seen should be able to read the first sentence without waiting for it to finish moving.
+
+## The wordmark, at full size
+
+The hero's mark is the pill and the wordmark side by side, and this is the only place either is drawn above its intrinsic size — the pill at 1.2, the wordmark at fifty-six pixels. The pair centres itself even though everything below it ranges left, because a mark this size reads as a masthead rather than as the first line of a column.
+
+The wordmark carries a little padding on its right so the descender of its last letter does not sit hard against whatever follows.
+
+=>
+
+import { Array, Option, pipe } from 'effect'
+import type { Html } from 'foldkit/html'
+import {
+  Copied,
+  PickedRuntime,
+  WentTo,
+  h,
+  type Model,
+  type Runtime,
+} from './model'
+import {
+  bunIcon,
+  denoIcon,
+  loomMark,
+  npmIcon,
+  pnpmIcon,
+} from './components'
+
+const wordmark = (): Html =>
+  h.div(
+    [h.Class('hero-mark')],
+    [
+      loomMark('paper', 1.2),
+      h.div([h.Class('hero-word')], ['Loom']),
+    ],
+  )
+
+## The claim
+
+The heading states what Loom is in one line, and the paragraph beneath it says how that works in three sentences. The paragraph stops at forty-six characters a line — narrower than the site's usual prose measure, because it sits beside a column of its own and a long line here would run under the install box.
+
+`loom tangle` appears inside the sentence in primary ink, one step up from the text around it, so the command reads as a name without becoming a link.
+
+=>
+
+const claim = (): Html =>
+  h.div(
+    [h.Class('hero-claim')],
+    [
+      h.h1([], ['Literate programming framework for AI-assisted engineering']),
+      h.p(
+        [h.Class('hero-lead')],
+        [
+          'Write your program the way you write a book. You write the reasoning in prose and the code beneath it, in the order you thought of it. ',
+          h.span([h.Class('hero-cmd')], ['loom tangle']),
+          ' resolves the sections and writes the real files.',
+        ],
+      ),
+    ],
+  )
+
+## One command, in the reader's own package manager
+
+Four package managers install Loom, and the hero shows one line rather than four. A reader picks their own from a row of tabs and the line beneath rewrites itself.
+
+Each tab carries the runtime's real logo, vendored as inline markup rather than fetched as a file, so the mark is sharp at any size and the page makes no request for it. The chosen tab darkens to primary ink and draws a rule beneath itself; the others sit in muted ink with a transparent rule, so the row's baseline never shifts as the choice moves.
+
+Deno's line is the odd one, and it has to be: the package is scoped, so without `-n loom` the command would install itself under the scope's name instead of under `loom`.
+
+The command a tab shows and the command the button copies are the same string, read from the same row of the table. Writing them twice would be an invitation for one to drift while the other stays right.
+
+=>
+
+type Install = {
+  readonly runtime: Runtime
+  readonly label: string
+  readonly command: string
+  readonly logo: Html
+}
+
+const installs: ReadonlyArray<Install> = [
+  { runtime: 'bun', label: 'bun', command: 'bun add -g @athrio/loom', logo: bunIcon() },
+  {
+    runtime: 'deno',
+    label: 'deno',
+    command: 'deno install -g -n loom npm:@athrio/loom',
+    logo: denoIcon(),
+  },
+  { runtime: 'npm', label: 'npm', command: 'npm install -g @athrio/loom', logo: npmIcon() },
+  { runtime: 'pnpm', label: 'pnpm', command: 'pnpm add -g @athrio/loom', logo: pnpmIcon() },
+]
+
+const commandFor = (runtime: Runtime): string =>
+  pipe(
+    Array.findFirst(installs, (install) => install.runtime === runtime),
+    Option.map((install) => install.command),
+    Option.getOrElse(() => ''),
+  )
+
+~
+
+The command line is a button, not a code block, because its whole purpose is to be taken. Pressing it copies the line and the label at its end turns from `copy` to `copied` in the green that names `loom init`, then turns back a moment later.
+
+=>
+
+const runtimeTab = (install: Install, here: boolean): Html =>
+  h.button(
+    [
+      h.Class(here ? 'rt-tab here' : 'rt-tab'),
+      h.Type('button'),
+      h.OnClick(PickedRuntime({ runtime: install.runtime })),
+    ],
+    [install.logo, install.label],
+  )
+
+const installLine = (model: Model): Html => {
+  const command = commandFor(model.runtime)
+  const taken = model.copied === 'install'
+  return h.div(
+    [h.Class('hero-install')],
+    [
+      h.div(
+        [h.Class('rt-tabs')],
+        Array.map(installs, (install) =>
+          runtimeTab(install, install.runtime === model.runtime),
+        ),
+      ),
+      h.button(
+        [
+          h.Class('rt-command'),
+          h.Type('button'),
+          h.Title('Copy install command'),
+          h.OnClick(Copied({ id: 'install', text: command })),
+        ],
+        [
+          h.span([h.Class('prompt')], ['$']),
+          h.span([h.Class('line')], [command]),
+          h.span([h.Class(taken ? 'took done' : 'took')], [taken ? 'copied' : 'copy']),
+        ],
+      ),
+    ],
+  )
+}
+
+## The way onward
+
+Two links close the hero: one into the documentation, one into the source. Each carries a rule beneath it rather than an underline, which keeps the descenders clear of the line.
+
+=>
+
+const onward = (): Html =>
+  h.div(
+    [h.Class('hero-onward')],
+    [
+      h.a(
+        [
+          h.Class('hero-link'),
+          h.Href('/docs'),
+          h.Style({ '--hero-ink': '#1D4FBF' }),
+          h.OnClick(WentTo({ route: 'docs' })),
+        ],
+        ['Read the docs →'],
+      ),
+      h.a(
+        [
+          h.Class('hero-link'),
+          h.Href('/source'),
+          h.Style({ '--hero-ink': '#C2410C' }),
+          h.OnClick(WentTo({ route: 'source' })),
+        ],
+        ['Browse the source'],
+      ),
+    ],
+  )
+
+## The hero, assembled
+
+The wordmark sits above two columns that become one below seven hundred and sixty-five pixels, where a line of prose and an install box can no longer stand side by side.
+
+=>
+
+export const hero = (model: Model): Html =>
+  h.div(
+    [h.Class('section section-hero'), h.Id('loom-top')],
+    [
+      wordmark(),
+      h.div(
+        [h.Class('hero-columns')],
+        [
+          claim(),
+          h.div([h.Class('hero-right')], [installLine(model), onward()]),
+        ],
+      ),
+    ],
+  )
+
+## The module {Tangle}[hero.ts]
+
+The module is the wordmark, the claim, the install line and the links, then the hero that holds them.
+
+=>
+
+::[The wordmark, at full size]
+
+::[The claim]
+
+::[One command, in the reader's own package manager]
+
+::[The way onward]
+
+::[The hero, assembled]

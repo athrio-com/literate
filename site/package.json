@@ -2,26 +2,26 @@
   "name": "loom-website",
   "type": "module",
   "private": true,
-  "version": "0.0.9",
+  "version": "0.0.0",
   "scripts": {
-    "build": "bunx --bun vite build && bun src/server/prerender.ts",
-    "serve": "bun src/server/server.ts",
-    "prerender": "bun src/server/prerender.ts",
-    "dev": "bunx --bun vite & bun src/server/server.ts"
+    "weave:docs": "bunx @athrio/loom weave ../docs/index.loom src/docs.woven.json",
+    "content": "bun run weave:docs",
+    "predev": "bun run content",
+    "dev": "bunx --bun vite --port 5199",
+    "prebuild": "bun run content",
+    "build": "bunx --bun vite build",
+    "serve": "bun src/server.ts",
+    "preview": "bunx --bun vite preview --port 5199"
   },
   "dependencies": {
+    "@athrio/foldkit-ssr": "workspace:*",
+    "@athrio/foldkit-hydration": "workspace:*",
     "foldkit": "workspace:*",
-    "@athrio/loom-lang": "workspace:*",
     "effect": "4.0.0-beta.97",
-    "marked": "^18.0.5",
-    "shiki": "^4.3.1"
+    "marked": "^18.0.5"
   },
   "devDependencies": {
-    "@foldkit/vite-plugin": "0.10.1",
     "@athrio/loom-devtools": "workspace:*",
-    "@types/node": "^26.1.0",
-    "playwright-core": "^1.49.0",
-    "typescript": "^6.0.3",
     "vite": "^8.1.3"
   }
 }
