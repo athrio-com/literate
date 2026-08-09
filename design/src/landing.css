@@ -183,6 +183,11 @@ a:hover { color: var(--ink-3); }
   color: var(--ink-3);
 }
 
+@media (max-width: 639px) {
+  .section-head { align-items: center; }
+  .section-head .eyebrow { display: none; }
+}
+
 h1 {
   margin: 0;
   font-family: var(--display);

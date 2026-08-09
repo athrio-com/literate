@@ -281,6 +281,8 @@ The two lines have to fit the mark, and that is what sets the eyebrow's leading.
 
 The eyebrow is the widest-tracked type on the site, uppercase in muted ink. A heading takes the mono, not the display face — Space Grotesk stops at the hero — and a sub-heading is the same treatment one step down.
 
+Below six hundred and forty pixels the eyebrow goes. A phone's width belongs to the heading, and of the two lines the subject is the one a reader can do without — the heading names the section, and the eyebrow only says what it is about. The stack is one line then rather than two, so the mark centres against it instead of hanging from its top. Only a section head loses its eyebrow; the pager keeps the pair above each destination, since there the eyebrow says which way the card leads.
+
 =>
 
 .section-head {
@@ -304,6 +306,11 @@ The eyebrow is the widest-tracked type on the site, uppercase in muted ink. A he
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+@media (max-width: 639px) {
+  .section-head { align-items: center; }
+  .section-head .eyebrow { display: none; }
 }
 
 h1 {
