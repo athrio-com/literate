@@ -14,7 +14,7 @@ The page is the shell the application fills. It carries an empty `#root` for the
 
 The site is set in two families. Space Grotesk carries the headings, and Lilex carries everything else — the running text as well as the code, since the whole site is set in mono. Lilex has no Google entry, so it arrives as three `@font-face` rules pointing at its own files, with IBM Plex Mono standing behind it in the stack for the moment before they land. Noto Color Emoji comes along for the emoji the documentation shows.
 
-The server rewrites two spots: the `#root` it fills with the rendered body, and the head where it inlines the model. So the strings `<div id="root"></div>` and `</head>` matter as much as the markup.
+The server rewrites three spots: the `#root` it fills with the rendered body, the head where it inlines the model, and the `<title>` it replaces with the route's own. The first two it finds by exact text, so the strings `<div id="root"></div>` and `</head>` matter as much as the markup; the title it finds by its element, so the words below are a default no reader sees.
 
 =>
 
