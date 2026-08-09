@@ -1,5 +1,5 @@
 import './browser-globals'
-import { Context, Effect, FileSystem, Layer, Match, Schema as S } from 'effect'
+import { Context, Effect, FileSystem, Layer, Match, Option, Schema as S } from 'effect'
 import {
   HttpServer,
   HttpServerRequest,
@@ -13,25 +13,34 @@ import { PREHYDRATION_CAPTURE_SCRIPT } from '@athrio/foldkit-hydration/prehydrat
 import { FoldkitRender } from '@athrio/foldkit-ssr'
 import { view } from './view'
 import { type Model } from './model'
-import * as Gomoku from '../../examples/gomoku/gomoku'
+import { seedNotes } from './devtools'
 
 const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 const seed: Model = {
-  theme: 'light',
-  accent: 'duo',
-  titleColors: 'three',
-  rotatorIndex: 0,
-  rotatorPhase: 'normal',
+  route: 'home',
+  chapter: '',
+  navHidden: false,
+  drawerOpen: false,
+  runtime: 'bun',
+  searchOpen: false,
+  caret: 0,
+  searching: false,
   activeSection: '',
-  exampleTab: 'loom',
-  loomView: 'source',
-  exampleExpanded: false,
-  game: Gomoku.newGame(),
+  player: { struck: 0, beat: 0, playing: false, output: Option.none(), full: false },
   version: '0.0.9',
   query: '',
   focus: 0,
   copied: '',
+  notes: seedNotes,
+  seq: 3,
+  notesOpen: false,
+  barCollapsed: false,
+  picking: false,
+  noteTab: 'open',
+  aimed: Option.none(),
+  draft: '',
+  highlight: Option.none(),
 }
 
 const inlineJson = (value: unknown): string =>

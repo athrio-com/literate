@@ -1,5 +1,5 @@
 ---
-Part XIV, Chapter 8: The server
+Part XIV, Chapter 16: The server
 Package: design/src/
 Language: TypeScript
 ---
@@ -29,7 +29,7 @@ The server loads the shim first, before any Foldkit module. From `effect` come `
 =>
 
 import './browser-globals'
-import { Context, Effect, FileSystem, Layer, Match, Schema as S } from 'effect'
+import { Context, Effect, FileSystem, Layer, Match, Option, Schema as S } from 'effect'
 import {
   HttpServer,
   HttpServerRequest,
@@ -43,33 +43,42 @@ import { PREHYDRATION_CAPTURE_SCRIPT } from '@athrio/foldkit-hydration/prehydrat
 import { FoldkitRender } from '@athrio/foldkit-ssr'
 import { view } from './view'
 import { type Model } from './model'
-import * as Gomoku from '../../examples/gomoku/gomoku'
+import { seedNotes } from './devtools'
 
 const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
 ## The page
 
-The page starts from the built shell and gains two things: the rendered body in place of the empty `#root`, and, in the head, the capture script and the model inlined as JSON for hydration. The seed is the landing at rest — the light theme with the rust-duo accents, the headline in three colours, no section jumped to, the loom tab showing its source, the rotator unstarted, the version standing at the workspace's own until the render fetches the latest.
+The page starts from the built shell and gains two things: the rendered body in place of the empty `#root`, and, in the head, the capture script and the model inlined as JSON for hydration. The seed is the site at rest — the landing, no chapter opened, no section jumped to, the example standing at its first frame, and the version at the workspace's own until the render fetches the latest.
 
 {{ version = ${version} }}
 
 =>
 
 const seed: Model = {
-  theme: 'light',
-  accent: 'duo',
-  titleColors: 'three',
-  rotatorIndex: 0,
-  rotatorPhase: 'normal',
+  route: 'home',
+  chapter: '',
+  navHidden: false,
+  drawerOpen: false,
+  runtime: 'bun',
+  searchOpen: false,
+  caret: 0,
+  searching: false,
   activeSection: '',
-  exampleTab: 'loom',
-  loomView: 'source',
-  exampleExpanded: false,
-  game: Gomoku.newGame(),
+  player: { struck: 0, beat: 0, playing: false, output: Option.none(), full: false },
   version: '::[version]',
   query: '',
   focus: 0,
   copied: '',
+  notes: seedNotes,
+  seq: 3,
+  notesOpen: false,
+  barCollapsed: false,
+  picking: false,
+  noteTab: 'open',
+  aimed: Option.none(),
+  draft: '',
+  highlight: Option.none(),
 }
 
 const inlineJson = (value: unknown): string =>

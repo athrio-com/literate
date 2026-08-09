@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="216" viewBox="0 0 300 216" role="img" aria-labelledby="tg-t">
+            <title id="tg-t">loom tangle — src/ is written out of the corpus, file by file</title>
+            <defs>
+              <filter id="tg-drop" x="-25%" y="-25%" width="160%" height="170%">
+                <feDropShadow dx="0" dy="1" stdDeviation="0.5" flood-color="#14130F" flood-opacity="0.14"/>
+              </filter>
+            </defs>
+            <rect width="300" height="216" rx="4" fill="#F2EFE6"/>
+          
+            <g>
+              <g>
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="25" y="43" width="1" height="32"/>
+                    <rect x="25" y="74.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M44 65.5Q44 64 45.5 64H55L61 70V84.5Q61 86 59.5 86H45.5Q44 86 44 84.5Z" fill="#FCFAF4"/>
+                    <path d="M55 64L61 70H55Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="47" y="72" width="11" height="1.5"/>
+                    <rect x="47" y="75.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="49" cy="81" r="2" fill="#8B5CF6"/>
+                <text x="72" y="75" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">board.loom</text>
+              </g>
+              <g>
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="25" y="75" width="1" height="32"/>
+                    <rect x="25" y="106.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M44 97.5Q44 96 45.5 96H55L61 102V116.5Q61 118 59.5 118H45.5Q44 118 44 116.5Z" fill="#FCFAF4"/>
+                    <path d="M55 96L61 102H55Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="47" y="104" width="11" height="1.5"/>
+                    <rect x="47" y="107.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="49" cy="113" r="2" fill="#8B5CF6"/>
+                <text x="72" y="107" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">rules.loom</text>
+              </g>
+              <g>
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="25" y="107" width="1" height="32"/>
+                    <rect x="25" y="138.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M44 129.5Q44 128 45.5 128H55L61 134V148.5Q61 150 59.5 150H45.5Q44 150 44 148.5Z" fill="#FCFAF4"/>
+                    <path d="M55 128L61 134H55Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="47" y="136" width="11" height="1.5"/>
+                    <rect x="47" y="139.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="49" cy="145" r="2" fill="#8B5CF6"/>
+                <text x="72" y="139" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">store.loom</text>
+              </g>
+              <g>
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="25" y="139" width="1" height="32"/>
+                    <rect x="25" y="170.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M44 161.5Q44 160 45.5 160H55L61 166V180.5Q61 182 59.5 182H45.5Q44 182 44 180.5Z" fill="#FCFAF4"/>
+                    <path d="M55 160L61 166H55Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="47" y="168" width="11" height="1.5"/>
+                    <rect x="47" y="171.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="49" cy="177" r="2" fill="#8B5CF6"/>
+                <text x="72" y="171" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">api.loom</text>
+              </g>
+                <g transform="translate(16 33.7) scale(.62)">
+                  <rect x="1" y="4" width="12" height="7" rx="1.5" fill="#7040E8"/>
+                  <rect x="1" y="8" width="26" height="18" rx="2" fill="#8B5CF6"/>
+                  <rect x="1" y="8" width="26" height="18" rx="2" fill="#A78BFA"/>
+                </g>
+              <text font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central" x="47" y="43">corpus/</text>
+            </g>
+          
+            <g>
+              <g opacity="0">
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="155" y="43" width="1" height="32"/>
+                    <rect x="155" y="74.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M174 65.5Q174 64 175.5 64H185L191 70V84.5Q191 86 189.5 86H175.5Q174 86 174 84.5Z" fill="#FCFAF4"/>
+                    <path d="M185 64L191 70H185Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="177" y="72" width="11" height="1.5"/>
+                    <rect x="177" y="75.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="179" cy="81" r="2" fill="#2E6FF2"/>
+                <text x="202" y="75" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">board.ts</text>
+                  <animate attributeName="opacity" dur="6.2s" repeatCount="indefinite" values="1;0;0;1;1" keyTimes="0;0.04839;0.1;0.14839;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1"/>
+                  <animateTransform attributeName="transform" type="translate" dur="6.2s" repeatCount="indefinite" values="0 0;0 7;0 7;0 0;0 0" keyTimes="0;0.05484;0.1;0.15484;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.32 0 0.24 1;0 0 1 1"/>
+              </g>
+              <g opacity="0">
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="155" y="75" width="1" height="32"/>
+                    <rect x="155" y="106.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M174 97.5Q174 96 175.5 96H185L191 102V116.5Q191 118 189.5 118H175.5Q174 118 174 116.5Z" fill="#FCFAF4"/>
+                    <path d="M185 96L191 102H185Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="177" y="104" width="11" height="1.5"/>
+                    <rect x="177" y="107.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="179" cy="113" r="2" fill="#2E6FF2"/>
+                <text x="202" y="107" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">rules.ts</text>
+                  <animate attributeName="opacity" dur="6.2s" repeatCount="indefinite" values="1;0;0;1;1" keyTimes="0;0.04839;0.15161;0.2;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1"/>
+                  <animateTransform attributeName="transform" type="translate" dur="6.2s" repeatCount="indefinite" values="0 0;0 7;0 7;0 0;0 0" keyTimes="0;0.05484;0.15161;0.20645;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.32 0 0.24 1;0 0 1 1"/>
+              </g>
+              <g opacity="0">
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="155" y="107" width="1" height="32"/>
+                    <rect x="155" y="138.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M174 129.5Q174 128 175.5 128H185L191 134V148.5Q191 150 189.5 150H175.5Q174 150 174 148.5Z" fill="#FCFAF4"/>
+                    <path d="M185 128L191 134H185Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="177" y="136" width="11" height="1.5"/>
+                    <rect x="177" y="139.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="179" cy="145" r="2" fill="#00996B"/>
+                <text x="202" y="139" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">store.sql</text>
+                  <animate attributeName="opacity" dur="6.2s" repeatCount="indefinite" values="1;0;0;1;1" keyTimes="0;0.04839;0.20323;0.25161;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1"/>
+                  <animateTransform attributeName="transform" type="translate" dur="6.2s" repeatCount="indefinite" values="0 0;0 7;0 7;0 0;0 0" keyTimes="0;0.05484;0.20323;0.25806;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.32 0 0.24 1;0 0 1 1"/>
+              </g>
+              <g opacity="0">
+                  <g fill="#DFD8C8" shape-rendering="crispEdges">
+                    <rect x="155" y="139" width="1" height="32"/>
+                    <rect x="155" y="170.5" width="19" height="1"/>
+                  </g>
+                  <g filter="url(#tg-drop)">
+                    <path d="M174 161.5Q174 160 175.5 160H185L191 166V180.5Q191 182 189.5 182H175.5Q174 182 174 180.5Z" fill="#FCFAF4"/>
+                    <path d="M185 160L191 166H185Z" fill="#D8CFBB"/>
+                  </g>
+                  <g fill="#7C6F64" opacity="0.24" shape-rendering="crispEdges">
+                    <rect x="177" y="168" width="11" height="1.5"/>
+                    <rect x="177" y="171.5" width="7.92" height="1.5"/>
+                  </g>
+                  <circle cx="179" cy="177" r="2" fill="#8B5CF6"/>
+                <text x="202" y="171" font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central">config.json</text>
+                  <animate attributeName="opacity" dur="6.2s" repeatCount="indefinite" values="1;0;0;1;1" keyTimes="0;0.04839;0.25484;0.30323;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1"/>
+                  <animateTransform attributeName="transform" type="translate" dur="6.2s" repeatCount="indefinite" values="0 0;0 7;0 7;0 0;0 0" keyTimes="0;0.05484;0.25484;0.30968;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.32 0 0.24 1;0 0 1 1"/>
+              </g>
+              <g opacity="0">
+                <g transform="translate(146 33.7) scale(.62)">
+                  <rect x="1" y="4" width="12" height="7" rx="1.5" fill="#1B54CC"/>
+                  <rect x="1" y="8" width="26" height="18" rx="2" fill="#2E6FF2"/>
+                  <rect x="1" y="8" width="26" height="18" rx="2" fill="#5A8DF6"/>
+                </g>
+                <text font-family="IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11" font-weight="600" fill="#14130F" dominant-baseline="central" x="177" y="43">src/</text>
+                  <animate attributeName="opacity" dur="6.2s" repeatCount="indefinite" values="1;0;0;1;1" keyTimes="0;0.04839;0.04839;0.09677;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.25 0.1 0.25 1;0 0 1 1"/>
+                  <animateTransform attributeName="transform" type="translate" dur="6.2s" repeatCount="indefinite" values="0 0;0 7;0 7;0 0;0 0" keyTimes="0;0.04839;0.04839;0.10323;1" calcMode="spline" keySplines="0.25 0.1 0.25 1;0 0 1 1;0.32 0 0.24 1;0 0 1 1"/>
+              </g>
+            </g>
+          </svg>

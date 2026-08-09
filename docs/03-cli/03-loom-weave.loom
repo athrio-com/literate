@@ -1,0 +1,33 @@
+---
+Part III: The command line
+Chapter 3: loom weave
+Language: Prose
+---
+
+# loom weave
+
+Where tangling reads a corpus for its code, weaving reads the same corpus for its document. It produces one JSON file describing the whole thing — its parts and chapters, each page's headings, its prose as Markdown, and its code.
+
+```bash
+loom weave <path> <out>
+```
+
+## What comes out
+
+The output has three parts. `nav` is the corpus arranged as parts and the chapters beneath them, which is what a site's navigation is built from. `pages` is a page per chapter, each a list of blocks: a heading carries its level, its title and a slug to link to, and a prose block carries Markdown. `loose` holds chapters that belong to no part.
+
+Because prose comes out as Markdown rather than as HTML, the site decides how to render it. Nothing about weaving assumes a browser.
+
+## Point it at a file, not a directory
+
+Weave works out which corpus you mean from the path you hand it, and it takes the directory that path sits in. Give it a chapter, or a spine — a file whose only job is to hold the table of contents — and it reads that file's directory and everything beneath it:
+
+```bash
+loom weave docs/index.loom docs.woven.json
+```
+
+Give it a directory instead and, unless that directory is a workspace in its own right, it reads the directory *above* the one you named. In a repository that means it can quietly weave everything you have, test fixtures included. The rule is short: pass a file.
+
+## More than one corpus in a project
+
+A project can hold several corpora — a book of documentation beside the source it documents, for instance. They need no configuration of their own. Each is a directory of chapters, and each is woven by pointing at a file inside it, so the same workspace settings govern them all.

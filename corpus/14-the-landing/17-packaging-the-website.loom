@@ -1,5 +1,5 @@
 ---
-Part XIV, Chapter 9: Packaging the landing
+Part XIV, Chapter 17: Packaging the website
 Package: design/
 Language: JSON
 ---
@@ -10,7 +10,11 @@ The landing is a small web application: a page the browser loads, a client that 
 
 ## The page {Tangle}[index.html]
 
-The page is the shell the application fills. It loads three type families from Google — a serif for display, a mono for code, and Noto Color Emoji for the emoji the page shows — while the prose sans, iA Writer Quattro, rides in with the client bundle. It carries an empty `#root` for the view to mount into, and the module that boots the client. A small script in the head runs before the first paint: it reads the reader's saved theme, or falls back to the light one, and sets it on the root so the page never flashes the wrong palette. The server rewrites two spots: the `#root` it fills with the rendered body, and the head where it inlines the model, so the strings `<div id="root"></div>` and `</head>` matter as much as the markup.
+The page is the shell the application fills. It carries an empty `#root` for the view to mount into, and the module that boots the client.
+
+The site is set in two families. Space Grotesk carries the headings, and Lilex carries everything else — the running text as well as the code, since the whole site is set in mono. Lilex has no Google entry, so it arrives as three `@font-face` rules pointing at its own files, with IBM Plex Mono standing behind it in the stack for the moment before they land. Noto Color Emoji comes along for the emoji the documentation shows.
+
+The server rewrites two spots: the `#root` it fills with the rendered body, and the head where it inlines the model. So the strings `<div id="root"></div>` and `</head>` matter as much as the markup.
 
 =>
 
@@ -20,22 +24,32 @@ The page is the shell the application fills. It loads three type families from G
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>loom — programs written to be read</title>
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem('loom-theme')
-          document.documentElement.setAttribute('data-theme', stored === 'dark' ? 'dark' : 'light')
-        } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'light')
-        }
-      })()
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=Noto+Color+Emoji&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Color+Emoji&display=swap"
       rel="stylesheet"
     />
+    <style>
+      @font-face {
+        font-family: 'Lilex';
+        src: url('https://cdn.jsdelivr.net/npm/@fontsource/lilex/files/lilex-latin-400-normal.woff2') format('woff2');
+        font-weight: 400;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Lilex';
+        src: url('https://cdn.jsdelivr.net/npm/@fontsource/lilex/files/lilex-latin-500-normal.woff2') format('woff2');
+        font-weight: 500;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Lilex';
+        src: url('https://cdn.jsdelivr.net/npm/@fontsource/lilex/files/lilex-latin-600-normal.woff2') format('woff2');
+        font-weight: 600;
+        font-display: swap;
+      }
+    </style>
     <script type="module" src="/src/client.ts"></script>
   </head>
   <body>
@@ -45,7 +59,13 @@ The page is the shell the application fills. It loads three type families from G
 
 ## The manifest {Tangle}[package.json]
 
-The manifest names the package, its commands, and its dependencies. The landing holds its own components, so it leans on only a few packages: `@athrio/foldkit-ssr` and `@athrio/foldkit-hydration` for the render and the adopt, `foldkit` and `effect` beneath them, `marked` to turn the woven prose into HTML, and `@fontsource/ia-writer-quattro` for the prose face. Before the landing runs or builds, two steps prepare the example: a weave turns the Gomoku loom into the JSON the preview reads, and a highlight pass colours its source and its tangle with Shiki. Both derive from the loom itself, so the example on the page is never a copy of it. Shiki and `@athrio/loom-devtools` are development dependencies alone — the highlight runs at build time, and the Devtools plugin runs only while Vite serves.
+The manifest names the package, its commands, and its dependencies. The site holds its own components, so it leans on only a few packages: `@athrio/foldkit-ssr` and `@athrio/foldkit-hydration` for the render and the adopt, `foldkit` and `effect` beneath them, and `marked` to turn the documentation's woven prose into HTML. The type comes from the page's own head rather than from a package.
+
+Before the site runs or builds, one step prepares the content it reads. It weaves the documentation, which is its own corpus of prose sitting beside this one, into the JSON the docs page renders. That JSON derives from a loom, so nothing the documentation shows is a copy of anything — change a chapter and the page changes with it. The landing's example needs no such step: the document it types is data in the section itself, since it is a teaching document rather than a corpus of Loom's own.
+
+Each weave is pointed at a *file* rather than at a directory, because weaving takes the corpus around the path it is given and a directory resolves to the one above it.
+
+Shiki and `@athrio/loom-devtools` are development dependencies alone — the highlight runs at build time, and the Devtools plugin runs only while Vite serves.
 
 =>
 
@@ -55,12 +75,11 @@ The manifest names the package, its commands, and its dependencies. The landing 
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "weave:example": "bunx @athrio/loom weave ../examples/gomoku src/gomoku.woven.json",
-    "highlight:example": "bun scripts/highlight-example.ts",
-    "example": "bun run weave:example && bun run highlight:example",
-    "predev": "bun run example",
+    "weave:docs": "bunx @athrio/loom weave ../docs/index.loom src/docs.woven.json",
+    "content": "bun run weave:docs",
+    "predev": "bun run content",
     "dev": "bunx --bun vite --port 5199",
-    "prebuild": "bun run example",
+    "prebuild": "bun run content",
     "build": "bunx --bun vite build",
     "serve": "bun src/server.ts",
     "preview": "bunx --bun vite preview --port 5199"
@@ -68,14 +87,12 @@ The manifest names the package, its commands, and its dependencies. The landing 
   "dependencies": {
     "@athrio/foldkit-ssr": "workspace:*",
     "@athrio/foldkit-hydration": "workspace:*",
-    "@fontsource/ia-writer-quattro": "^5.3.0",
     "foldkit": "workspace:*",
     "effect": "4.0.0-beta.97",
     "marked": "^18.0.5"
   },
   "devDependencies": {
     "@athrio/loom-devtools": "workspace:*",
-    "shiki": "^4.3.1",
     "vite": "^8.1.3"
   }
 }

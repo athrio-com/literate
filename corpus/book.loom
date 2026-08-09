@@ -153,19 +153,30 @@ The design catalog, the reading website, and the demos beside them are all Foldk
 7. The code surface
 8. Packaging Loom UI
 
-### Part XIV — The landing
+### Part XIV — The website
 
-The landing is the front page of the site, rebuilt as a Foldkit application: the window chrome, a hero whose headline rotates a word beside the quick start, a walk through the pipeline with a searchable command palette, a get-started with a config and the way to read further, and a footer. It renders on the server first, for a reader and a crawler, then hydrates and takes over — the site menu, the file tree, the palette, and the copy buttons come alive, while the rotating word runs on its own. It holds its own components for now, local to the landing, to be lifted into the shared library once the rest of the site joins them. This part builds it up — the stylesheet, the model, the local components, the hero, how it works, the get-started and the page, the client, the server, and the package that ships them.
+Loom's website is a Foldkit application of five pages, set on paper. The landing makes the pitch and shows a Loom document written out. Why Loom argues the case against the three approaches it replaces. Docs teaches the marks inside an editor shell. Community gathers the people and the corpora, and Source reads a loom the way the framework renders one.
 
-1. The landing styles
+One scheme governs all five, so the site reads as one thing: a warm cream ground under three steps of ink, two families of type on a fixed scale, and every measurement on a four-pixel grid. Loom's own woven mark ties it together — a carpet of coloured cells drawn from a grid of glyphs, small beside a name and whole in the hero.
+
+Each page wears the same chrome. A centred nav carries the wordmark between its links, and a slash opens a search palette that indexes both the pages and the prose inside them. A pager closes each page by naming its neighbours, and the footer ends the site on its one dark ground.
+
+The site renders on the server first, for a reader and a crawler, then hydrates and takes over. This part builds it up — the scheme, the model, the marks, the chrome, each page in turn, then the client, the server, and the package that ships them.
+
+1. The paper scheme
 2. The model
-3. Local components
-4. The hero
-5. How it works
-6. Get started and the page
-7. The client
-8. The server
-9. Packaging the landing
+3. The marks and the pieces
+4. The chrome every page wears
+5. The page
+6. The hero
+7. A Loom document, written out
+8. The whole vocabulary
+9. From init to eject
+10. The devtools point at this page
+12. The documentation shell
+15. The client
+16. The server
+17. Packaging the website
 
 ### Work in progress
 

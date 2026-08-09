@@ -1,3 +1,27 @@
+---
+Part XIV, Chapter 3: The marks and the pieces
+Package: design/src/
+Language: TypeScript
+---
+
+# The marks and the pieces
+
+Every page of the site wears the same small set of parts: Loom's own woven mark, a handful of line icons, and the runtime logos the install rows lead with. This chapter draws each one once, and the pages that follow compose them.
+
+The mark and the four command illustrations are not drawn here at all. They are vendored SVGs — the design draws them, and this chapter only says how they are placed and at what size. Each carries its own animation in SMIL, so none of them asks the model for a clock.
+
+## The woven carpet
+
+Loom's mark is a woven carpet, and the site draws it at every size — seventeen pixels beside a page's name in the search palette, forty-two at the head of a section, and the whole pill in the hero and the footer. A carpet is a small square grid of coloured cells. Rows of glyphs say where each thread runs, and a key says what colour each glyph stands for: a dot is always the navy ground, a `p` is always paper, and the remaining letters name whatever colours that particular mark is woven from.
+
+One row becomes one horizontal gradient with a hard stop at every cell boundary, and the rows stack into a square by background position. Drawn this way a carpet needs no image file and no element per cell: seven gradients paint a seven-by-seven mark, and it stays sharp at any size the page asks for.
+
+Gradient stops that meet exactly leave a hairline seam wherever the browser rounds a fraction of a pixel. So every layer bleeds a little past its own row, and at larger sizes each cell reaches a little into the next.
+
+A fine seam covers a mark a few pixels across — the seventeen-pixel glyphs in the search palette need nothing more. A mark drawn at forty-two pixels or above shows that rounding, so it takes a broader bleed and holds the whole carpet a pixel inside its own box, painting into the content edge rather than the border edge. Without that inset the widened bleed would spill past the mark.
+
+=>
+
 import { Array, Match, Option, pipe } from 'effect'
 import type { Html } from 'foldkit/html'
 import { h } from './model'
@@ -19,6 +43,12 @@ export type Seam = {
 export const fineSeam: Seam = { bleed: 0.5, overlap: 0, inset: 0 }
 export const broadSeam: Seam = { bleed: 0.8, overlap: 0.2, inset: 1 }
 
+~
+
+A row turns into its gradient one cell at a time. Each cell claims the slice of the width its position gives it, and paints it in the colour its glyph names — falling back to the navy ground for any glyph the key does not mention.
+
+=>
+
 const pct = (value: number): string => `${Number(value.toFixed(4))}%`
 
 const rowStops = (row: string, threads: Record<string, string>, overlap: number): string =>
@@ -35,6 +65,12 @@ const rowStops = (row: string, threads: Record<string, string>, overlap: number)
     }),
     Array.join(', '),
   )
+
+~
+
+The carpet's style gathers those rows into one background: a gradient per row, a position per row, and a row height of one seventh of the mark plus the seam's bleed.
+
+=>
 
 const insetBox = (inset: number): Record<string, string> =>
   inset === 0
@@ -61,6 +97,12 @@ export const carpetStyle = (carpet: Carpet, seam: Seam): Record<string, string> 
   ),
 })
 
+~
+
+A mark is that style on an empty square. It carries no text and says nothing a reader needs, so it is hidden from anything reading the page aloud.
+
+=>
+
 export const carpetMark = (carpet: Carpet, size: string, seam: Seam = fineSeam): Html =>
   h.span(
     [
@@ -75,6 +117,12 @@ export const carpetMark = (carpet: Carpet, size: string, seam: Seam = fineSeam):
     ],
     [],
   )
+
+## The marks a page wears
+
+Four pages carry a mark of their own, and each is woven from the colours that page answers to. Docs is a blue letter form. Why Loom is a diamond that runs amber through green to a magenta centre, the three approaches meeting Loom's own colour. Community is a blue square held inside a violet one. Source crosses blue against orange.
+
+=>
 
 export const docsCarpet: Carpet = {
   rows: ['.......', '.aaaaa.', '.a...a.', '.aaa.a.', '.a...a.', '.aaaap.', '.......'],
@@ -96,6 +144,14 @@ export const sourceCarpet: Carpet = {
   threads: { '.': NAVY, p: PAPER, a: '#2E6FF2', b: '#FF6A3D' },
 }
 
+## The marks the landing's sections wear
+
+Each section of the landing opens on a carpet of its own, and each is a little picture rather than a letter form. A seedling of green threads climbs through an orange bloom where the example sits; a magenta block meets green where the vocabulary is; the operations grow a violet flower on a green stem; and the devtools repeat the example's shape in blue, because they are the same idea seen through a tool.
+
+They are read from the same eight threads as everything else, so a section mark can never introduce a colour the page does not already use.
+
+=>
+
 export const exampleCarpet: Carpet = {
   rows: ['....g.g', '...gg..', 'g..g...', '.gooo..', '.goyo.g', '..ooo.v', '.g.....'],
   threads: { '.': NAVY, p: PAPER, g: '#00B37E', o: '#FF6A3D', y: '#FFC53D', v: '#8B5CF6' },
@@ -116,6 +172,18 @@ export const devtoolsCarpet: Carpet = {
   threads: { '.': NAVY, p: PAPER, b: '#2E6FF2', o: '#FF6A3D', y: '#FFC53D', v: '#8B5CF6' },
 }
 
+## The Loom mark
+
+Loom's full mark is a pill with two carets on it, and it is the one piece of the site that moves. The carets blink, glance together, and a woven quilt drifts up behind them before fading out — a loop of twelve and four fifths seconds that runs on nothing but itself.
+
+It is a vendored SVG, drawn in the design and applied here untouched. Two grounds, one mark: the paper copy for the hero and the documentation's bar, and a copy for the footer's single dark ground.
+
+The mark is served as a file rather than written into the page. At forty kilobytes each the two would be a third of the document if they were inlined, and they gain nothing from being there — the mark carries no text, so it needs none of the page's type, and its animation runs inside an image as happily as in the document. The three command illustrations go the other way for exactly that reason: they set their file names in live text, and text in an image cannot reach the fonts the page loaded.
+
+The pill is a hundred and twelve by forty-eight at its natural size, and every use scales from there — the hero at one and a fifth, the footer at a little over three quarters, the documentation's bar at just under a half. The wordmark beside it says `Loom` in text, so the image itself is decorative and carries no alternative of its own.
+
+=>
+
 export type MarkGround = 'paper' | 'dark'
 
 const MARK_WIDTH = 112
@@ -129,6 +197,16 @@ export const loomMark = (ground: MarkGround, scale: number): Html =>
     h.Width(String(Math.round(MARK_WIDTH * scale))),
     h.Height(String(Math.round(MARK_HEIGHT * scale))),
   ])
+
+## The icons
+
+The icons are the small marks the chrome and its buttons wear — a copy glyph, an open book, an external arrow, a forward arrow, a down chevron and an up one, a check, a burger that opens the documentation's drawer, the GitHub octocat, and the two the devtools bar wears: a crosshair for the picker and a speech bubble for the notes. Each is an inline SVG drawn in the current text colour, so it takes the colour of whatever sits around it.
+
+The two chevrons point opposite ways for the same reason. A bar that collapses points down, towards where it is going, and the handle it leaves behind points up, towards where it came from.
+
+The octocat comes in two drawings. The one below is traced on a sixteen-unit grid, and it is the copy every inline link wears. The palette's pill carries a different tracing on a twenty-four-unit grid, baked into a data URI with its fill fixed, because a background image cannot follow the text colour around it.
+
+=>
 
 import logos from './logos.json'
 
@@ -248,6 +326,14 @@ export const noteIcon = (): Html =>
     strokePath('M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'),
   ])
 
+~
+
+The player's transport wears five more. They are drawn filled rather than stroked, because a transport control reads as a solid shape at fourteen pixels where an outline reads as a smudge — the exception is the replay arrow, which is a circle a stroke can draw and a fill cannot.
+
+Back and skip are the same triangle with a bar beside it, mirrored: the bar stands where the playhead would come to rest.
+
+=>
+
 const solidIcon = (width: string, height: string, box: string, parts: ReadonlyArray<Html>): Html =>
   h.svg(
     [h.Width(width), h.Height(height), h.ViewBox(box), h.Fill('currentColor'), h.AriaHidden(true)],
@@ -295,6 +381,12 @@ export const replayIcon = (): Html =>
     ],
   )
 
+~
+
+Two more sit in the player's top corner, where a reader asks for the card to grow to the height of the window and then asks for it back. Each is four bare corners on a fourteen-pixel square, drawn with square caps so the elbows meet flush. The expand icon turns its corners outwards and the collapse icon turns the same four inwards, which is the whole difference a reader needs to read the button's state.
+
+=>
+
 const cornerIcon = (corners: ReadonlyArray<string>): Html =>
   h.svg(
     [
@@ -331,6 +423,12 @@ export const octocatIcon = (size: string): Html =>
     ],
   )
 
+## The runtime marks
+
+The install rows each lead with the mark of a runtime — bun, deno, npm, pnpm — in the brand's own logo, not a redrawing. Each logo is the project's official SVG, vendored in `logos.json` and dropped into a span as inline markup, so the page carries no image file and the mark stays sharp at any size. Most keep their own colours: npm's red block, pnpm's yellow-and-grey squares, bun's cream mascot. Deno's dinosaur ships as a black silhouette, so the vendored copy draws in the current text colour instead — pale on the dark theme, dark on the light — to read on either.
+
+=>
+
 const svgMark = (svg: string): Html =>
   h.span([h.Class('rt-logo'), h.InnerHTML(svg)], [])
 
@@ -338,3 +436,21 @@ export const bunIcon = (): Html => svgMark(logos.bun)
 export const denoIcon = (): Html => svgMark(logos.deno)
 export const npmIcon = (): Html => svgMark(logos.npm)
 export const pnpmIcon = (): Html => svgMark(logos.pnpm)
+
+## The module {Tangle}[components.ts]
+
+The module opens with the woven carpet, since the small marks a page wears are woven from it. Then the full mark, the icons, and the runtime logos.
+
+=>
+
+::[The woven carpet]
+
+::[The marks a page wears]
+
+::[The marks the landing's sections wear]
+
+::[The Loom mark]
+
+::[The icons]
+
+::[The runtime marks]

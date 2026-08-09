@@ -1,0 +1,167 @@
+---
+Part XIV, Chapter 8: The whole vocabulary
+Package: design/src/
+Language: TypeScript
+---
+
+# The whole vocabulary
+
+This section is Loom's entire syntax on one screen. Eight marks, each with its glyph, its name and a sentence saying what it does — and nothing held back for a later page.
+
+Showing all of it at once is the argument. A reader deciding whether to try a tool wants to know how much there is to learn, and the honest answer here is short enough to print. A vocabulary you can read in a minute is a different proposition from one you have to work through.
+
+## The eight marks
+
+Each mark carries a colour, and the colour is the mark's own wherever it appears again — in the operations below, in the source view, in the docs. A glyph sits in a chip of its colour over a twelve-percent wash of the same, which is enough to separate it from the prose without turning the row into a swatch.
+
+The list counts a heading once. A part is the same `#` mark one level deeper, so it earns a sentence inside the heading's row rather than a row of its own — the count is meant to be the number of things to learn, not the number of ways to write them.
+
+=>
+
+import { Array } from 'effect'
+import type { Html } from 'foldkit/html'
+import { h } from './model'
+import { broadSeam, carpetMark, vocabularyCarpet } from './components'
+
+type Mark = {
+  readonly glyph: string
+  readonly colour: string
+  readonly tint: string
+  readonly name: string
+  readonly says: string
+}
+
+export const marks: ReadonlyArray<Mark> = [
+  {
+    glyph: '---',
+    colour: '#8B5CF6',
+    tint: '#F0EAFE',
+    name: 'Frontmatter',
+    says: 'Frontmatter opens a chapter and carries its metadata.',
+  },
+  {
+    glyph: '#',
+    colour: '#2E6FF2',
+    tint: '#EAF1FE',
+    name: 'Section',
+    says: 'A heading opens a section and names it.',
+  },
+  {
+    glyph: '{{ }}',
+    colour: '#5A8DF6',
+    tint: '#EDF3FE',
+    name: 'Warp',
+    says: 'Warps bind variables which are used for values interpolation.',
+  },
+  {
+    glyph: '[ ]',
+    colour: '#2E6FF2',
+    tint: '#EAF1FE',
+    name: 'Sink',
+    says: 'A sink names the file a section tangles into.',
+  },
+  {
+    glyph: '{ }',
+    colour: '#8A5A00',
+    tint: '#FDF3DF',
+    name: 'Specifier',
+    says: 'A specifier gives a section its language or its role.',
+  },
+  {
+    glyph: '=>',
+    colour: '#00996B',
+    tint: '#E4F7F0',
+    name: 'Arrow',
+    says: 'An arrow turns from prose into code.',
+  },
+  {
+    glyph: '~',
+    colour: '#E8501F',
+    tint: '#FDEEE8',
+    name: 'Tilde',
+    says: 'A tilde turns back from code into prose.',
+  },
+  {
+    glyph: `::${'['} ]`,
+    colour: '#8B5CF6',
+    tint: '#F0EAFE',
+    name: 'Anchor',
+    says: 'An anchor transcludes the section or a warp.',
+  },
+]
+
+~
+
+The anchor's glyph is written with its bracket interpolated rather than typed. `::` followed by a bracket is how Loom opens an anchor, so typing it whole here would make this list's own source try to draw in a section called `a section`. Breaking the token is what lets the vocabulary quote the mark it is describing.
+
+The chip's wash is the mark's own colour at an eighth strength, written as the colour with an alpha pair appended. Deriving it from the colour rather than listing a second one means a mark can never end up with a wash that does not match it.
+
+=>
+
+const glyphChip = (mark: Mark): Html =>
+  h.span(
+    [h.Class('mark-glyph'), h.Style({ color: mark.colour, background: `${mark.colour}1F` })],
+    [mark.glyph],
+  )
+
+## One card per mark
+
+A mark gets a card: its glyph in a chip, its name beside the chip in the mark's own colour, and one sentence under both. Nothing is numbered. A vocabulary is a set rather than a sequence, and eight numbered rows invite a reader to think there is an order to learn them in.
+
+The card lies quiet until the cursor is on it, and then it takes the mark's colour twice over — the ground goes to the mark's tint, the edge to the mark's own hue. That is the only way the colour reaches the card, so a reader who runs down the set sees each mark's colour arrive and leave one at a time.
+
+=>
+
+const markCard = (mark: Mark): Html =>
+  h.div(
+    [
+      h.Class('mark-card'),
+      h.Style({ '--mark-ink': mark.colour, '--mark-tint': mark.tint }),
+    ],
+    [
+      h.span(
+        [h.Class('mark-card-head')],
+        [glyphChip(mark), h.span([h.Class('mark-name')], [mark.name])],
+      ),
+      h.span([h.Class('mark-says')], [mark.says]),
+    ],
+  )
+
+## The section
+
+The section opens with the header block every section wears — the woven mark, the eyebrow, the heading — then gives the rest of its width to the vocabulary. At forty-two pixels the mark takes the broader seam, since a carpet this size shows the rounding a fine one leaves.
+
+=>
+
+export const vocabulary = (): Html =>
+  h.div(
+    [h.Class('section'), h.Id('loom-marks')],
+    [
+      h.div(
+        [h.Class('section-head')],
+        [
+          carpetMark(vocabularyCarpet, '42px', broadSeam),
+          h.div(
+            [h.Class('lines')],
+            [
+              h.span([h.Class('eyebrow')], ['Loom syntax']),
+              h.h2([], ['The whole vocabulary']),
+            ],
+          ),
+        ],
+      ),
+      h.div([h.Class('mark-set')], Array.map(marks, markCard)),
+    ],
+  )
+
+## The module {Tangle}[vocabulary.ts]
+
+The module is the marks themselves, the chip that draws a glyph, the card that holds one, and the section that holds them all.
+
+=>
+
+::[The eight marks]
+
+::[One card per mark]
+
+::[The section]

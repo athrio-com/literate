@@ -1,156 +1,146 @@
-import { Array, Match } from 'effect'
+import { Array, Option, pipe } from 'effect'
 import type { Html } from 'foldkit/html'
 import {
-  copyIcon,
-  checkIcon,
-  bookIcon,
-  loomIcon,
+  Copied,
+  PickedRuntime,
+  WentTo,
+  h,
+  type Model,
+  type Runtime,
+} from './model'
+import {
   bunIcon,
   denoIcon,
+  loomMark,
   npmIcon,
   pnpmIcon,
 } from './components'
-import { Copied, h, type Model } from './model'
 
-export const ROTATOR_WORDS = ['a book', 'an article', 'a spec']
-
-const rotatorClass = (phase: Model['rotatorPhase']): string =>
-  Match.value(phase).pipe(
-    Match.when('out', () => 'rotator-word out'),
-    Match.when('in-start', () => 'rotator-word in-start'),
-    Match.orElse(() => 'rotator-word'),
-  )
-
-const headline = (model: Model): Html =>
-  h.h1(
-    [h.Class('loom-h')],
-    [
-      h.span([h.Class('hl-1')], ['Write your program']),
-      h.br([]),
-      h.span([h.Class('hl-2')], [`the way you write`]),
-      h.br([]),
-      h.span(
-        [h.Class('rotator-host hl-3'), h.AriaLive('polite')],
-        [
-          h.span(
-            [h.Class(rotatorClass(model.rotatorPhase))],
-            [ROTATOR_WORDS[model.rotatorIndex] ?? ROTATOR_WORDS[0]],
-          ),
-        ],
-      ),
-      h.span([h.Class('caret'), h.AriaHidden(true)], []),
-    ],
-  )
-
-type Runtime = {
-  readonly id: string
-  readonly command: string
-  readonly icon: Html
-}
-
-const RUNTIMES: ReadonlyArray<Runtime> = [
-  { id: 'bun', command: 'bun add -g @athrio/loom', icon: bunIcon() },
-  { id: 'deno', command: 'deno install -g -n loom npm:@athrio/loom', icon: denoIcon() },
-  { id: 'npm', command: 'npm install -g @athrio/loom', icon: npmIcon() },
-  { id: 'pnpm', command: 'pnpm add -g @athrio/loom', icon: pnpmIcon() },
-]
-
-const rowCopy = (id: string, copied: string): Html => {
-  const done = copied === id
-  return h.span(
-    [h.Class(done ? 'rt-copy copied' : 'rt-copy')],
-    [done ? checkIcon() : copyIcon()],
-  )
-}
-
-const installRow = (copied: string) => (runtime: Runtime): Html =>
-  h.button(
-    [
-      h.Class('install-row'),
-      h.AriaLabel(`Copy: ${runtime.command}`),
-      h.OnClick(Copied({ id: `install-${runtime.id}`, text: runtime.command })),
-    ],
-    [
-      h.span([h.Class('rt-mark')], [runtime.icon]),
-      h.code([h.Class('rt-cmd')], [runtime.command]),
-      rowCopy(`install-${runtime.id}`, copied),
-    ],
-  )
-
-const installRows = (model: Model): Html =>
-  h.div([h.Class('install-rows')], Array.map(RUNTIMES, installRow(model.copied)))
-
-const prim = (token: string): Html =>
-  h.code([h.Class('hero-prim')], [token])
-
-const point = (content: ReadonlyArray<Html | string>): Html =>
-  h.li([], [h.span([h.Class('hero-bullet')], [loomIcon()]), h.span([], content)])
-
-const whatLoom = (): Html =>
+const wordmark = (): Html =>
   h.div(
-    [h.Class('hero-note')],
+    [h.Class('hero-mark')],
     [
+      loomMark('paper', 1.2),
+      h.div([h.Class('hero-word')], ['Loom']),
+    ],
+  )
+
+const claim = (): Html =>
+  h.div(
+    [h.Class('hero-claim')],
+    [
+      h.h1([], ['Literate programming framework for AI-assisted engineering']),
       h.p(
         [h.Class('hero-lead')],
-        ['Loom is a compositional language designed for AI-assisted literate programming.'],
-      ),
-      h.ul(
-        [h.Class('hero-points')],
         [
-          point(['Provides the tools to write programs in the order demanded by natural language, logic, and the flow of thought.']),
-          point(['Keeps specification alongside code, while structurally separating the two.']),
-          point([
-            'Introduces a minimal syntax surface over standard Markdown, with intuitive primitives like ',
-            prim('=>'),
-            ', ',
-            prim('~'),
-            ', ',
-            prim('::' + '[]'),
-            ', and ',
-            prim('{}'),
-            '.',
-          ]),
-          point(['Installs as a CLI with integrated LSP and MCP devtools.']),
+          'Write your program the way you write a book. You write the reasoning in prose and the code beneath it, in the order you thought of it. ',
+          h.span([h.Class('hero-cmd')], ['loom tangle']),
+          ' resolves the sections and writes the real files.',
         ],
       ),
-      h.p(
-        [],
-        ['Everything else is just prose and code in your favourite programming language.'],
+    ],
+  )
+
+type Install = {
+  readonly runtime: Runtime
+  readonly label: string
+  readonly command: string
+  readonly logo: Html
+}
+
+const installs: ReadonlyArray<Install> = [
+  { runtime: 'bun', label: 'bun', command: 'bun add -g @athrio/loom', logo: bunIcon() },
+  {
+    runtime: 'deno',
+    label: 'deno',
+    command: 'deno install -g -n loom npm:@athrio/loom',
+    logo: denoIcon(),
+  },
+  { runtime: 'npm', label: 'npm', command: 'npm install -g @athrio/loom', logo: npmIcon() },
+  { runtime: 'pnpm', label: 'pnpm', command: 'pnpm add -g @athrio/loom', logo: pnpmIcon() },
+]
+
+const commandFor = (runtime: Runtime): string =>
+  pipe(
+    Array.findFirst(installs, (install) => install.runtime === runtime),
+    Option.map((install) => install.command),
+    Option.getOrElse(() => ''),
+  )
+
+const runtimeTab = (install: Install, here: boolean): Html =>
+  h.button(
+    [
+      h.Class(here ? 'rt-tab here' : 'rt-tab'),
+      h.Type('button'),
+      h.OnClick(PickedRuntime({ runtime: install.runtime })),
+    ],
+    [install.logo, install.label],
+  )
+
+const installLine = (model: Model): Html => {
+  const command = commandFor(model.runtime)
+  const taken = model.copied === 'install'
+  return h.div(
+    [h.Class('hero-install')],
+    [
+      h.div(
+        [h.Class('rt-tabs')],
+        Array.map(installs, (install) =>
+          runtimeTab(install, install.runtime === model.runtime),
+        ),
+      ),
+      h.button(
+        [
+          h.Class('rt-command'),
+          h.Type('button'),
+          h.Title('Copy install command'),
+          h.OnClick(Copied({ id: 'install', text: command })),
+        ],
+        [
+          h.span([h.Class('prompt')], ['$']),
+          h.span([h.Class('line')], [command]),
+          h.span([h.Class(taken ? 'took done' : 'took')], [taken ? 'copied' : 'copy']),
+        ],
+      ),
+    ],
+  )
+}
+
+const onward = (): Html =>
+  h.div(
+    [h.Class('hero-onward')],
+    [
+      h.a(
+        [
+          h.Class('hero-link'),
+          h.Href('/docs'),
+          h.Style({ '--hero-ink': '#1D4FBF' }),
+          h.OnClick(WentTo({ route: 'docs' })),
+        ],
+        ['Read the docs →'],
+      ),
+      h.a(
+        [
+          h.Class('hero-link'),
+          h.Href('/source'),
+          h.Style({ '--hero-ink': '#C2410C' }),
+          h.OnClick(WentTo({ route: 'source' })),
+        ],
+        ['Browse the source'],
       ),
     ],
   )
 
-const heroLogo = (version: string): Html =>
-  h.div(
-    [h.Class('hero-logo')],
-    [
-      h.span([h.Class('hero-logo-mark')], [loomIcon()]),
-      h.span([h.Class('hero-logo-word')], ['loom']),
-      h.span([h.Class('hero-logo-ver')], [`v${version}`]),
-    ],
-  )
-
-const cta = (): Html =>
-  h.div(
-    [h.Class('actions hero-cta')],
-    [
-      h.a([h.Class('btn primary'), h.Href('#')], ['Read the docs', bookIcon()]),
-      h.a([h.Class('btn'), h.Href('#')], ['Browse the source']),
-    ],
-  )
-
-const pitch = (model: Model): Html =>
-  h.div([h.Class('hero-col')], [headline(model), installRows(model), cta()])
-
 export const hero = (model: Model): Html =>
-  h.section(
-    [h.Class('hero')],
+  h.div(
+    [h.Class('section section-hero'), h.Id('loom-top')],
     [
+      wordmark(),
       h.div(
-        [h.Class('wrap')],
+        [h.Class('hero-columns')],
         [
-          heroLogo(model.version),
-          h.div([h.Class('hero-grid')], [pitch(model), whatLoom()]),
+          claim(),
+          h.div([h.Class('hero-right')], [installLine(model), onward()]),
         ],
       ),
     ],

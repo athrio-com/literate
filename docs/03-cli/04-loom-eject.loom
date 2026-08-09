@@ -1,0 +1,27 @@
+---
+Part III: The command line
+Chapter 4: loom eject
+Language: Prose
+---
+
+# loom eject
+
+`loom eject` is the way out. It archives the corpus and leaves the tangled source in place, so a project that no longer wants to be literate keeps everything Loom built for it and stops depending on Loom.
+
+```bash
+loom eject
+```
+
+## What it leaves behind
+
+The source stays exactly where it was. Every file tangle wrote — `src/board.ts`, `src/rules.ts`, the SQL, the JSON — remains on disk, unchanged, and the project builds and runs as it did the moment before. Nothing has to be regenerated, because tangling already produced ordinary source and no build step ever stood between that source and the compiler.
+
+The corpus is archived rather than deleted. It becomes `corpus.zip` beside the project, so the prose that explains the code is kept even though nothing reads it any more.
+
+Then the workspace's own files go: `.loom/`, and the configuration inside it.
+
+## Why it exists
+
+A tool that cannot be removed is a tool you have to be sure about before you start. Eject is what makes Loom a choice rather than a commitment: the code was always plain source, so leaving costs one command and loses nothing except the explanation.
+
+That the exit is cheap is also why the explanation tends to survive. Prose that a tool holds hostage gets abandoned. Prose you could walk away from at any moment, and keep anyway, is prose someone chose to write.

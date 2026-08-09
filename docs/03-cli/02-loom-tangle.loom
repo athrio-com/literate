@@ -1,0 +1,49 @@
+---
+Part III: The command line
+Chapter 2: loom tangle
+Language: Prose
+---
+
+# loom tangle
+
+`loom tangle` is the command that turns documents into files. It reads a corpus, resolves every anchor and warp, and writes each section's code to the file that section names.
+
+```bash
+loom tangle <path> [--watch]
+```
+
+## What it writes
+
+Output is ordinary source. Tangling leaves no marker, no header and no import behind, so a file Loom wrote is indistinguishable from one a person typed. That is deliberate: a tool that stamped its output would make every consumer of that output care about the tool.
+
+A file is only rewritten when its content would change. Prose edits therefore cost nothing downstream — no timestamp churn, and no rebuild triggered in whatever is watching the output directory.
+
+## When it refuses
+
+Tangle checks the corpus before it writes anything, and it refuses the whole run rather than write half of it. An anchor that names a section which does not exist is the common case:
+
+```
+loom: refusing to tangle — Unresolved anchor: no section named `the parser`.
+```
+
+Refusing wholesale is what keeps a corpus and its files from drifting apart. A partial write would leave the output in a state no document describes.
+
+## Watching
+
+`--watch` re-tangles when a document changes.
+
+```bash
+loom tangle corpus --watch
+```
+
+This is the normal way to work: leave it running beside the editor and the files follow the document as you write it.
+
+## Finding files nothing describes
+
+Rename a section's sink and the file it used to write stays on disk, no longer described by anything. `loom orphans` lists those.
+
+```bash
+loom orphans [--prune]
+```
+
+With `--prune` it deletes them. Without it, it only reports — which is the safer habit, since the list is also a useful signal that a rename went further than you intended.

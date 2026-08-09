@@ -1,0 +1,2939 @@
+---
+Part XIV: The website
+Chapter 1: The paper scheme
+Package: design/src/
+Language: CSS
+---
+
+# The paper scheme
+
+The site is set on paper. A warm cream ground carries three steps of ink, two weights of rule, and the woven mark's own eight colours; the type pairs one display face against one monospace, and every measurement lands on a four-pixel grid. Three schemes — colour, type and measure — govern all of it, and this chapter is where they live.
+
+A scheme only holds if there is one place to change it. So each load-bearing value is a custom property declared once at the top, and every rule below reads the property rather than repeating the number. A value that is not load-bearing stays a literal in the rule that needs it, and the artwork keeps its own fills throughout: the pixel carpets, the file icons and the isometric folder are drawings, not tokens.
+
+## Paper, ink and the mark's palette
+
+Colour divides into grounds, ink, rules and accents.
+
+Three grounds carry the site. Paper is the page itself. A card lifts a region just off the paper, a shade lighter than the ground it sits on. The footer inverts to near-black, the one dark surface the page ends on. A code fence washes the paper with a trace of its own ink rather than taking a ground of its own.
+
+One kind of card does not use that ground. The bordered cards that fill Why Loom and Community sit on the mark's own pale accent instead, which reads a touch warmer and keeps a page of twenty-odd cards from looking like a stack of white boxes. They take `--pale` rather than `--card`, and the difference is deliberate rather than drift.
+
+Ink runs three steps and stops. Primary ink sets headings, body and any code meant to be read. Secondary ink sets interface chrome and the copy inside a mock panel. Muted ink sets eyebrows, captions and meta — never a sentence. On the footer's dark ground the ramp collapses to two: cream for text, grey for the blurb beneath it.
+
+The accents are the woven mark's own palette and the page takes nothing from outside it. Eight colours name themselves; four of them do second duty naming a command, since a command's pill and its illustration must always agree. The `loom init` green sits a shade deeper than the mark's green, because a pill needs to hold its own against paper.
+
+Why Loom names three approaches and Loom itself, and each name carries a colour wherever it appears. Every one comes as a pair: the bright value for the navy card it is printed on, and a deeper value for paper.
+
+The navy card is the infographic's ground, and it runs its own small scheme — a ground, cream ink, a muted blue for labels, and a guide colour barely lifted off the ground.
+
+=>
+
+:root {
+  /* Grounds */
+  --paper:       #F7F4EC;
+  --card:        #FCFAF4;
+  --footer-bg:   #111111;
+  --fence:       rgba(20, 19, 15, 0.032);
+
+  /* Ink on paper */
+  --ink:         #14130F;
+  --ink-2:       #4A453C;
+  --ink-3:       #7C6F64;
+
+  /* Ink on the footer ground */
+  --footer-ink:   #F7F4EC;
+  --footer-muted: #A9A29A;
+
+  /* Rules */
+  --rule:        #E4DCCB;
+  --rule-faint:  #EFEAE0;
+
+  /* The mark's palette */
+  --navy:        #14204A;
+  --orange:      #FF6A3D;
+  --blue:        #2E6FF2;
+  --green:       #00B37E;
+  --violet:      #8B5CF6;
+  --magenta:     #E8318A;
+  --amber:       #FFC53D;
+  --pale:        #F2EFE6;
+
+  /* A command's colour, worn by its pill and its illustration alike */
+  --init:        #00996B;
+  --tangle:      #2E6FF2;
+  --weave:       #8B5CF6;
+  --eject:       #CE3F5C;
+
+  /* An approach's colour, bright on the navy card and deeper on paper */
+  --prompt:        #FF6A3D;
+  --prompt-paper:  #C2410C;
+  --spec:          #FFC53D;
+  --spec-paper:    #8A5A00;
+  --hooks:         #F45C9F;
+  --hooks-paper:   #C41E63;
+  --loom:          #19D69C;
+  --loom-paper:    #00714F;
+
+  /* The navy card */
+  --navy-ink:    #F2EFE6;
+  --navy-muted:  #8494C4;
+  --navy-guide:  rgba(242, 239, 230, 0.13);
+
+  /* The accent — a mark of state, not of linkage */
+  --accent:        #E8501F;
+  --accent-hover:  #C4441A;
+}
+
+~
+
+## Two families and a fixed scale
+
+Two families dress the whole site. Space Grotesk at 500 sets display type and the wordmarks, and it sets nothing else. One monospace sets everything that remains — prose, interface, code, file names, commands and pixel labels alike. Naming the mono once, as a property, is what keeps the promise: no rule may write a family of its own, so two monospaces can never meet on a page.
+
+Every size on the site comes off one list, and the list has no half-pixels in it. The scale runs from the hero wordmark down to a pixel badge, and each step names the role it serves rather than a t-shirt size, so a rule asks for the heading size and not for "large".
+
+Running text has exactly one treatment, and `--t-body` is it. A section heading and a card's sub-heading share one treatment at two sizes, both 500 weight tracked at `-0.02em`; colour may vary between them to say which thing a heading names, but never size or weight as well. Block code sits one step down at `--t-code`, and only because a fence is not a sentence.
+
+The example's stage takes the one step in between, `--t-stage`. A document being written is neither running text nor a quoted fence, and it is the only place on the site where a reader watches a line arrive rather than reads it whole.
+
+Two leadings carry the site. Headings hold at 1.25. Anything that runs past one line — prose and code equally — opens right out to 2, which is what gives the page its air. Single-line chrome keeps `normal`, and a glyph box takes 0.
+
+=>
+
+:root {
+  /* Faces */
+  --display: 'Space Grotesk', system-ui, -apple-system, 'Noto Color Emoji', sans-serif;
+  --mono:    'Lilex', 'IBM Plex Mono', ui-monospace, Menlo, 'Noto Color Emoji', monospace;
+
+  /* Sizes, by the role each one serves */
+  --t-wordmark:        56px;
+  --t-footer-wordmark: 43px;
+  --t-glyph:           38px;
+  --t-hero:            32px;
+  --t-head:            21px;
+  --t-sub:             16px;
+  --t-body:            15px;
+  --t-stage:           14px;
+  --t-code:            13px;
+  --t-label:           12px;
+  --t-eyebrow:         11px;
+  --t-micro:           10px;
+  --t-pixel:           8px;
+
+  /* Leading */
+  --lead-head: 1.25;
+  --lead:      2;
+}
+
+~
+
+## Four pixels at a time
+
+Measure starts from a four-pixel base, and the spacing steps climb it: 4, 8, 12, 16, 24, 32, 44, 58, 80 and 96. That scale governs the rhythm between sections. Inside a card or a piece of chrome it gives way to optical values — a twenty-two-pixel bottom that pays for the mono's descender, a five-pixel offset that lands a first baseline on a card's top edge — and those stay literal in the rules that need them.
+
+The container is a single width the whole site holds to. Eighty pixels of side padding inside 1260 leaves an eleven-hundred-pixel measure, and every section takes it.
+
+Three of these values run tighter than the scale suggests, and deliberately so: the air below a section, the air above the footer, and the rhythm between a heading and its content. Each is floored where it stands rather than left free to grow, so the page reads closer than a scale drawn from the steps alone would set it.
+
+A gap narrows as the window does. The side padding steps down through fifty-six and forty to twenty-four, and the gutter between columns follows it. The air below a section and above the footer barely move, because they are what separates one idea from the next and a narrow window needs that separation more, not less. The rhythm does not move at all: a heading sits thirty-six pixels above its content at every width.
+
+These are the landing's own numbers, read from the page itself rather than from a scheme laid over the site. The pages of this site genuinely disagree on their measure, so each takes the one it was drawn with.
+
+Radii come in two steps and a pill. Two rounds a chip, a pixel or a small fence; four rounds a card, a panel or a code fence; the mark's pill is fully round, and a dot is a circle.
+
+=>
+
+:root {
+  /* The container and its air */
+  --measure:      1260px;
+  --side:         80px;
+  --section-pad:  64px;
+  --footer-pad:   48px;
+
+  /* Rhythm inside a section */
+  --rhythm:       36px;
+  --col-gap:      44px;
+  --stack:        18px;
+  --label-gap:    10px;
+
+  /* Radii */
+  --radius:       4px;
+  --radius-sm:    2px;
+}
+
+@media (max-width: 1179px) {
+  :root { --side: 56px; --col-gap: 40px; }
+}
+
+@media (max-width: 999px) {
+  :root { --side: 40px; --col-gap: 32px; }
+}
+
+@media (max-width: 639px) {
+  :root { --side: 24px; --section-pad: 58px; --col-gap: 24px; }
+}
+
+~
+
+## The page on paper
+
+The base sets the page in the mono on paper, at the body size and the open leading everything else inherits from. The monospace carries contextual ligatures, which is what turns `=>` and `::` in a quoted mark into the shapes an editor draws. Every family ends in Noto Color Emoji, so an emoji renders the same on every client instead of in each platform's own set.
+
+The page stops narrowing at three hundred and sixty pixels, which is the width of the narrowest phone anyone reads this on. Below it the page scrolls sideways rather than going on compressing: a column that keeps shrinking eventually breaks a word in half or crushes a row of controls into each other, and a reader would rather drag the page an inch than read either. The floor is what lets the pager keep both its cards on one row all the way down.
+
+The page and the canvas take different grounds. The canvas is the surface a browser paints outside the document — what a rubber-band scroll uncovers above the nav and below the footer — and it takes the colour set on the root element, while the page takes the colour set on the body. So the root wears the footer's near-black and the body wears paper. A scroll flung past either end then runs out onto the dark the page ends on, instead of flashing a band of cream the reader never asked to see.
+
+The base does not touch font smoothing, and that is deliberate. Setting `-webkit-font-smoothing: antialiased` moves a Mac from subpixel rendering to grayscale, which thins every stroke on the page by roughly a shade. On a site set entirely in a monospace, at fifteen pixels, on cream, that reads as a lighter and weaker face than the one the type was chosen for. The browser's own default is the right one here, so no rule overrides it.
+
+A link is set in body ink rather than in a colour of its own, and fades to muted ink under the cursor. Nearly every anchor on this site is a piece of chrome — a nav item, a card, a pager — and those say what they are by their shape, so a colour would only compete with the shape.
+
+Prose is the exception, because a sentence has no shape to read. A link inside a documentation article takes the accent, which is the one place on the site where a run of text has to announce that part of it is a link.
+
+That accent is not a link colour. It marks state: the rail's current chapter, the outline's current heading, a token chip, the devtools picker. Naming it for what it does keeps it from being sprinkled on anything merely clickable.
+
+A selection washes the mark's green over the text at a quarter strength and leaves the ink alone. The browser's own blue belongs to no scheme on this page, and green is the one colour here that reads as a thing the reader did rather than a thing the page is saying.
+
+The wash holds on the two dark grounds, but the ink cannot: near-black type under a dark green wash on near-black paper is a smudge. So the footer and the search palette each turn the selected text over to the cream they already set everything else in. A rule matching the region alone would not reach the text inside it, since the page-wide rule matches those descendants too and beats an inherited value — hence the pair of selectors.
+
+=>
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+html { background: var(--footer-bg); }
+
+body {
+  min-width: 360px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-variant-ligatures: contextual common-ligatures;
+  font-feature-settings: 'calt' 1, 'liga' 1;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+}
+
+a { color: var(--ink); text-decoration: none; }
+a:hover { color: var(--ink-3); }
+
+.docs-prose a { color: var(--accent); }
+.docs-prose a:hover { color: var(--accent-hover); }
+
+::selection { background: rgba(0, 179, 126, 0.24); color: var(--ink); }
+
+.footer::selection,
+.footer ::selection { color: var(--footer-ink); }
+
+.palette-card::selection,
+.palette-card ::selection { color: var(--navy-ink); }
+
+~
+
+The Loom mark's quilts drift while they show. A band of the pattern tiles every hundred and twenty-eight pixels, so shifting the background by exactly one tile and looping leaves no visible jump. Bands laid across the pill travel sideways, and bands laid down it travel upward.
+
+A reader who has asked their system for less motion gets none: the drift stops, and the mark holds still.
+
+=>
+
+@keyframes loomWeave   { to { background-position-x: 128px; } }
+@keyframes loomWeaveUp { to { background-position-y: -128px; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .weave-band { animation: none !important; }
+}
+
+~
+
+## Every section in one container
+
+One container rules the page, and every section is that container. The side padding lives on the section itself, so a section's ground can run to the window's edge while its content still lands on the measure.
+
+Three paddings vary. A section sits close under the one above it and leaves its own air beneath. The hero opens far taller, because it is the first thing a reader meets, and it draws in as the window narrows. The last section before the footer carries the cream air above that dark edge as its own bottom padding — the footer's top padding only ever sizes the footer's own content.
+
+=>
+
+.section {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 8px var(--side) var(--section-pad);
+}
+
+.section-hero { padding: 104px var(--side) 116px; }
+.section-last { padding-bottom: var(--footer-pad); }
+
+@media (max-width: 1179px) { .section-hero { padding: 96px var(--side) 104px; } }
+@media (max-width: 999px)  { .section-hero { padding: 80px var(--side) 88px; } }
+@media (max-width: 639px)  { .section-hero { padding: 56px var(--side) 64px; } }
+
+~
+
+## A mark, an eyebrow, a heading
+
+Every section opens the same way: a forty-two-pixel woven mark, then a stack of two lines beside it — the eyebrow that names the section's subject, and the heading that says what it is. Sixteen pixels separate the mark from the stack and four separate the two lines, which is close enough that they read as one block.
+
+Between that block and the content beneath it sits the rhythm — thirty-six pixels, closer than the air around the section itself. A heading belongs to what follows it, so it sits nearer to its content than to its neighbours.
+
+The two lines have to fit the mark, and that is what sets the eyebrow's leading. The heading takes 1.25 over twenty-one pixels, and the gap takes four, which leaves the eyebrow about thirteen — the browser's own leading over eleven pixels of type. Together they stand a little over forty, and the mark beside them is forty-two. Let the eyebrow inherit the running text's leading of two instead and it alone grows to twenty-two, the stack overruns the mark by ten pixels, and every section head on the site is wrong in the same way.
+
+The eyebrow is the widest-tracked type on the site, uppercase in muted ink. A heading takes the mono, not the display face — Space Grotesk stops at the hero — and a sub-heading is the same treatment one step down.
+
+=>
+
+.section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: var(--rhythm);
+}
+
+.section-head .mark { flex: none; width: 42px; height: 42px; }
+
+.section-head .lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eyebrow {
+  font-size: var(--t-eyebrow);
+  line-height: normal;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: var(--t-hero);
+  line-height: var(--lead-head);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+h2, .subhead {
+  margin: 0;
+  font-weight: 500;
+  font-size: var(--t-head);
+  line-height: var(--lead-head);
+  letter-spacing: -0.02em;
+}
+
+.subhead { font-size: var(--t-sub); }
+
+.label {
+  font-size: var(--t-label);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+~
+
+## One treatment for running text
+
+Every sentence on the site is one thing: one family, one size, one leading, one ink. The hero's lead, a section's prose, a caption, a per-item description, the code set inside a sentence — all of them. Code inside a sentence keeps the body size too, so the line does not jump where it appears.
+
+A run of prose never takes the full thousand-pixel measure. Sixty-two characters is the line, and `62ch` states it directly: the same element carries the size and the measure, so `ch` resolves against the face actually setting the text. Measured any other way — on a wrapper that has no size of its own — the line silently runs long.
+
+Where prose fills a section by itself it flows across two balanced columns, each one still sixty-two characters wide. Multi-column layout ignores the flex gap between its children, so a paragraph inside one carries its own bottom margin instead.
+
+A label and the thing it introduces — a line of copy, a fence — sit ten pixels apart. That gap is explicit, never the accident of a line box.
+
+=>
+
+.prose {
+  max-width: 62ch;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--ink);
+}
+
+.prose-columns {
+  column-count: 2;
+  column-gap: var(--col-gap);
+}
+
+.prose-columns > p {
+  max-width: 62ch;
+  margin: 0 0 var(--stack);
+}
+
+.caption {
+  margin-top: 20px;
+  max-width: 62ch;
+  color: var(--ink);
+}
+
+.meta { color: var(--ink-3); }
+
+.introduces { margin-bottom: var(--label-gap); }
+
+~
+
+## A fence is not a sentence
+
+Block code steps down to thirteen pixels and keeps everything else — the same family, the same open leading, the same ink. Only the size differs, because a fence is not a sentence. A code fence washes the paper with a trace of ink rather than sitting on a ground of its own, and rounds to the card radius.
+
+A syntax token is the one thing that may take a colour of its own inside a fence. A file label and a legend chip are set as block code too, since neither is prose.
+
+=>
+
+.fence {
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--fence);
+  font-size: var(--t-code);
+  line-height: var(--lead);
+  color: var(--ink);
+  overflow-x: auto;
+}
+
+.code { font-size: var(--t-code); }
+
+.chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--fence);
+  font-size: var(--t-code);
+  line-height: normal;
+  color: var(--ink-2);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: var(--t-label);
+  line-height: normal;
+}
+
+~
+
+## One file tree, everywhere
+
+A file tree looks the same wherever the site draws one, so its treatment lives here rather than in each section that shows a corpus. A row stands thirty-two pixels tall and sets its label in the mono at eleven pixels, weight 600, eleven pixels after the icon. Children indent to forty-eight pixels and a guide line runs down behind them.
+
+The two icons are pixel drawings, and a drawing keeps its own fills: the folder is green, and the file is cream with a dot in the colour of whatever it holds. Those fills stay literal here, beside the ramps rather than inside them, because nothing else on the site reads them.
+
+=>
+
+.tree { display: flex; flex-direction: column; }
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 32px;
+}
+
+.tree-row .name {
+  font-size: var(--t-eyebrow);
+  font-weight: 600;
+  line-height: normal;
+  color: var(--ink);
+}
+
+.tree-children {
+  display: flex;
+  flex-direction: column;
+  margin-left: 48px;
+  border-left: 1px solid #DFD8C8;
+}
+
+~
+
+## The nav across the top
+
+The nav is a single row fifty-six pixels tall, and it centres its links around the wordmark rather than pushing them to one side. It sets its own leading back to the browser's default, because the base sets a leading of two for running prose and a nav is not prose — a link with no height of its own would otherwise stand twenty-two pixels tall for eleven pixels of text, and the row of them would read as a stack of blocks rather than a line of words. Its type is the site's smallest: eleven pixels, tracked wide, in capitals and muted ink. A link warms to the faint rule and darkens to primary ink when a reader hovers it, and the page a reader is already on wears that same treatment permanently, so the nav always says where they are.
+
+The wordmark is the one thing here in Space Grotesk, and it does not change colour on hover — a logo is not a link that needs to prove it is one.
+
+Search sits apart from the row. It pins to the right edge rather than joining the flow, so the links stay centred whatever it says. The key badge beside it shows the slash that opens the palette.
+
+The nav's side padding steps down with the window, from eighty pixels to twenty-four. The links drop away earlier than that, at seven hundred and sixty-seven pixels, because search is pinned to the right edge rather than laid out in the row: nothing pushes back when the links grow toward it, and by seven hundred pixels the last of them is already under the button. So the row hands over while it still has forty pixels to spare, and from there the wordmark moves to the left edge, search says `navs` instead, and the palette becomes the way through the site.
+
+=>
+
+.nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  height: 56px;
+  line-height: normal;
+  max-width: var(--measure);
+  padding: 0 var(--side);
+  margin: 0 auto;
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--ink-3);
+  transition: background-color .14s ease, color .14s ease;
+}
+
+.nav-link:hover,
+.nav-link.here { background-color: var(--rule-faint); color: var(--ink); }
+
+.nav-word {
+  flex: none;
+  margin: 0 6px;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 19px;
+  letter-spacing: -0.03em;
+  text-transform: none;
+  color: var(--ink);
+}
+
+.nav-word:hover { background-color: transparent; color: var(--ink); }
+
+.nav-find .narrow { display: none; }
+
+.nav-find {
+  appearance: none;
+  cursor: pointer;
+  position: absolute;
+  right: var(--side);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  padding: 4px 6px 4px 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: background-color .14s ease, color .14s ease;
+}
+
+.nav-find:hover { background-color: var(--rule-faint); color: var(--ink); }
+
+.nav-key {
+  display: flex;
+  box-sizing: content-box;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0;
+  text-transform: none;
+  color: #A79A8C;
+}
+
+@media (max-width: 1179px) {
+  .nav { padding: 0 56px; }
+  .nav-find { right: 56px; }
+}
+
+@media (max-width: 999px) {
+  .nav { gap: 20px; padding: 0 40px; }
+  .nav-find { right: 40px; }
+}
+
+@media (max-width: 767px) {
+  .nav { justify-content: flex-start; }
+  .nav-link { display: none; }
+  .nav-find .wide { display: none; }
+  .nav-find .narrow { display: inline; }
+}
+
+@media (max-width: 639px) {
+  .nav { padding: 0 24px; }
+  .nav-find { right: 24px; }
+}
+
+~
+
+## The palette over the page
+
+The search palette is the one place on the site that goes dark. It drops a navy card over a blurred wash of the page, because a reader who opens it has stopped reading and started looking.
+
+The card holds four bands stacked in a column: the query, then either the page pills or the grouped results, and a key hint along the bottom. It never grows past five hundred and sixty pixels wide or three quarters of the window tall, and the results band is the only one that scrolls.
+
+The palette draws its own caret. A block caret cannot be styled on a real input, so the input's own caret is hidden and a mirror of the typed text sits behind it, transparent except for a white block at the caret's position. The mirror shares the input's family, size and leading exactly — any difference and the block drifts away from the letter it should be sitting on.
+
+=>
+
+.palette-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 17vh 16px 16px;
+  background: rgba(20, 19, 15, 0.14);
+  backdrop-filter: blur(2.5px) saturate(106%);
+  -webkit-backdrop-filter: blur(2.5px) saturate(106%);
+}
+
+.palette-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: 74vh;
+  background: var(--navy);
+  border: 1px solid #2D3B6B;
+  border-radius: var(--radius);
+  box-shadow: 0 20px 56px rgba(11, 18, 48, 0.34);
+  overflow: hidden;
+}
+
+@media (max-width: 780px) {
+  .palette-shell { padding: 12vh 12px 12px; }
+  .palette-card { max-width: none; max-height: 76dvh; }
+}
+
+.palette-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+  padding: 15px 18px;
+}
+
+.palette-field {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.palette-input {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-body);
+  line-height: 1.4;
+  color: var(--navy-ink);
+  caret-color: transparent;
+}
+
+.palette-input::placeholder { color: #6C7CAE; }
+
+.palette-mirror {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  white-space: pre;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: var(--t-body);
+  line-height: 1.4;
+  color: transparent;
+  pointer-events: none;
+}
+
+.palette-caret {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: none;
+  width: 1ch;
+  min-width: 8px;
+  height: 17px;
+  background: #FFFFFF;
+  color: var(--navy);
+  animation: palCaret 1.05s steps(1, end) infinite;
+}
+
+@keyframes palCaret { 0%, 52% { opacity: 1; } 53%, 100% { opacity: 0; } }
+
+.palette-esc {
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding: 2px 7px;
+  border: 1px solid #6C7CAE;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.04em;
+  color: var(--navy-muted);
+  transition: border-color .12s ease, color .12s ease;
+}
+
+.palette-esc:hover { border-color: #8FA0D6; color: var(--navy-ink); }
+
+.palette-esc .cross { font-size: var(--t-code); line-height: 1; }
+
+~
+
+With nothing typed, the palette offers the site itself: a pill per page and a pill per place Loom lives elsewhere. Each pops in a beat after the one before it, so the row assembles rather than appearing.
+
+A pill stands thirty-four pixels tall, which is smaller than a finger. So each one carries an invisible box behind it, centred on the pill and at least forty-four pixels square, and that box is what a thumb actually hits. The box has to be positioned against the pill it belongs to — left to itself it would resolve against the palette card and every pill would claim the same patch of the middle.
+
+A pill measures itself the old way, as the mark does. Thirty-four pixels of content inside a one-pixel edge stands thirty-six tall, which is what the row is drawn to — under the stylesheet's `border-box` default the edge would eat into the height instead and the pill would come out two pixels short. The same holds for the key box beside the search label, so both say `content-box` for themselves.
+
+Being focused and being hovered are two different states, and they look different. The focused pill is the one the arrow keys are on: it lifts to a fourteen-percent wash behind a pale edge, and its label goes to full cream. A hovered pill lifts less — ten percent behind a dimmer edge — and does not touch the label at all. So a reader moving the mouse over the row can still see which pill the keyboard would open, because only one of the six wears the brighter state.
+
+=>
+
+.palette-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  flex: none;
+  padding: 18px 18px 20px;
+}
+
+.pill-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  box-sizing: content-box;
+  height: 34px;
+  padding: 0 14px 0 11px;
+  border: 1px solid #6C7CAE;
+  border-radius: 999px;
+  background: transparent;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  letter-spacing: 0.04em;
+  color: #C4CCE4;
+  animation: rxPop .2s cubic-bezier(.16, .84, .28, 1.04) both;
+  transition: background-color .12s ease, border-color .12s ease;
+}
+
+.pill-link::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  min-width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.pill-link.here {
+  background: rgba(242, 239, 230, 0.14);
+  border-color: #B9C4E8;
+  color: var(--navy-ink);
+}
+
+.pill-link:hover {
+  background: rgba(242, 239, 230, 0.10);
+  border-color: #8FA0D6;
+}
+
+@keyframes rxPop {
+  from { opacity: 0; transform: scale(.86) translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+~
+
+A query in flight shows a stitched bar drawing itself sideways, in the colour of whichever page the focus is on. It is the loom's own shuttle, and it holds the place for the moment between the last keystroke and the results.
+
+=>
+
+.palette-stitch {
+  display: block;
+  height: 2px;
+  background-size: 12px 2px;
+  animation: palStitch 520ms linear infinite;
+}
+
+@keyframes palStitch { from { background-position: 0 0; } to { background-position: 12px 0; } }
+
+.palette-loading {
+  padding: 13px 18px 15px;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  letter-spacing: 0.04em;
+  color: var(--navy-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palette-stitch, .palette-caret, .pill-link { animation: none !important; }
+}
+
+~
+
+Results group under the page that holds them. A page's row carries a tilde, its name and its path; the prose found inside it indents beneath, each row marked with a chevron and showing the fragment that matched. The focused row washes in its page's own colour, and the matched words inside a fragment take that colour too, so the eye lands on the page and the phrase at once.
+
+=>
+
+.palette-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 6px 0 10px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(242, 239, 230, 0.2) transparent;
+}
+
+.palette-body::-webkit-scrollbar { width: 6px; }
+.palette-body::-webkit-scrollbar-track { background: transparent; }
+.palette-body::-webkit-scrollbar-thumb { background: rgba(242, 239, 230, 0.2); border-radius: var(--radius-sm); }
+
+.palette-group,
+.palette-row {
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex: none;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  letter-spacing: 0.04em;
+  transition: background-color .12s ease;
+}
+
+.palette-group { height: 36px; padding: 0 18px; font-weight: 600; color: var(--navy-ink); }
+.palette-row   { height: 34px; padding: 0 18px 0 15px; color: var(--navy-muted); }
+.palette-row.here { color: var(--navy-ink); }
+
+.palette-group .sigil,
+.palette-row .sigil { flex: none; }
+
+.palette-group .name,
+.palette-row .fragment {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-group .path {
+  margin-left: auto;
+  flex: none;
+  font-size: var(--t-eyebrow);
+  color: var(--navy-muted);
+}
+
+.palette-kids-wrap { display: flex; flex-direction: column; flex: none; }
+
+.palette-kids { display: flex; flex-direction: column; margin: 0 0 8px 26px; }
+
+.palette-hit { font-weight: 600; }
+
+.palette-empty {
+  padding: 14px 18px 16px;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  line-height: 1.7;
+  color: var(--navy-muted);
+}
+
+.palette-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: none;
+  padding: 10px 18px;
+  border-top: 1px solid transparent;
+  font-family: var(--mono);
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.04em;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease;
+}
+
+.palette-bar .count { margin-left: auto; color: var(--navy-ink); }
+
+~
+
+## The footer that ends every page
+
+The footer is the site's one dark ground, and the page above it hands over cleanly: the cream air before the edge belongs to the last section, so the footer's own top padding only ever sizes the footer's content.
+
+The footer takes the container's side air, so its brand starts on the same line as every section above it and the page reads as one column down to its last word.
+
+Two columns divide it, a hundred and forty pixels apart. The brand sits on the left — the Loom mark beside its wordmark, with a single line at body size saying what Loom is — and every link the site offers takes the wider right-hand column as a set of chips.
+
+The chips are one flat list, not three groups. Each is a bordered box forty-four pixels tall that wraps when the row runs out, and the set is held to five hundred and twenty pixels and pushed to the right edge, so it stacks into a block against the brand rather than trailing across the whole column.
+
+Under the cursor a chip takes its destination's colour in both its edge and its label. These are the bright values, not the deepened ones the pager uses: the same hue has to carry on near-black here and on paper there, and one value cannot do both.
+
+Under both sits the copyright, and nothing rules it off. Sixty-eight pixels of air below the chips is separation enough, and a line drawn there would be the third horizontal edge in as many inches. On a narrow window the two columns stack and the chips fall into two of equal width, with the last one spanning both so the block ends square.
+
+=>
+
+.footer { background: var(--footer-bg); }
+
+.footer-inner {
+  position: relative;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 76px var(--side) 64px;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 3fr);
+  column-gap: 140px;
+  row-gap: 44px;
+  align-items: start;
+  padding-bottom: 68px;
+}
+
+.footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+.footer-mark { display: flex; align-items: center; gap: 13px; }
+
+.footer-word {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: var(--t-footer-wordmark);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--footer-ink);
+}
+
+.footer-blurb {
+  max-width: 30ch;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--footer-muted);
+  text-wrap: pretty;
+}
+
+.footer-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: start;
+  gap: 8px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 0 0 auto;
+}
+
+.footer-chip {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid #2C2C2C;
+  border-radius: var(--radius-sm);
+  font-size: var(--t-code);
+  white-space: nowrap;
+  color: var(--footer-ink);
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.footer-chip:hover { border-color: var(--chip-ink); color: var(--chip-ink); }
+
+.footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: fit-content;
+  gap: var(--stack);
+  font-size: var(--t-code);
+  letter-spacing: 0.14em;
+  color: var(--footer-muted);
+}
+
+@media (max-width: 999px) {
+  .footer-top { grid-template-columns: minmax(0, 1fr); }
+  .footer-chips { justify-content: flex-start; max-width: none; margin: 0; }
+}
+
+@media (max-width: 699px) {
+  .footer-inner { padding: 48px var(--side) 40px; }
+  .footer-top {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    row-gap: 32px;
+    padding-bottom: 40px;
+  }
+  .footer-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .footer-chip:last-child { grid-column: 1 / -1; }
+}
+
+## The hero
+
+The hero stacks two things: the masthead, and a pair of columns beneath it. The masthead centres itself while everything below ranges left, which is what makes it read as a masthead rather than as an oversized first line.
+
+The claim and the install line sit side by side down to a thousand pixels. The claim's column is a little wider than the install line's, which needs only as much room as its longest command. A seventy-six-pixel gutter holds them apart — much wider than the site's usual column gap, because these are two separate offers rather than two columns of one thing. Below a thousand pixels a paragraph and a command box can no longer share a row, so they stack and the gutter closes to a normal gap.
+
+The claim's paragraph stops at forty-six characters rather than the site's usual sixty-two. It has a column of its own to fit inside, and a longer line here would run beneath the install box.
+
+=>
+
+.hero-mark {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  align-self: center;
+  margin-bottom: 40px;
+  white-space: nowrap;
+}
+
+.hero-word {
+  padding-right: 25px;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: var(--t-wordmark);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.section-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rhythm);
+  align-items: stretch;
+}
+
+.hero-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
+  gap: 76px;
+  align-items: start;
+  width: 100%;
+}
+
+.hero-claim { display: flex; flex-direction: column; gap: 26px; min-width: 0; }
+
+.hero-lead {
+  margin: 0;
+  max-width: 46ch;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.hero-cmd { color: var(--ink); }
+
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-width: 0;
+  padding-top: 6px;
+}
+
+@media (max-width: 1179px) { .hero-columns { gap: 48px; } }
+@media (max-width: 999px)  { .hero-columns { grid-template-columns: minmax(0, 1fr); gap: 44px; } }
+@media (max-width: 639px)  { .hero-columns { gap: 36px; } }
+
+~
+
+The install line is a row of tabs over one command. A tab draws a rule beneath itself only when it is the chosen one, but every tab reserves that rule in transparent, so the row's baseline never shifts as the choice moves along it.
+
+The command itself is a button on the one pure-white ground the page uses. White here says "this is not prose, it is a thing you take", and the border darkens to ink under the cursor to confirm it.
+
+=>
+
+.hero-install { display: flex; flex-direction: column; gap: 12px; align-items: stretch; width: 100%; }
+
+.rt-tabs { display: flex; align-items: center; gap: var(--stack); }
+
+.rt-tab {
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 0 5px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: color 120ms ease;
+}
+
+.rt-tab.here { border-bottom-color: var(--ink); color: var(--ink); }
+
+.rt-tab svg,
+.rt-tab img { display: block; width: 14px; height: 14px; }
+
+.rt-command {
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--rule);
+  background: #FFFFFF;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 140ms ease;
+}
+
+.rt-command:hover { border-color: var(--ink); }
+.rt-command .prompt { color: var(--ink-3); }
+.rt-command .line { flex: 1; min-width: 0; }
+
+.rt-command .took {
+  font-size: var(--t-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: color 120ms ease;
+}
+
+.rt-command .took.done { color: var(--init); }
+
+.hero-onward {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  padding-left: 3px;
+  font-size: var(--t-code);
+  line-height: var(--lead);
+}
+
+.hero-link {
+  color: var(--ink);
+  transition: color 140ms ease;
+}
+
+.hero-link:hover { color: var(--hero-ink); }
+
+## The vocabulary, one card at a time
+
+Each of the eight marks gets a card, and the cards flow down columns: three of them on a wide window, two below a thousand pixels, and below six hundred and forty a single row a reader swipes, each card snapping to centre. Flowing rather than gridding is what lets a card with a long sentence take the height it needs without dragging seven others down with it, and `break-inside: avoid` is what keeps one from splitting across a column boundary.
+
+A card is quiet until the cursor reaches it. Then the ground goes to the mark's tint and the edge to the mark's own hue, both arriving over the same hundred and eighty milliseconds. Each card carries those two values as custom properties, since a hover rule cannot be written inline but the colours belong to the mark.
+
+The glyph keeps the pill it always had, and the name now sits beside it in the mark's colour rather than in a column of its own. A reader meets the mark and its name as one object, which is what they are.
+
+=>
+
+.mark-set {
+  display: block;
+  column-count: 3;
+  column-gap: 16px;
+  padding: 24px 0;
+}
+
+.mark-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: 0;
+  break-inside: avoid;
+  margin-bottom: 16px;
+  padding: 20px 20px 22px;
+  background: var(--pale);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.mark-card:hover { background: var(--mark-tint); border-color: var(--mark-ink); }
+
+.mark-card-head { display: flex; align-items: center; gap: 12px; }
+
+.mark-glyph {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: var(--t-code);
+  line-height: normal;
+}
+
+.mark-name {
+  font-weight: 500;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--mark-ink);
+}
+
+.mark-says {
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+@media (max-width: 999px) {
+  .mark-set { column-count: 2; }
+}
+
+@media (max-width: 639px) {
+  .mark-set {
+    display: flex;
+    column-count: auto;
+    gap: 12px;
+    margin: 0 calc(-1 * var(--side));
+    padding: 24px var(--side) 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .mark-set::-webkit-scrollbar { display: none; }
+
+  .mark-card { flex: none; width: 268px; margin-bottom: 0; scroll-snap-align: center; }
+}
+
+## The commands and their pictures
+
+Four command cards sit in three columns, so the fourth wraps under the first and the set reads as a sequence rather than a menu. Below six hundred and forty pixels they become a rail to swipe, bleeding to the window's edges so a card can sit centred.
+
+An illustration stands on a stage two hundred and sixteen pixels tall, whatever it draws. Three of the four fill that height on their own and the woven JSON does not, so the height is set on the stage rather than left to the drawing — otherwise one card in the row would carry a shorter picture than its neighbours for no reason a reader could see. A drawing shorter than its stage sits centred in it. The frame around the stage takes the pale accent rather than the card ground, because the drawing inside it is already made of cards.
+
+The frame also clips. The woven JSON inside one of these drawings keeps its own line breaks and so has a width of its own, and on a narrow window that width is wider than the card — left alone it pushes the whole page sideways. A drawing is a picture of an output rather than the output itself, so losing its right edge to the frame costs a reader nothing and saves them a page that scrolls when it should not.
+
+=>
+
+.ops-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: var(--rhythm);
+}
+
+.ops-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  flex: 0 1 auto;
+  min-width: 0;
+  scroll-snap-align: center;
+}
+
+.ops-head { display: flex; align-items: center; gap: 13px; height: 26px; }
+
+.ops-pill {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ops-took {
+  font-family: var(--mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.ops-took.shown { opacity: 1; }
+
+.ops-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 15px;
+  padding: 16px;
+  overflow: hidden;
+  background: var(--pale);
+  border-radius: var(--radius);
+}
+
+.ops-art {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 216px;
+  width: fit-content;
+  padding: 0 0 2px;
+}
+
+.ops-art .tree { display: flex; flex-direction: column; }
+
+.loom-mark { display: block; flex: none; }
+
+.ops-svg { display: flex; max-width: 100%; }
+
+.ops-svg svg { display: block; max-width: 100%; height: auto; }
+
+.ops-says {
+  margin: 20px 0 0;
+  max-width: 332px;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+@media (max-width: 639px) {
+  .ops-grid {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    margin: 0 calc(-1 * var(--side));
+    padding: 0 var(--side) 4px;
+  }
+  .ops-grid::-webkit-scrollbar { display: none; }
+  .ops-card { flex: none; width: min(330px, 84vw); }
+}
+
+~
+
+The two icons are rectangles, not images, which is what lets a file's dot take its colour from the row beside it.
+
+A folder is a tab, a body and a lighter lip over the body — the three greens in order. The lip covers the body exactly; the body sits beneath it so the shape has a darker edge to sit on rather than floating on the frame.
+
+A file is a page with its corner turned. The page is clipped to five sides so the top-right corner is cut away, a triangle fills that corner in the fold's shade, two faint bars stand in for text, and the dot carries the file's own colour. A single-pixel shadow lifts it off the frame.
+
+=>
+
+.px-folder {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 20px;
+  height: 22px;
+}
+
+.px-folder-art {
+  position: absolute;
+  left: 0;
+  top: -4px;
+  width: 30px;
+  height: 30px;
+  transform: scale(0.62);
+  transform-origin: 0 50%;
+}
+
+.px-folder-art .tab {
+  position: absolute;
+  left: 1px;
+  top: 4px;
+  width: 12px;
+  height: 7px;
+  border-radius: 1.5px 3px 0 0;
+  z-index: 0;
+}
+
+.px-folder-art .body,
+.px-folder-art .lip {
+  position: absolute;
+  left: 1px;
+  top: 8px;
+  width: 26px;
+  height: 18px;
+  border-radius: var(--radius-sm);
+}
+
+.px-folder-art .body { background: #00B37E; z-index: 1; }
+.px-folder-art .lip  { background: #19D69C; z-index: 3; }
+
+.px-file {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 17px;
+  height: 22px;
+  filter: drop-shadow(0 1px 1px rgba(20, 19, 15, 0.14));
+}
+
+.px-file .page {
+  position: absolute;
+  inset: 0;
+  background: #FCFAF4;
+  border-radius: var(--radius-sm);
+  clip-path: polygon(0px 0px, 11px 0px, 17px 6px, 17px 22px, 0px 22px);
+}
+
+.px-file .fold {
+  position: absolute;
+  left: 11px;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  background: #D8CFBB;
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.px-file .rules {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.px-file .rules span { height: 1.5px; background: var(--ink-3); opacity: 0.24; }
+.px-file .rules span:first-child { width: 100%; }
+.px-file .rules span:last-child  { width: 72%; }
+
+.px-file .dot {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+~
+
+A tree's rows are flat and a file simply indents, with a guide running down behind the indent. Drawing one guide for the whole run rather than a branch per row keeps a five-row tree from looking like a diagram.
+
+The weave's picture is JSON rather than a tree, so its tokens take their colours here — a key, a string, a number, and the punctuation that holds them apart.
+
+=>
+
+.tree-row.nested { position: relative; padding-left: 28px; }
+
+.tree-row.nested::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: -16px;
+  width: 1px;
+  height: 32px;
+  background: #DFD8C8;
+}
+
+.tree-row.nested::after {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 16px;
+  width: 19px;
+  height: 1px;
+  background: #DFD8C8;
+}
+
+.tree-row.nested::before,
+.tree-row.nested::after { z-index: 0; }
+
+.tree-row .px-file,
+.tree-row .px-folder { z-index: 1; }
+
+.tree-row:not(.nested) { position: relative; z-index: 3; }
+
+.tree-row.written {
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity 360ms ease, transform 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tree-row.written.landed { opacity: 1; transform: none; }
+
+.tree-row.nested::before,
+.tree-row.nested::after { transition: opacity 380ms ease; }
+
+.tree-row.nested.faded::before,
+.tree-row.nested.faded::after { opacity: 0; }
+
+/* The folder a corpus is ejected from is four layers, and two of them move. */
+.px-folder .back {
+  position: absolute;
+  left: 1px;
+  top: 8px;
+  width: 26px;
+  height: 18px;
+  border-radius: 2px;
+  z-index: 1;
+  transition: background 240ms ease;
+}
+
+.px-folder .paper {
+  position: absolute;
+  left: 4px;
+  top: 10px;
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--card);
+  z-index: 2;
+}
+
+.px-folder .front {
+  position: absolute;
+  left: 1px;
+  top: 8px;
+  width: 26px;
+  height: 18px;
+  border-radius: 2px;
+  background: #E85A78;
+  z-index: 3;
+  transition: clip-path 420ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tree.handed-back { transition: opacity 480ms ease; }
+
+.tree { transition: opacity 480ms ease; }
+
+.tree-row .name { transition: opacity 300ms ease 180ms; }
+
+.tree-archive { transition: opacity 300ms ease 180ms; }
+
+.px-folder-art { transition: transform 620ms cubic-bezier(0.4, 0, 0.2, 1), opacity 480ms ease; }
+
+.tree-label { position: relative; display: flex; align-items: center; }
+
+.tree-archive {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+
+.tree-archive.shown { opacity: 1; }
+
+.tree-archive .zip { font-size: var(--t-eyebrow); font-weight: 600; color: var(--ink); }
+.tree-archive .said { font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--eject); }
+
+
+
+.tree-note {
+  margin-left: 8px;
+  font-size: var(--t-micro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.px-json {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  line-height: var(--lead);
+  white-space: pre;
+}
+
+.tok-key         { color: var(--blue); }
+.tok-string      { color: var(--init); }
+.tok-number      { color: var(--violet); }
+.tok-punctuation { color: var(--ink-3); }
+
+## The document being typed
+
+The example is a white sheet on the paper, and nothing draws its edge. It has no border and no hairline: one soft shadow lifts it off the page, and the change of ground does the rest. A stage is a place a document is written, and a sheet a hand would write on is whiter than the page it lies on.
+
+A holder carries the height, and the card fills it. That split is what lets the card grow: the reader asks for the height of the window, the holder eases from one height to the other, and the stage inside keeps the line it was showing.
+
+The stage opens forty-four pixels down, which is where the button in the top corner ends. The document's first line clears it rather than running under it, and the reader never has to choose between reading a line and pressing a control.
+
+The stage scrolls itself and hides its scrollbar, since the caret leads the reader rather than the bar. Until the document is finished, or the card has grown, the stage does not scroll under the reader's hand at all — the run is driving it, and two things pulling on one document fight each other.
+
+=>
+
+.pl-hold {
+  width: 100%;
+  height: 560px;
+  transition: height 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.pl-hold.full { height: max(560px, calc(100vh - 48px)); }
+
+.pl-card {
+  --pl-run: 0%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #FFFFFF;
+  box-shadow: 0 2px 26px rgba(20, 19, 15, 0.08);
+}
+
+.pl-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 44px 36px 72px;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  font-size: var(--t-stage);
+  line-height: 2;
+}
+
+.pl-card.open .pl-stage { overflow-y: auto; }
+
+.pl-stage::-webkit-scrollbar { width: 0; height: 0; }
+
+.pl-column { max-width: 80ch; }
+
+.pl-tail { height: 78px; }
+
+@media (max-width: 639px) {
+  .pl-hold { height: 380px; }
+  .pl-hold.full { height: max(380px, calc(100vh - 48px)); }
+  .pl-stage { padding: 44px 20px 60px; }
+}
+
+~
+
+The progress bar lies along the foot of the card in the mark's mint, the one thing on this card that is not ink on white. It carries how far the run has reached as its own width, off one custom property the view sets. While the document is being typed the width eases between frames so the bar reads as a run rather than as a stutter; the moment the reader stops or skips it snaps, because a bar that keeps sliding after the press looks like a control that missed it.
+
+The button in the top corner grows the card to the height of the window. It sits over the stage rather than in the transport, since it changes the card and not the run.
+
+=>
+
+.pl-run {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 5;
+  width: var(--pl-run);
+  height: 3px;
+  border-radius: 999px;
+  background: var(--loom);
+  transition: width 0ms;
+}
+
+.pl-card.running .pl-run { transition: width 120ms linear; }
+
+.pl-full {
+  appearance: none;
+  cursor: pointer;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+~
+
+A line of the document holds its own row highlight, which bleeds far past both edges of the column so it reads as a row of the editor rather than a box drawn round the text. The wash is the page's own ink at two per cent — barely a tint, since it has to mark the line without competing with the words on it. The caret is a block, and it blinks only while the typing rests on a finished line.
+
+=>
+
+.pl-line { position: relative; isolation: isolate; }
+.pl-line.kept { white-space: pre; }
+.pl-line:not(.kept) { white-space: pre-wrap; }
+
+.pl-cur {
+  position: absolute;
+  z-index: -1;
+  left: -36px;
+  right: -200%;
+  top: 0;
+  bottom: 0;
+  background: rgba(20, 19, 15, 0.022);
+}
+
+.pl-tok { border-radius: var(--radius-sm); }
+.pl-tok.chip { padding: 2px 7px; }
+
+.pl-caret {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  margin-left: 1px;
+  vertical-align: -2px;
+  background: var(--ink);
+}
+
+.pl-caret.blink { animation: loomType 1.05s steps(1, end) infinite; }
+
+@keyframes loomType { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@keyframes loomRise { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-caret.blink { animation: none; }
+}
+
+~
+
+The two command buttons rise into place when the document finishes, the second a beat after the first, and each names the command above the file it writes. A pressed button takes its command's colour and the panel under it takes the same, so the eye can tell at a glance which of the two files is on show.
+
+=>
+
+.pl-outs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+
+.pl-out {
+  appearance: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: transparent;
+  text-align: left;
+  font-family: var(--mono);
+  line-height: 1.4;
+  transition: border-color 140ms ease, background-color 140ms ease;
+  animation: loomRise 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pl-out.tangle { animation-delay: 60ms; }
+.pl-out.weave  { animation-delay: 220ms; }
+
+.pl-out-cmd  { font-size: var(--t-code); letter-spacing: 0.04em; white-space: nowrap; }
+.pl-out-file { font-size: var(--t-label); letter-spacing: 0.04em; white-space: nowrap; color: var(--ink-3); }
+
+.pl-out.tangle .pl-out-cmd { color: var(--blue); }
+.pl-out.weave  .pl-out-cmd { color: var(--violet); }
+
+.pl-out.tangle:hover, .pl-out.tangle.showing { border-color: var(--blue); }
+.pl-out.weave:hover,  .pl-out.weave.showing  { border-color: var(--violet); }
+
+.pl-out.tangle.showing { background: rgba(46, 111, 242, 0.07); }
+.pl-out.weave.showing  { background: rgba(139, 92, 246, 0.07); }
+
+.pl-result {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: loomRise 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.pl-result.tangle { border-color: rgba(46, 111, 242, 0.4); }
+.pl-result.weave  { border-color: rgba(139, 92, 246, 0.4); }
+
+.pl-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--rule);
+  font-size: var(--t-label);
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.pl-result-file { color: var(--ink); }
+
+.pl-result-body {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  background: var(--fence);
+  font-size: var(--t-code);
+  line-height: 1.75;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.pl-result-line { min-height: 1em; }
+
+@media (max-width: 639px) {
+  .pl-result-body { white-space: pre-wrap; overflow-wrap: anywhere; overflow-x: hidden; padding: 10px 12px; }
+}
+
+~
+
+The foot of the stage fades into the card so text does not run under the transport, and the transport itself sits over that fade. The transport is on the card from the first frame, because the document is on the card from the first frame too: a reader who has not pressed anything is reading it, not waiting for it.
+
+None of the controls answers the cursor. They hold their ink whether it is over them or not, so the only thing moving on this card is the document. Play is the smallest of them and the one pressed most, so it carries an invisible forty-four-pixel square over its thirty: the target a finger needs, without the weight a thirty-pixel triangle would gain by growing to match. Skipping hides itself at the end rather than leaving the row, so nothing under the cursor moves when the run finishes.
+
+=>
+
+.pl-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 44px;
+  height: 44px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #FFFFFF 100%);
+}
+
+.pl-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 18px;
+  background: #FFFFFF;
+}
+
+.pl-back, .pl-skip, .pl-play {
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+}
+
+.pl-back, .pl-skip { width: 34px; height: 34px; }
+.pl-play { width: 30px; height: 30px; color: var(--ink); }
+
+.pl-play::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.pl-skip.gone { visibility: hidden; }
+
+@media (max-width: 639px) {
+  .pl-bar { padding: 0 14px; }
+}
+
+## The devtools over the page
+
+The devtools section is two columns of equal width, and one column below a thousand pixels. It is the only section on the site whose parts leave the container: the notes panel and the picker's outline are fixed to the window, because devtools sits over an application rather than inside a page.
+
+An armed picker changes the cursor everywhere, which is what a `data-picking` attribute on the root element is for. The rule reaches every element, so the crosshair holds over links and buttons that would otherwise assert their own cursor.
+
+=>
+
+.dt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 44px;
+  row-gap: var(--rhythm);
+  align-items: start;
+}
+
+.dt-col { min-width: 0; }
+
+.dt-aim {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+:root[data-picking] * { cursor: crosshair !important; }
+
+@media (max-width: 999px) {
+  .dt-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 639px) {
+  .dt-grid {
+    display: flex;
+    column-gap: 12px;
+    margin: 0 calc(-1 * var(--side));
+    padding: 0 var(--side);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .dt-grid::-webkit-scrollbar { display: none; }
+
+  .dt-col {
+    flex: none;
+    width: min(330px, calc(100vw - 60px));
+    scroll-snap-align: center;
+  }
+}
+
+~
+
+The bar is the shape a real devtools bar takes over a dev server: full width, a name at one end and its tools at the other, lifted off the paper by a shadow soft enough to read as hovering rather than as a card.
+
+A tool's ground fills in when its tool is active — orange behind an armed picker, cream behind an open panel — and that fill is the only thing on the page saying the picker is armed once the reviewer is looking elsewhere.
+
+=>
+
+.dt-chrome { position: relative; }
+
+.dt-bar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: #FDFCF8;
+  box-shadow: 0 2px 8px rgba(20, 19, 15, 0.04);
+  color: var(--ink-2);
+}
+
+.dt-project { font-family: var(--mono); font-size: var(--t-code); }
+
+.dt-tools { margin-left: auto; display: inline-flex; align-items: center; gap: 13px; }
+
+.dt-tool {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-2);
+}
+
+.dt-tool.picking { background: rgba(232, 80, 31, 0.12); color: var(--accent); }
+.dt-tool.showing { background: #F0EADC; }
+
+.dt-count { font-family: var(--mono); font-size: var(--t-label); color: var(--init); }
+
+~
+
+Collapsing the bar leaves a handle at the right edge, drawn as a tab: rounded at the top, open at the bottom, sitting on the line the bar used to fill. It keeps the count, which is the one thing worth showing when everything else is put away.
+
+=>
+
+.dt-handle-row { display: flex; justify-content: flex-end; height: 36px; align-items: flex-end; }
+
+.dt-handle {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: #F0EADC;
+  color: var(--init);
+}
+
+~
+
+The paragraph beside the bar names the three kinds of note, and each name wears its kind's colour inline so the words teach the legend the panel then uses.
+
+The stamped fragment is bordered in green at a little under half strength, which marks it as woven Loom without turning it into a card competing with the bar above it.
+
+=>
+
+.dt-what {
+  margin: 0 0 20px;
+  padding-left: 3px;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.dt-kind { font-family: var(--mono); }
+.dt-kind.chat { color: var(--blue); }
+.dt-kind.dom  { color: #7C4DE0; }
+.dt-kind.loom { color: var(--init); }
+.dt-kind.file { color: var(--ink); }
+
+.dt-woven {
+  border: 1px solid rgba(0, 153, 107, 0.42);
+  border-radius: var(--radius);
+  padding: 13px 15px 15px;
+}
+
+.dt-woven-says {
+  margin: 0;
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.dt-woven-code {
+  margin-top: var(--label-gap);
+  font-family: var(--mono);
+  font-size: var(--t-body);
+  line-height: var(--lead);
+  color: var(--ink-2);
+  white-space: pre-wrap;
+}
+
+.dt-woven-code .tok-keyword { color: #7E71A0; }
+
+.dt-docs {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0 15px;
+  color: var(--ink);
+  min-width: 0;
+  transition: color 140ms ease;
+}
+
+.dt-docs:hover { color: #1D4FBF; }
+
+.dt-docs .eyebrow { color: inherit; opacity: 0.75; }
+
+.dt-docs .lines { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.dt-docs-title {
+  font-weight: 500;
+  font-size: var(--t-sub);
+  line-height: var(--lead-head);
+  letter-spacing: -0.02em;
+}
+
+~
+
+The panel is fixed to the bottom-right corner of the window and capped in height, so a long list scrolls inside it rather than growing past the fold. On a narrow window it gives back the side padding at both edges instead of running off the screen.
+
+=>
+
+.dt-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  width: 461px;
+  max-width: calc(100vw - 2 * var(--side));
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: #FDFCF8;
+  box-shadow: 0 3px 10px rgba(20, 19, 15, 0.05);
+}
+
+.dt-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.dt-panel-title { font-size: var(--t-code); font-weight: 600; }
+
+.dt-tabs { display: flex; gap: 11px; }
+
+.dt-tab {
+  appearance: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  padding: 0 0 2px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--t-label);
+  color: var(--ink-3);
+}
+
+.dt-tab.here { color: var(--ink); border-bottom-color: var(--accent); }
+
+.dt-close {
+  margin-left: auto;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--t-code);
+  color: var(--ink-3);
+}
+
+~
+
+A note's own row leads with a line of small facts — its number, its kind, its pointer and its route — then the sentence, then what can be done about it. The pointer is the one that can run long, so it is the one that truncates.
+
+=>
+
+.dt-list { flex: 1 1 auto; overflow: auto; display: flex; flex-direction: column; }
+
+.dt-note {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule-faint);
+}
+
+.dt-note-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+}
+
+.dt-note-seq { color: var(--ink-3); }
+
+.dt-note-pointer {
+  color: #7C4DE0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-note-route { margin-left: auto; flex: none; color: var(--ink-3); }
+
+.dt-note-text { font-size: var(--t-code); line-height: var(--lead); color: var(--ink-2); }
+
+.dt-note-acts { display: flex; gap: 13px; }
+
+.dt-act {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--t-label);
+  color: var(--ink-3);
+}
+
+.dt-act.resolve { color: var(--init); }
+
+.dt-empty {
+  padding: 24px 14px;
+  font-size: var(--t-code);
+  line-height: 1.8;
+  color: var(--ink-3);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+~
+
+The composer closes the panel. A chip above the field names what the reviewer aimed at, written in the accent on a wash of it so it reads as a pinned thing rather than as a warning. The send button stays grey until the field has something in it, then goes to ink.
+
+=>
+
+.dt-composer {
+  border-top: 1px solid var(--rule-faint);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dt-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  border-radius: var(--radius-sm);
+  background: rgba(232, 80, 31, 0.09);
+  color: var(--accent-hover);
+  font-family: var(--mono);
+  font-size: var(--t-label);
+}
+
+.dt-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.dt-chip-drop {
+  margin-left: auto;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--t-label);
+  color: var(--accent-hover);
+}
+
+.dt-draft {
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: var(--t-code);
+  color: var(--ink);
+  outline: none;
+}
+
+.dt-send-row { display: flex; align-items: center; gap: 8px; }
+
+.dt-pick-chip {
+  appearance: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  color: var(--ink-2);
+}
+
+.dt-pick-chip.picking {
+  border-color: var(--accent);
+  background: rgba(232, 80, 31, 0.10);
+  color: var(--accent-hover);
+}
+
+.dt-send {
+  margin-left: auto;
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 5px 11px;
+  border-radius: var(--radius-sm);
+  background: #B3A99A;
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: var(--t-label);
+}
+
+.dt-send.ready { background: var(--ink); }
+
+~
+
+The outline and its label are the last two rules on the page and the highest, since they mark whatever is under them and nothing may cover them. Both take no pointer events, so the click that follows the aim reaches the element rather than the rectangle drawn over it.
+
+=>
+
+.dt-outline {
+  position: fixed;
+  z-index: 70;
+  pointer-events: none;
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  background: rgba(232, 80, 31, 0.06);
+  transition: opacity 90ms linear;
+}
+
+.dt-outline-label {
+  position: fixed;
+  z-index: 71;
+  pointer-events: none;
+  padding: 2px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #FFF6F2;
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  white-space: nowrap;
+}
+
+## The pager
+
+The pager carries the cream air above the footer as its own bottom padding, so it is the last thing on the page in the layout as well as in the reading.
+
+Its two cards sit at seventy percent of their half of the row, which leaves air between them rather than butting them together — they are two destinations, not a segmented control. They stay side by side at every width. Where the page ends, back and on are a pair, and stacking them would put the previous page above the next one as though one came before the other in the reading rather than either side of it. Below six hundred and forty pixels each card takes its whole half and the gutter narrows to twenty-four, which is what the three-hundred-and-sixty-pixel floor leaves room for.
+
+A card is not a card. It draws no ground, no edge and no padding of its own — only the mark, the eyebrow and the name of the page, standing on the paper as plainly as the section above them. Under the cursor the card takes the destination's own colour and both lines inherit it; the eyebrow stays a quarter transparent, which is what has always made it quieter than the name. So one colour moves and the hierarchy between the two lines survives the move. The colour reaches the card as a custom property, since a hover rule cannot be written inline but the colour belongs to whichever page the card leads to.
+
+=>
+
+.pager {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 8px var(--side) var(--footer-pad);
+}
+
+.pager-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 44px;
+  align-items: stretch;
+  row-gap: 0;
+  padding-top: 44px;
+}
+
+.pager-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 70%;
+  min-width: 0;
+  color: var(--ink);
+  transition: color 140ms ease;
+}
+
+.pager-card:hover { color: var(--pg-ink); }
+
+.pager-card .eyebrow { color: inherit; opacity: 0.75; transition: color 140ms ease; }
+
+.pager-card.next { justify-content: flex-end; margin-left: auto; }
+
+.pager-words {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.pager-card.next .pager-words { align-items: flex-end; text-align: right; }
+
+.pager-title {
+  max-width: 100%;
+  font-weight: 500;
+  font-size: var(--t-head);
+  line-height: var(--lead-head);
+  letter-spacing: -0.02em;
+  color: inherit;
+  transition: color 140ms ease;
+}
+
+.pager-card > span[aria-hidden] { align-self: flex-start; }
+
+@media (max-width: 1179px) { .pager-card { width: 80%; } }
+
+@media (max-width: 639px) {
+  .pager-row { column-gap: 24px; }
+  .pager-card { width: 100%; }
+}
+
+@media (max-width: 379px) {
+  .pager-card { gap: 10px; }
+  .pager-title { font-size: var(--t-sub); }
+  .pager-card > span[aria-hidden] { width: 32px; height: 32px; }
+}
+
+~
+
+The documentation's own pager sits in the second row of the article's column, so it lines up with the prose above it rather than with the page. Its width tracks the article — the measure plus the padding on either side — which keeps it aligned at every breakpoint without repeating the article's numbers.
+
+=>
+
+.docs-pager {
+  grid-row: 2;
+  grid-column: 2;
+  display: flex;
+  gap: 24px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: calc(720px + 2 * var(--art-pad));
+  margin: 44px auto 0;
+  padding: 0 var(--art-pad) 96px;
+}
+
+.docs-pager-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  color: var(--ink);
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.docs-pager-card:hover { background: var(--card); border-color: var(--rule); color: var(--ink); }
+.docs-pager-card.next { text-align: right; align-items: flex-end; }
+
+@media (max-width: 639px) {
+  .docs-pager { flex-direction: column; }
+  .docs-pager-card { flex: none; width: 100%; }
+}
+
+## The bar the documentation wears
+
+The documentation's bar is the marketing nav's opposite in almost every respect. It sticks to the top of the window rather than scrolling away, it carries a rule beneath it, its wordmark sits hard left, and it slides up out of the way as a reader scrolls down.
+
+Hiding is a transform rather than a change of layout, so nothing below the bar moves when it goes. The rail's sticky top follows it — fifty-six pixels while the bar is showing, zero once it has gone — which is why that offset is a property the shell can turn from one place.
+
+Below a thousand pixels the links give way to a burger, and the wordmark loses the twenty pixels of lead that separated it from them. The repository link never hides, on the reasoning that the version a reader is looking at is worth the room at any width.
+
+=>
+
+.docs-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 clamp(16px, 2vw, 24px) 0 32px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  transform: translateY(0);
+  transition: transform 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.docs-bar.hidden { transform: translateY(-100%); }
+
+.bar-burger {
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  margin-left: -6px;
+  margin-right: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+}
+
+.bar-burger::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.bar-burger:hover { background: rgba(20, 19, 15, 0.06); }
+
+.bar-word {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  color: var(--ink);
+}
+
+.bar-word:hover { color: var(--ink); }
+
+.bar-word-text {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.bar-links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 20px;
+  padding-top: 3px;
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.bar-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bar-find {
+  appearance: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  padding: 4px 6px 4px 8px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--mono);
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: background-color .14s ease, color .14s ease;
+}
+
+.bar-find:hover { background-color: var(--rule-faint); color: var(--ink); }
+.bar-find .narrow { display: none; }
+
+.bar-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.bar-repo:hover { color: var(--ink); }
+
+@media (max-width: 999px) {
+  .docs-bar { padding-left: 12px; }
+  .bar-burger { display: inline-flex; }
+  .bar-links { display: none; }
+}
+
+~
+
+Below the width where the rail fits, the drawer carries it instead. The panel slides in from the left edge over a scrim, and both move on their own curve — the panel on a long ease-out so it settles rather than stops, the scrim a little quicker so the dimming leads the movement.
+
+The scrim also stops taking clicks when it is invisible. An invisible layer that still swallows a click is the kind of bug that only shows up on the page it breaks.
+
+=>
+
+.docs-page { position: relative; }
+
+.docs-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(20, 19, 15, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 340ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.docs-scrim.open { opacity: 1; pointer-events: auto; }
+
+.docs-drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 50;
+  display: none;
+  flex-direction: column;
+  width: 296px;
+  max-width: 84vw;
+  background: var(--paper);
+  border-right: 1px solid var(--rule);
+  box-shadow: 0 0 48px rgba(20, 19, 15, 0.14);
+  transform: translateX(-104%);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.docs-drawer.open { transform: translateX(0); }
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  min-height: 56px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+}
+
+.drawer-close {
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink);
+}
+
+.drawer-close::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+}
+
+.drawer-close:hover { background: rgba(20, 19, 15, 0.06); }
+
+.drawer-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 24px 0 96px; }
+
+@media (max-width: 779px) {
+  .docs-drawer { display: flex; }
+}
+
+## The documentation shell
+
+The documentation is the one place on the site that reads like an editor rather than a page. Three columns fill the window: a rail of chapters, the article, and an outline of the headings inside it. The rail and the outline hold a width between a floor and a ceiling so neither collapses nor sprawls, and the article takes everything left over.
+
+Both side columns span the grid's two rows, so a pager placed under the article sits inside the middle column instead of running under the whole page.
+
+The article holds a seven-hundred-and-twenty-pixel measure and centres itself in whatever the middle column turns out to be. That is wider than the sixty-two characters a marketing page allows itself, because documentation is read by someone looking for an answer rather than by someone being persuaded.
+
+Each column is a property rather than a literal, so the window's width changes three numbers and the grid rule itself never moves. The columns give way in an order: the outline goes first, at eleven-eighty, since a reader can still see the headings by scrolling; then the rail, at seven-eighty, once there is no room for a page of chapters beside a page of prose.
+
+When the outline goes it does not simply vanish. Its column narrows to thirty-eight pixels and holds, because that strip is where the miniature ruler stands — the scrubber a reader drags to move between headings once the full outline is gone.
+
+=>
+
+.docs-shell {
+  --rail-track: minmax(180px, 268px);
+  --toc-track:  minmax(180px, 264px);
+  --art-pad:    64px;
+  --rail-top:   56px;
+  display: grid;
+  grid-template-columns: var(--rail-track) minmax(0, 1fr) var(--toc-track);
+  min-height: 100vh;
+}
+
+.docs-shell.alone {
+  grid-template-columns: var(--rail-track) minmax(0, 1fr);
+}
+
+.docs-shell.bar-hidden { --rail-top: 0px; }
+
+.docs-rail    { grid-row: 1 / span 2; }
+.docs-outline { grid-row: 1 / span 2; }
+
+.docs-article {
+  grid-row: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 44px var(--art-pad) 0;
+}
+
+@media (max-width: 1439px) { .docs-shell { --art-pad: 56px; } }
+
+@media (max-width: 1179px) {
+  .docs-shell { --rail-track: minmax(180px, 240px); --toc-track: 38px; --art-pad: 44px; }
+  .docs-outline { display: none; }
+}
+
+@media (max-width: 999px) {
+  .docs-shell { --rail-track: minmax(180px, 220px); --art-pad: 32px; }
+}
+
+@media (max-width: 779px) {
+  .docs-shell { --rail-track: 0px; --art-pad: 24px; }
+  .docs-rail { display: none; }
+}
+
+~
+
+The rail groups its chapters under each part. A label names the part, the rows beneath it name the chapters, and the row a reader is on carries a marker down its left edge.
+
+That marker is an inset shadow, which occupies space inside the row. So the current row is set two pixels narrower on each side to compensate — without that, its text would sit out of line with every row above and below it.
+
+=>
+
+.docs-rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0 0 96px;
+  border-right: 1px solid var(--rule);
+}
+
+.rail-sticky {
+  position: sticky;
+  top: var(--rail-top);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding-top: 44px;
+  max-height: calc(100vh - var(--rail-top));
+  overflow-y: auto;
+}
+
+.thin-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.thin-scroll:hover { scrollbar-color: rgba(124, 111, 100, 0.22) transparent; }
+.thin-scroll::-webkit-scrollbar { width: 6px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--radius-sm); }
+.thin-scroll:hover::-webkit-scrollbar-thumb { background: rgba(124, 111, 100, 0.22); }
+
+.rail-group { display: flex; flex-direction: column; }
+
+.rail-label {
+  padding: 0 16px;
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.rail-items { display: flex; flex-direction: column; margin-top: 8px; }
+
+.rail-item {
+  appearance: none;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 7px 16px;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  line-height: 1.7;
+  color: var(--ink-2);
+  transition: background-color .12s ease;
+}
+
+.rail-item:hover { background: rgba(20, 19, 15, 0.032); }
+
+.rail-item.here {
+  padding: 7px 12px;
+  background: rgba(20, 19, 15, 0.045);
+  box-shadow: inset 2px 0 0 var(--accent);
+  color: var(--ink);
+}
+
+~
+
+A line above the article says where it sits — the documentation, its part, then the chapter — with a paler slash between each.
+
+=>
+
+.docs-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.docs-crumbs .sep  { color: #D8CFBB; }
+.docs-crumbs .here { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+~
+
+The article's own prose is Markdown the weave carried through, so the elements it produces are styled here rather than by the views: a heading, a paragraph, a list, a table, a fence, and code set inside a sentence.
+
+=>
+
+.docs-article h1 {
+  margin: 24px 0 0;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: var(--t-hero);
+  line-height: var(--lead-head);
+  letter-spacing: -0.02em;
+}
+
+.docs-article h2 {
+  margin: 58px 0 0;
+  scroll-margin-top: 88px;
+}
+
+.docs-article h3 { margin: 32px 0 0; font-size: var(--t-sub); }
+
+.docs-prose p { margin: 16px 0 0; max-width: 62ch; }
+
+.docs-prose ul,
+.docs-prose ol { margin: 16px 0 0; padding-left: 24px; max-width: 62ch; }
+
+.docs-prose li { margin: 4px 0 0; }
+
+.docs-prose pre {
+  margin: 24px 0 0;
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--fence);
+  font-size: var(--t-code);
+  line-height: var(--lead);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.docs-prose code {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(196, 30, 99, 0.07);
+  font-size: var(--t-body);
+  color: #C41E63;
+}
+
+.docs-prose pre code { padding: 0; background: none; color: var(--ink); font-size: var(--t-code); }
+
+.docs-prose table {
+  margin: 24px 0 0;
+  border-collapse: collapse;
+  font-size: var(--t-code);
+}
+
+.docs-prose th,
+.docs-prose td {
+  padding: 8px 16px 8px 0;
+  border-bottom: 1px solid var(--rule-faint);
+  text-align: left;
+  vertical-align: top;
+}
+
+.docs-prose th {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+~
+
+The outline sticks as the article scrolls past it. Each heading is a link with a rule down its left edge, transparent until it is the one a reader has reached — so the rules stay in one column and only the colour moves.
+
+=>
+
+.docs-outline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-self: start;
+  position: sticky;
+  top: 80px;
+  max-height: calc(100vh - 112px);
+  padding: 44px 24px 0 0;
+  overflow-y: auto;
+}
+
+.outline-label {
+  font-size: var(--t-eyebrow);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.outline-links { display: flex; flex-direction: column; }
+
+.outline-link {
+  appearance: none;
+  cursor: pointer;
+  border: none;
+  border-left: 2px solid transparent;
+  background: transparent;
+  text-align: left;
+  padding: 6px 0 6px 12px;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  color: var(--ink-3);
+  transition: color .12s ease, border-color .12s ease;
+}
+
+.outline-link:hover { color: var(--ink); }
+.outline-link.here { border-left-color: var(--accent); color: var(--ink); }
+
+## The stylesheet {Tangle}[landing.css]
+
+The stylesheet is the three schemes first — colour, type and measure — then the base. Then the pieces every page shares: the container and its sections, a section's header, running text, block code, and the file tree. The chrome closes it, since the nav, the palette and the footer wrap whatever a page puts between them.
+
+=>
+
+::[Paper, ink and the mark's palette]
+
+::[Two families and a fixed scale]
+
+::[Four pixels at a time]
+
+::[The page on paper]
+
+::[Every section in one container]
+
+::[A mark, an eyebrow, a heading]
+
+::[One treatment for running text]
+
+::[A fence is not a sentence]
+
+::[One file tree, everywhere]
+
+::[The hero]
+
+::[The vocabulary, one card at a time]
+
+::[The commands and their pictures]
+
+::[The document being typed]
+
+::[The devtools over the page]
+
+::[The pager]
+
+::[The nav across the top]
+
+::[The palette over the page]
+
+::[The footer that ends every page]
+
+::[The documentation shell]

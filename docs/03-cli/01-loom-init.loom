@@ -1,0 +1,37 @@
+---
+Part III: The command line
+Chapter 1: loom init
+Language: Prose
+---
+
+# loom init
+
+`loom init` sets a workspace up. It is the only command that asks questions, and it asks them once.
+
+```bash
+loom init [directory]
+```
+
+The directory defaults to the current one.
+
+## What it asks
+
+The first question is the **primary language** — the language a section is written in when its heading does not say otherwise. It defaults to `typescript`.
+
+The second is which **languages to activate**, as space-separated identifiers. Activating a language installs its editor services, so the language server can offer completion and diagnostics inside that language's sections. It defaults to whatever you answered first.
+
+## What it writes
+
+| file | what it holds |
+|---|---|
+| `.loom/config.yaml` | the primary language, the activated languages, and `corpus`, the directory Loom reads |
+| `.loom/.gitignore` | ignores `services/`, so downloaded language services stay out of version control |
+| `.mcp.json` | lets an agent reach the workspace over the Model Context Protocol |
+
+It does not create the corpus directory. The configuration names it; you make it.
+
+## Running it twice
+
+Init is safe to run again. If `.loom/config.yaml` already exists it asks nothing, keeps the configuration as it stands, and reports which file it found. So a project that already has a workspace can be re-initialised to pick up the agent configuration without losing its language settings.
+
+To change the languages afterwards, use `loom add` and `loom remove` rather than editing the file by hand.

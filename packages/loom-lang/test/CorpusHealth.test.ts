@@ -58,3 +58,31 @@ describe('corpus health — every loom-lang corpus file builds without error', (
     expect(messages).toEqual([])
   })
 })
+
+// The documentation is a second corpus in the same workspace: prose chapters that are
+// woven rather than tangled, so none of them names a file. It earns the same guard the
+// book has — malformed frontmatter, an unclosed delimiter or a broken heading fails
+// here, with the chapter named. The spine (index.loom) is included rather than skipped,
+// since it carries the generated table of contents and it is worth knowing when that
+// stops building.
+//
+// What this does NOT catch, measured rather than assumed: an unquoted `::[…]` in prose
+// parses as a prose anchor, and prose anchors are never resolution-checked, so a mark
+// that loses its backticks passes here in silence. It renders as literal text today, and
+// would become a broken link the day prose anchors resolve. Quote every mark; no test is
+// standing behind you on that one.
+const docsDir = resolve(__dirname, '../../../docs')
+const docs = readdirSync(docsDir, { recursive: true })
+  .map(String)
+  .filter((name) => name.endsWith('.loom'))
+
+describe('docs health — every documentation chapter builds without error', () => {
+  it.each(docs)('%s carries no error diagnostics', (file) => {
+    const messages = run(
+      LoomCompiler.pipe(Effect.flatMap((c) => c.diagnose(resolve(docsDir, file)))),
+    )
+      .filter((d) => d.severity === 'error')
+      .map((d) => d.message)
+    expect(messages).toEqual([])
+  })
+})
