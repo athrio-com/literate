@@ -1,0 +1,149 @@
+---
+Part: Work in progress
+Chapter: Loom Design
+Status: Exploring
+Priority: 1
+Language: TypeScript
+---
+
+# Loom Design
+
+Loom Design turns a running web application into a surface we point at, mark up, and change. The application stays the subject. It runs from its own dev server, holds its own state, and carries no knowledge that Design exists.
+
+## The application is the subject, the tool is the frame
+
+A design tool that generates its own pages owns everything it shows, so it answers questions about markup by rewriting the file. Loom Design shows an application it did not write. That single fact sets the architecture: we read a page we do not own, address the things inside it, and hand what we learn to an agent that changes the source.
+
+Design runs as a local web application. A shell page holds the chat, the panels, and the note list; a same-origin frame holds the application under work. Both live in one browser tab, in whichever browser we already use.
+
+## Attaching without being installed
+
+Design serves on a local port and proxies the application through itself. The application answers on its own port; Design forwards every request, so the browser sees one origin and the frame becomes readable.
+
+The proxy is also where the overlay enters. As HTML passes through, Design appends a script tag that loads the overlay from the Design server. The application's build configuration stays untouched, its dependency list stays unchanged, and any framework works, because the transport carries the injection rather than the bundler.
+
+Two mechanics keep the loop live. The proxy forwards the dev server's hot-module-replacement socket rather than terminating it, so a rebuild patches the frame while the shell holds its chat and its panels. The overlay re-enters on every navigation, so a full reload restores it without our help.
+
+## What the devtools already settled
+
+The `@athrio/loom-devtools` package holds the parts of this we have built and proved, and chapter eleven of the corpus describes them across eleven looms. Loom Design keeps that core and replaces its edges.
+
+A note carries an address and an observation. The `NoteSchema` union names three kinds: a `dom` note holds a CSS selector, a label, and a rectangle; a `loom` note holds a chapter and a section; a `chat` note holds text alone. Every note carries the project, the route it was made on, its text, a per-project sequence number, a timestamp, and whether an agent has addressed it.
+
+The `loom` kind already solves the anchoring problem we care about most. The overlay walks up from the picked element to the nearest ancestor carrying a `data-loom-chapter` and a `data-loom-section` attribute, and records those instead of a selector. A note anchored that way names the prose that specifies the code, so it survives every rebuild that leaves the section in place. Elements outside a marked section fall back to an identifier selector when one exists, and to a depth-limited path otherwise.
+
+The store keeps notes in SQL through Effect's SQL client, with SQLite for a single machine and Postgres for a shared one. It records each note under `(project, seq)`, publishes it on a `PubSub`, and marks an addressed note rather than deleting it.
+
+The server exposes the capture and resolve routes, streams changes over `/notes/live`, and serves the overlay itself from `/notes.js`. Serving the overlay from the tool rather than bundling it into the application is the dependency direction Design needs, and it makes the proxy a short step rather than a rewrite.
+
+Four tools give an agent the store: `projects` lists what the store holds, `notes` returns a project's unaddressed notes in the order we made them, `resolve` marks one addressed, and `discard` drops one that no longer applies.
+
+## What we leave behind
+
+The Vite plugin binds Design to one bundler. It applies during `serve`, starts the note server from `configureServer`, and injects the overlay through `transformIndexHtml`. Every application that wants notes therefore edits its own build configuration and runs Vite. The proxy replaces all of it and asks the application for nothing.
+
+The Docker image and its Postgres service belong to a hosted deployment. A local tool starts in a second from a command, and SQLite already serves a single machine. We keep the Postgres backend for the day a team shares a store, and we stop presenting a container as the way to run Design on a laptop.
+
+## A note is the first tier, and the cheapest
+
+We enter select mode, hover to see the element outlined, click to pick it, and write a sentence. Design captures the address, the label, the rectangle, and the route, and records the note. The page stays as it was.
+
+Notes earn their place before any editing exists, because an agent that reads a repository needs an address and an intention, and a sentence about a specific element gives it both.
+
+## Style edits live in a stylesheet
+
+A style edit becomes a rule in a stylesheet Design owns and injects last. Nudging a padding writes `nav > .brand { padding-left: 20px }` and nothing else.
+
+Storing style edits as CSS makes them persist for free. A rule waits in the stylesheet and applies whenever a matching element appears — after a reload, after a fetch, after a drawer opens for the first time in a session. The cascade does the reapplication, so Design keeps no replay code for this tier. The file also reads as what it is, to a person and to an agent alike.
+
+## Moving things is a different problem
+
+A structural edit changes the tree, and the tree gets rebuilt. Design records the edit as an ordered operation with two addresses, the node and its destination, and replays the operations in sequence after each rebuild.
+
+Structural edits apply on appearance rather than on load. Design registers each pending address, watches the document for new nodes, and applies an operation when its target arrives. An edit inside a cart drawer waits while the drawer stays closed and lands when the drawer opens, which makes state-dependent markup ordinary rather than exceptional.
+
+Repetition sets the limit of what an address can settle. Restyling one row of a list is unambiguous, because the fix belongs in the template either way. Moving one row is not, because the rendered tree holds nothing that separates this row from every row. Design asks at the moment of the edit, and a `data-loom-section` attribute answers the rest.
+
+## Marks are a projection, not a record
+
+Design stamps each touched node with the identifier of the patch that touched it and outlines it from its own stylesheet. Turning the layer off removes the marks and the edits together, because both come from the same source. Design keeps no second register of what has changed.
+
+## Isolation, for the work a nudge cannot do
+
+Some changes want a blank canvas. Design extracts a subtree into an artifact: static HTML and CSS, frozen in the state we extracted it from, opened in the conversation the way a chat produces an artifact.
+
+Inside an artifact the agent writes rather than reads, so the whole apparatus of picking, anchoring, and cascade provenance falls away. Variants become possible, because three versions of a panel sit side by side.
+
+Extraction captures provenance in the same pass. Design writes a manifest beside the artifact mapping each element back to its section, its selector, and the tokens that applied, so merging the result reads a table instead of re-deriving intent from markup.
+
+## Agents read the store, and the shell calls an agent
+
+An agent reaching into Design queries the store over MCP. The four existing tools grow to cover patches and element context, and the agent asks for a project's open work rather than searching a repository for it.
+
+Design reaching out to an agent spawns one. Clicking *fix this* runs the agent headless with the note, the patch, and the context, reads its output, and lets the dev server show the result.
+
+## Working state stays out of the repository
+
+Notes and patches are the work in progress, not the product. They change constantly, they answer queries, and they would bury a repository's history. The store keeps them under a project key in a data directory of its own, and the corpus keeps the prose and the code.
+
+Export stays explicit. A patch does not travel with a clone, and Design says so rather than implying otherwise.
+
+## One command
+
+Design ships as a package we run rather than an application we install.
+
+```
+loom design
+```
+
+The command starts the server, opens the browser, and proxies the application. No signing, no notarization, no update channel, no per-architecture build, and no browser bundled inside. Working in the browser we already use is the point, so Design speaks the platform — `elementFromPoint` for picking, an injected stylesheet for overrides, `getComputedStyle` and the CSSOM for provenance — and reaches for a browser protocol nowhere.
+
+## Why the proxy belongs outside the product
+
+The website's own server briefly proxied Vite so that it could render in development, and that arrangement was wrong in a way worth recording, because it uses the same mechanism this design does.
+
+A proxy inside the product makes the shipping server unable to answer alone. The website inherited a build tool's transport, its module graph, its not-found, and its socket, and every one of those became a defect to patch. A proxy outside the product inverts the dependency. Design stands in front of an application that does not know it exists, and the application ships nothing on Design's behalf.
+
+That inversion is what buys a tool that works with any stack. A plugin reaches only the bundlers someone writes plugins for. A transport reaches everything that speaks HTTP. Leaving the bundler and leaving the container are therefore one decision rather than two.
+
+## What this frees the website to be
+
+Design attaching from outside means the website owes the devtools nothing, and that removes the last reason for the website to run a bundler at request time.
+
+Vite becomes a build rather than a server. It writes `dist`, and the Effect server reads it and renders. Development and production stop being two arrangements held in agreement and become one path run twice. The stylesheet reaches the browser as a link in the head in both, which closes a flash of unstyled content that measured 383 milliseconds in development against nothing in production.
+
+The site's Vite configuration drops the devtools plugin, the server drops its development layer and its proxy, and one of the four standing type errors goes with the plugin import.
+
+## The looms this replaces
+
+Chapter eleven holds eleven looms. Three of them describe the arrangement Design leaves behind: the Vite plugin, the local stack, and the image. The other eight stand: the note, the store, the server, the overlay, the agent's tools, packaging, the service entry, and the setup UI.
+
+So this is a replacement of edges around a proved core, and the work is smaller than the change in direction suggests.
+
+## Mechanical extraction, and what the platform gives
+
+Extraction has to be mechanical to be trustworthy, and the browser supplies everything it needs. Four capabilities carry it, each confirmed against Chrome rather than assumed.
+
+Custom properties enumerate off the computed style of the document element, so a token block can be read whole rather than guessed at. A token resolves by name at any element. Every stylesheet rule can be tested against an element with `matches`, including rules nested inside a media query, whose condition reads off the rule that wraps them. Inherited properties resolve through the computed style of the node that inherited them.
+
+The subtree is the easy half. The cascade above the extraction root is the whole problem: inherited properties and custom properties are declared on ancestors the artifact will not contain, so extraction has to flatten them onto the artifact's own root. An extraction that copies the subtree and forgets what it inherited produces an artifact that looks plausible and is wrong, which is worse than one that fails.
+
+The mechanical pass therefore clones the subtree, collects matching rules in source order inside their media and layer wrappers, flattens the inherited properties and the token block onto the root, carries the font faces, and rewrites relative URLs against the application's origin. The manifest records what each of those steps decided.
+
+## What the transport must handle
+
+Four hazards sit in the proxy, and each is certain rather than possible.
+
+The websocket upgrade has to be forwarded. The website's own proxy avoided this by pointing the hot-module client at a port directly, which was available only because it owned the application's configuration. Design owns nothing of the application, so it must proxy the upgrade itself. This is the one genuinely hard piece of the transport.
+
+Compressed responses cannot be injected into, so the proxy asks upstream for an identity encoding. Over a loopback interface compression buys nothing anyway.
+
+Streamed HTML has to be injected into as it passes, or buffered. Buffering is simpler and costs little on a local machine, but it ends streaming, so the choice belongs in the design rather than in the moment the first streaming application arrives.
+
+A content security policy is mostly answered by the single origin the proxy creates, since a policy naming `self` now covers the overlay. A policy built on a nonce still refuses an injected tag, so the proxy reuses the page's nonce or strips the header. Redirects need their `Location` rewritten to stay inside the frame.
+
+## The limit of an address
+
+Durable anchoring belongs to Loom. An application woven from a corpus carries the chapter and section attributes a note can hold onto, and such a note survives a refactor that moves the markup. An application from anywhere else carries no such attributes, so its notes hold selectors, and selectors are exactly what a rebuild breaks.
+
+This is the boundary to state plainly rather than let someone discover. Loom applications get notes that outlive their markup. Every other application gets notes that outlive it until it moves.
