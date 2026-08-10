@@ -13,7 +13,7 @@ import {
   type Note,
   type NoteTab,
   ResolvedNote,
-  type Route,
+  Route,
   SentNote,
   ShowedNotes,
   type Target,
@@ -115,6 +115,9 @@ export const pathOf = (route: Route): string =>
     Match.when('source', () => '/source'),
     Match.exhaustive,
   )
+
+export const routeOf = (pathname: string): Option.Option<Route> =>
+  Array.findFirst(Route.literals, (route) => pathOf(route) === pathname)
 
 const CHROME = '[data-dt-chrome]'
 

@@ -22,7 +22,7 @@ import {
   Ticked,
   ToggledFullHeight,
 } from './model'
-import { aimableAt, highlightOf, pathOf, seedNotes, targetOf } from './devtools'
+import { aimableAt, highlightOf, pathOf, routeOf, seedNotes, targetOf } from './devtools'
 import { CHARACTERS, RUN, struckBy } from './example'
 
 type Step = readonly [Model, ReadonlyArray<Command<Message>>]
@@ -467,13 +467,21 @@ const emptyModel: Model = {
   highlight: Option.none(),
 }
 
+const routed = (model: Model): Model =>
+  Option.match(routeOf(window.location.pathname), {
+    onNone: () => model,
+    onSome: (route) => ({ ...model, route }),
+  })
+
 const flags: Effect.Effect<Model> = Effect.sync(() =>
-  Option.match(
-    Option.fromNullishOr(document.getElementById('foldkit-model')?.textContent),
-    {
-      onSome: (text) => S.decodeUnknownSync(Model)(JSON.parse(text)),
-      onNone: () => emptyModel,
-    },
+  routed(
+    Option.match(
+      Option.fromNullishOr(document.getElementById('foldkit-model')?.textContent),
+      {
+        onSome: (text) => S.decodeUnknownSync(Model)(JSON.parse(text)),
+        onNone: () => emptyModel,
+      },
+    ),
   ),
 )
 

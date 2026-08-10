@@ -38,7 +38,7 @@ import {
   Ticked,
   ToggledFullHeight,
 } from './model'
-import { aimableAt, highlightOf, pathOf, seedNotes, targetOf } from './devtools'
+import { aimableAt, highlightOf, pathOf, routeOf, seedNotes, targetOf } from './devtools'
 import { CHARACTERS, RUN, struckBy } from './example'
 
 type Step = readonly [Model, ReadonlyArray<Command<Message>>]
@@ -542,7 +542,7 @@ const subscriptions = Subscription.make<Model, Message>()((entry) => ({
 
 ## Booting
 
-The client boots from a model — the one the server inlined on a real load, or a default in development. That default names the workspace version, since no server has fetched the latest release, and stands the example at its first frame. Importing the stylesheet here, in the browser entry, keeps it out of the server's path.
+The client boots from a model. On a real load the server inlines the model it rendered the page with; in development Vite serves the shell without rendering anything, so the client falls back to a default. That default names the workspace version, since no server has fetched the latest release, and stands the example at its first frame. Importing the stylesheet here, in the browser entry, keeps it out of the server's path.
 
 {{ version = ${version} }}
 
@@ -576,13 +576,29 @@ const emptyModel: Model = {
   highlight: Option.none(),
 }
 
+~
+
+Whichever model the client starts from, the `routed` function takes the route from the address bar and sets it on that model. The address is what the reader asked for. A seeded model agrees with it only because the server keyed every rendered page by the same path, and in development no seeded model exists at all.
+
+Leaving the route to the seed would boot every development address as the landing, since the default names the `home` route and nothing afterwards corrects it. An address the site does not serve names no route, and there the model's own route stands.
+
+=>
+
+const routed = (model: Model): Model =>
+  Option.match(routeOf(window.location.pathname), {
+    onNone: () => model,
+    onSome: (route) => ({ ...model, route }),
+  })
+
 const flags: Effect.Effect<Model> = Effect.sync(() =>
-  Option.match(
-    Option.fromNullishOr(document.getElementById('foldkit-model')?.textContent),
-    {
-      onSome: (text) => S.decodeUnknownSync(Model)(JSON.parse(text)),
-      onNone: () => emptyModel,
-    },
+  routed(
+    Option.match(
+      Option.fromNullishOr(document.getElementById('foldkit-model')?.textContent),
+      {
+        onSome: (text) => S.decodeUnknownSync(Model)(JSON.parse(text)),
+        onNone: () => emptyModel,
+      },
+    ),
   ),
 )
 
