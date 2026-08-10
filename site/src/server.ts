@@ -85,13 +85,7 @@ const pageOf = (
     return withSeed(withTitle(withBody(shell, body), document.title), model)
   })
 
-const MISSING = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Not found — Loom</title>
-    <style>
+const PAGE_STYLE = `
       :root { --paper: #F7F4EC; --ink: #14130F; --ink-3: #7C6F64; --rule: #E4DCCB; }
       body {
         margin: 0;
@@ -108,7 +102,9 @@ const MISSING = `<!doctype html>
         text-align: center;
       }
       .number { font-size: 46px; letter-spacing: 0.02em; }
-      .line { margin: 0; max-width: 46ch; line-height: 1.7; color: var(--ink-3); }
+      .headline { font-size: 24px; letter-spacing: 0.01em; }
+      .line { margin: 0; max-width: 52ch; line-height: 1.7; color: var(--ink-3); }
+      .line code { color: var(--ink); }
       .back {
         color: var(--ink);
         text-decoration: none;
@@ -116,16 +112,29 @@ const MISSING = `<!doctype html>
         border-bottom: 1px solid var(--rule);
       }
       .back:hover { color: var(--ink-3); }
-    </style>
+`
+
+const standalone = (title: string, body: string): string => `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${title}</title>
+    <style>${PAGE_STYLE}</style>
   </head>
-  <body>
-    <img src="/mark.svg" alt="Loom" width="140" height="60" />
-    <div class="number">404</div>
-    <p class="line">There is no page at this address.</p>
-    <a class="back" href="/">Back to Loom</a>
+  <body>${body}
   </body>
 </html>
 `
+
+const MISSING = standalone(
+  'Not found — Loom',
+  `
+    <img src="/mark.svg" alt="Loom" width="140" height="60" />
+    <div class="number">404</div>
+    <p class="line">There is no page at this address.</p>
+    <a class="back" href="/">Back to Loom</a>`,
+)
 
 const notFound = Effect.succeed(
   HttpServerResponse.text(MISSING, { status: 404, contentType: 'text/html' }),
@@ -172,14 +181,19 @@ const fromVite = (target: string): Effect.Effect<HttpServerResponse.HttpServerRe
     Effect.catchCause(() => notFound),
   )
 
-const WITHOUT_VITE =
-  '<!doctype html><html lang="en"><head><title>Loom</title></head>' +
-  '<body><p>Vite is not answering, so this page has no client. Run <code>bun run dev</code>.</p>' +
-  '<div id="root"></div></body></html>'
+const NO_VITE = standalone(
+  'Vite is not running — Loom',
+  `
+    <div class="headline">Vite is not running</div>
+    <p class="line">This server renders the pages, and Vite holds the client. Start both with <code>bun run dev</code>.</p>`,
+)
 
-const viteShell: Effect.Effect<string> = Effect.tryPromise(() =>
+const viteShell: Effect.Effect<Option.Option<string>> = Effect.tryPromise(() =>
   fetch(`${VITE}/index.html`).then((held) => held.text()),
-).pipe(Effect.catchCause(() => Effect.succeed(WITHOUT_VITE)))
+).pipe(
+  Effect.map(Option.some),
+  Effect.catchCause(() => Effect.succeed(Option.none())),
+)
 
 const liveSite = Effect.gen(function* () {
   const render = yield* FoldkitRender
@@ -189,11 +203,16 @@ const liveSite = Effect.gen(function* () {
       Option.match(routeOf(url.pathname), {
         onNone: () => Effect.succeed(Option.none()),
         onSome: (route) =>
-          Effect.map(
-            Effect.flatMap(viteShell, (shell) =>
-              pageOf(render, shell, { ...seed, route, version }),
-            ),
-            Option.some,
+          Effect.flatMap(
+            viteShell,
+            Option.match({
+              onNone: () => Effect.succeed(Option.some(NO_VITE)),
+              onSome: (shell) =>
+                Effect.map(
+                  pageOf(render, shell, { ...seed, route, version }),
+                  Option.some,
+                ),
+            }),
           ),
       }),
     assetAt: (url: URL) => fromVite(`${url.pathname}${url.search}`),
