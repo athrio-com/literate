@@ -12,8 +12,8 @@ import { renderStatic } from 'foldkit/html'
 import { PREHYDRATION_CAPTURE_SCRIPT } from '@athrio/foldkit-hydration/prehydration'
 import { FoldkitRender } from '@athrio/foldkit-ssr'
 import { view } from './view'
-import { Route, type Model } from './model'
-import { pathOf, routeOf, seedNotes } from './devtools'
+import { type Model } from './model'
+import { routeOf, seedNotes } from './devtools'
 
 const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
@@ -140,95 +140,42 @@ const notFound = Effect.succeed(
   HttpServerResponse.text(MISSING, { status: 404, contentType: 'text/html' }),
 )
 
-const renderedSite = Effect.gen(function* () {
-  const fs = yield* FileSystem.FileSystem
-  const render = yield* FoldkitRender
-  const shell = yield* fs.readFileString(join(distDir, 'index.html'))
-  const version = yield* latestVersion(seed.version)
-  const rendered = yield* Effect.forEach(Route.literals, (route) =>
-    Effect.map(
-      pageOf(render, shell, { ...seed, route, version }),
-      (page) => [pathOf(route), page] as const,
-    ),
-  )
-  const pages = new Map(rendered)
-  return {
-    pageAt: (url: URL): Effect.Effect<Option.Option<string>> =>
-      Effect.succeed(Option.fromNullishOr(pages.get(url.pathname))),
-    assetAt: (url: URL) =>
-      HttpServerResponse.file(join(distDir, url.pathname)).pipe(
-        Effect.catchCause(() => notFound),
-      ),
-  } as const
-})
-
-const VITE = `http://localhost:${Number(process.env.VITE_PORT ?? 5200)}`
-
-const fromVite = (target: string): Effect.Effect<HttpServerResponse.HttpServerResponse> =>
-  Effect.tryPromise(() => fetch(`${VITE}${target}`)).pipe(
-    Effect.flatMap((held) =>
-      held.status === 404
-        ? notFound
-        : Effect.map(
-            Effect.tryPromise(() => held.arrayBuffer()),
-            (body) =>
-              HttpServerResponse.uint8Array(new Uint8Array(body), {
-                status: held.status,
-                contentType: held.headers.get('content-type') ?? 'application/octet-stream',
-              }),
-          ),
-    ),
-    Effect.catchCause(() => notFound),
-  )
-
-const NO_VITE = standalone(
-  'Vite is not running — Loom',
+const NOT_BUILT = standalone(
+  'Not built — Loom',
   `
-    <div class="headline">Vite is not running</div>
-    <p class="line">This server renders the pages, and Vite holds the client. Start both with <code>bun run dev</code>.</p>`,
+    <div class="headline">The site is not built</div>
+    <p class="line">The server renders from <code>dist</code>, and nothing is there yet. Run <code>bun run build</code>, or <code>bun run dev</code> to keep it building.</p>`,
 )
-
-const viteShell: Effect.Effect<Option.Option<string>> = Effect.tryPromise(() =>
-  fetch(`${VITE}/index.html`).then((held) => held.text()),
-).pipe(
-  Effect.map(Option.some),
-  Effect.catchCause(() => Effect.succeed(Option.none())),
-)
-
-const liveSite = Effect.gen(function* () {
-  const render = yield* FoldkitRender
-  const version = yield* latestVersion(seed.version)
-  return {
-    pageAt: (url: URL): Effect.Effect<Option.Option<string>> =>
-      Option.match(routeOf(url.pathname), {
-        onNone: () => Effect.succeed(Option.none()),
-        onSome: (route) =>
-          Effect.flatMap(
-            viteShell,
-            Option.match({
-              onNone: () => Effect.succeed(Option.some(NO_VITE)),
-              onSome: (shell) =>
-                Effect.map(
-                  pageOf(render, shell, { ...seed, route, version }),
-                  Option.some,
-                ),
-            }),
-          ),
-      }),
-    assetAt: (url: URL) => fromVite(`${url.pathname}${url.search}`),
-  } as const
-})
 
 export class Site extends Context.Service<Site>()('Site', {
-  make: renderedSite,
+  make: Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const render = yield* FoldkitRender
+    const version = yield* latestVersion(seed.version)
+    const shell = fs.readFileString(join(distDir, 'index.html'))
+    return {
+      pageAt: (url: URL): Effect.Effect<Option.Option<string>> =>
+        Option.match(routeOf(url.pathname), {
+          onNone: () => Effect.succeed(Option.none()),
+          onSome: (route) =>
+            shell.pipe(
+              Effect.flatMap((held) =>
+                pageOf(render, held, { ...seed, route, version }),
+              ),
+              Effect.catchCause(() => Effect.succeed(NOT_BUILT)),
+              Effect.map(Option.some),
+            ),
+        }),
+      assetAt: (url: URL) =>
+        HttpServerResponse.file(join(distDir, url.pathname)).pipe(
+          Effect.catchCause(() => notFound),
+        ),
+    } as const
+  }),
 }) {
   static readonly layer = Layer.effect(this, this.make).pipe(
     Layer.provide(FoldkitRender.layer),
     Layer.provide(BunServices.layer),
-  )
-
-  static readonly liveLayer = Layer.effect(this, liveSite).pipe(
-    Layer.provide(FoldkitRender.layer),
   )
 }
 
@@ -250,11 +197,9 @@ const app = Effect.gen(function* () {
 
 const port = Number(process.env.PORT ?? 5199)
 
-const site = process.env.LOOM_DEV === '1' ? Site.liveLayer : Site.layer
-
 const server = HttpServer.serve(app).pipe(
   HttpServer.withLogAddress,
-  Layer.provide(site),
+  Layer.provide(Site.layer),
   Layer.provide(BunHttpServer.layer({ port })),
 )
 

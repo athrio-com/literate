@@ -7,7 +7,7 @@
     "weave:docs": "bunx @athrio/loom weave ../docs/index.loom src/docs.woven.json",
     "content": "bun run weave:docs",
     "predev": "bun run content",
-    "dev": "bunx --bun vite & vite=$!; trap 'kill $vite' EXIT; LOOM_DEV=1 bun --watch src/server.ts",
+    "dev": "bunx --bun vite build --watch & build=$!; trap 'kill $build' EXIT; bun --watch src/server.ts",
     "prebuild": "bun run content",
     "build": "bunx --bun vite build",
     "serve": "bun src/server.ts",
@@ -21,7 +21,6 @@
     "marked": "^18.0.5"
   },
   "devDependencies": {
-    "@athrio/loom-devtools": "workspace:*",
     "vite": "^8.1.3"
   }
 }
