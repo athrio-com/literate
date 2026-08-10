@@ -85,8 +85,50 @@ const pageOf = (
     return withSeed(withTitle(withBody(shell, body), document.title), model)
   })
 
+const MISSING = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Not found — Loom</title>
+    <style>
+      :root { --paper: #F7F4EC; --ink: #14130F; --ink-3: #7C6F64; --rule: #E4DCCB; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        padding: 40px;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'Lilex', 'IBM Plex Mono', ui-monospace, monospace;
+        text-align: center;
+      }
+      .number { font-size: 46px; letter-spacing: 0.02em; }
+      .line { margin: 0; max-width: 46ch; line-height: 1.7; color: var(--ink-3); }
+      .back {
+        color: var(--ink);
+        text-decoration: none;
+        padding-bottom: 3px;
+        border-bottom: 1px solid var(--rule);
+      }
+      .back:hover { color: var(--ink-3); }
+    </style>
+  </head>
+  <body>
+    <img src="/mark.svg" alt="Loom" width="140" height="60" />
+    <div class="number">404</div>
+    <p class="line">There is no page at this address.</p>
+    <a class="back" href="/">Back to Loom</a>
+  </body>
+</html>
+`
+
 const notFound = Effect.succeed(
-  HttpServerResponse.text('Not found', { status: 404 }),
+  HttpServerResponse.text(MISSING, { status: 404, contentType: 'text/html' }),
 )
 
 const renderedSite = Effect.gen(function* () {
@@ -114,13 +156,21 @@ const renderedSite = Effect.gen(function* () {
 const VITE = `http://localhost:${Number(process.env.VITE_PORT ?? 5200)}`
 
 const fromVite = (target: string): Effect.Effect<HttpServerResponse.HttpServerResponse> =>
-  Effect.tryPromise(async () => {
-    const held = await fetch(`${VITE}${target}`)
-    return HttpServerResponse.uint8Array(new Uint8Array(await held.arrayBuffer()), {
-      status: held.status,
-      contentType: held.headers.get('content-type') ?? 'application/octet-stream',
-    })
-  }).pipe(Effect.catchCause(() => notFound))
+  Effect.tryPromise(() => fetch(`${VITE}${target}`)).pipe(
+    Effect.flatMap((held) =>
+      held.status === 404
+        ? notFound
+        : Effect.map(
+            Effect.tryPromise(() => held.arrayBuffer()),
+            (body) =>
+              HttpServerResponse.uint8Array(new Uint8Array(body), {
+                status: held.status,
+                contentType: held.headers.get('content-type') ?? 'application/octet-stream',
+              }),
+          ),
+    ),
+    Effect.catchCause(() => notFound),
+  )
 
 const WITHOUT_VITE =
   '<!doctype html><html lang="en"><head><title>Loom</title></head>' +
