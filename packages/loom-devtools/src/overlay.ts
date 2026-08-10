@@ -110,11 +110,13 @@ const settle = (base: string, project: string, path: string, body: unknown) =>
     Effect.catchCause(() => Effect.succeed(Unreachable())),
   )
 
+const directoryOf = (url: URL): string => url.href.slice(0, url.href.lastIndexOf('/'))
+
 const config = (): { readonly base: string; readonly project: string } =>
   Option.match(Option.fromNullishOr(document.querySelector('script[data-loom-project]')), {
     onNone: () => ({ base: location.origin, project: 'local' }),
     onSome: (tag) => ({
-      base: new URL(tag.getAttribute('src') ?? location.href, location.href).origin,
+      base: directoryOf(new URL(tag.getAttribute('src') ?? location.href, location.href)),
       project: tag.getAttribute('data-loom-project') ?? 'local',
     }),
   })

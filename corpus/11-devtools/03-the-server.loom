@@ -185,32 +185,49 @@ const handling = <R>(
 
 The router carries every route the browser and the agent reach. The overlay captures, lists, resolves, discards, and edits notes, renames its project, and asks for its own script — one route each. `live` skips `handling` too, but for a different reason than the static files below. Once a request has upgraded to a socket, a fault is a closed connection, not a response `handling` could send, so `live` catches its own. The root serves the setup page and `/ui.js` its application; those and the overlay script are static files, with no store call that could fail, so they alone skip `handling` for the ordinary reason. The router answers any other request with a not-found of its own.
 
+The handlers are named apart from the paths they answer on, because this daemon is no longer the only server that mounts them. A proxy standing in front of an application it does not own folds the same handlers in under a path of its own, where the application's routes cannot collide with them. Naming them once and mounting them twice keeps the two servers answering the same way.
+
 =>
 
+export const noteHandlers = {
+  capture: handling(capture),
+  feed: handling(feed),
+  live,
+  resolve: handling(resolve),
+  discard: handling(discard),
+  edit: handling(edit),
+  overlay,
+} as const
+
 const routes = Layer.mergeAll(
-  HttpRouter.add('POST', '/notes/capture', handling(capture)),
-  HttpRouter.add('GET', '/notes/feed', handling(feed)),
-  HttpRouter.add('GET', '/notes/live', live),
-  HttpRouter.add('POST', '/notes/resolve', handling(resolve)),
-  HttpRouter.add('POST', '/notes/discard', handling(discard)),
-  HttpRouter.add('POST', '/notes/edit', handling(edit)),
-  HttpRouter.add('GET', '/notes.js', overlay),
+  HttpRouter.add('POST', '/notes/capture', noteHandlers.capture),
+  HttpRouter.add('GET', '/notes/feed', noteHandlers.feed),
+  HttpRouter.add('GET', '/notes/live', noteHandlers.live),
+  HttpRouter.add('POST', '/notes/resolve', noteHandlers.resolve),
+  HttpRouter.add('POST', '/notes/discard', noteHandlers.discard),
+  HttpRouter.add('POST', '/notes/edit', noteHandlers.edit),
+  HttpRouter.add('GET', '/notes.js', noteHandlers.overlay),
   HttpRouter.add('GET', '/ui.js', uiScript),
   HttpRouter.add('GET', '/', page),
 )
 
 # Mounting the agent's tools
 
-The agent's tools ride the same router. `McpServer.layerHttp` registers a JSON-RPC route at `/mcp`, and `McpServer.toolkit` binds the toolkit and its handlers to it, so the agent reaches the tools where the overlay reaches the API. The handlers draw on the store, which the server provides once beneath everything.
+The agent's tools ride the same router. `McpServer.layerHttp` registers a JSON-RPC route, and `McpServer.toolkit` binds the toolkit and its handlers to it, so the agent reaches the tools where the overlay reaches the API. The handlers draw on the store, which the server provides once beneath everything.
+
+The path is an argument for the same reason the note handlers are named apart from their routes. This daemon mounts the tools at a root of its own; a proxy sharing an origin with an application mounts them under its corner, where nothing the application serves can be mistaken for them.
 
 {{ version = ${version} }}
 
 =>
 
-const mcp = McpServer.toolkit(toolkit).pipe(
-  Layer.provide(handlers),
-  Layer.provide(McpServer.layerHttp({ name: 'loom', version: '::[version]', path: '/mcp' })),
-)
+export const mcpAt = (path: HttpRouter.PathInput) =>
+  McpServer.toolkit(toolkit).pipe(
+    Layer.provide(handlers),
+    Layer.provide(McpServer.layerHttp({ name: 'loom', version: '::[version]', path })),
+  )
+
+const mcp = mcpAt('/mcp')
 
 # Logging
 

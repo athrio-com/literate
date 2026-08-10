@@ -111,7 +111,9 @@ const h = html<Message>()
 
 # Talking to the server
 
-The overlay reads its own script tag for where to reach the server and which project it belongs to. The tag's source names the origin, and its `data-loom-project` attribute names the project. `config` reads that pair, falling back to the page's own origin so the overlay still runs when a page loads it some other way.
+The overlay reads its own script tag for where to reach the server and which project it belongs to. The tag's source names where the server answers, and its `data-loom-project` attribute names the project. `config` reads that pair, falling back to the page's own origin so the overlay still runs when a page loads it some other way.
+
+The base is the directory the script was served from rather than its origin, and that one choice is what lets the server sit anywhere. A daemon answering on its own port serves the script at the root and gets the root back. A proxy that has folded the server in beside an application it does not own serves the script under a path of its own, and gets that path back — so the overlay reaches the same routes without being told where they moved.
 
 The commands carry the network over two shared pieces. `fetchFeed` reads the notes. `settle` writes: it posts to an endpoint and then rereads the feed, so a write refreshes the card in one step.
 
@@ -146,11 +148,13 @@ const settle = (base: string, project: string, path: string, body: unknown) =>
     Effect.catchCause(() => Effect.succeed(Unreachable())),
   )
 
+const directoryOf = (url: URL): string => url.href.slice(0, url.href.lastIndexOf('/'))
+
 const config = (): { readonly base: string; readonly project: string } =>
   Option.match(Option.fromNullishOr(document.querySelector('script[data-loom-project]')), {
     onNone: () => ({ base: location.origin, project: 'local' }),
     onSome: (tag) => ({
-      base: new URL(tag.getAttribute('src') ?? location.href, location.href).origin,
+      base: directoryOf(new URL(tag.getAttribute('src') ?? location.href, location.href)),
       project: tag.getAttribute('data-loom-project') ?? 'local',
     }),
   })

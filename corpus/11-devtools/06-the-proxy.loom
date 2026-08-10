@@ -1,0 +1,211 @@
+---
+Part XI, Chapter 6: The proxy
+Package: packages/loom-devtools/src/
+Language: TypeScript
+---
+
+# The proxy
+
+Loom Design stands in front of an application it did not write. The application answers on its own port and knows nothing about being watched; Design answers on another, forwards every request to it, and hands back what comes home. The browser therefore sees one origin, which is what makes the page readable from the tool around it.
+
+Forwarding is also where the overlay enters. As HTML passes through, Design appends the script tag that loads it. Nothing is added to the application's dependencies, nothing is changed in its build, and the bundler it happens to use never comes into it — the transport carries the injection instead, so a framework Design has never heard of works the same as one it has.
+
+## Where Design keeps itself
+
+Design serves the application at every path but its own, so its own routes need a corner the application will not reach for. Everything Design answers itself sits under one mount, and everything else goes forward.
+
+The overlay finds those routes from where its script was served rather than from a port, so mounting them here rather than at a root costs nothing on the browser side.
+
+=>
+
+import { Effect, Layer, Option } from 'effect'
+import {
+  HttpRouter,
+  HttpServerRequest,
+  HttpServerResponse,
+} from 'effect/unstable/http'
+import { NodeHttpServer } from '@effect/platform-node'
+import { createServer } from 'node:http'
+import { mcpAt, noteHandlers } from './api'
+import { NoteStore } from './store'
+
+const MOUNT = '/__loom'
+
+## The tag the application never carries
+
+The overlay arrives as one script tag appended to the closing body, so it loads after the application has laid its own scripts out. A response with no closing body — a fragment, or markup a framework streamed without one — takes the tag at the end instead, which is where a browser would have put it anyway.
+
+The project travels on the tag, since the store keys every note by project and a proxy is the only party here that knows which application it was pointed at.
+
+=>
+
+const CLOSING_BODY = /<\/body>/i
+
+const tagFor = (project: string): string =>
+  `<script type="module" src="${MOUNT}/notes.js" data-loom-project="${project}"></script>`
+
+const injected = (html: string, project: string): string =>
+  CLOSING_BODY.test(html)
+    ? html.replace(CLOSING_BODY, () => `${tagFor(project)}</body>`)
+    : `${html}${tagFor(project)}`
+
+## Passing a request through
+
+A forwarded request keeps its method, its path, its query, and its body, and drops the headers that describe the hop rather than the message. `host` would name the proxy to an application expecting itself, and the framing headers describe a connection that ends here.
+
+One header is set rather than dropped. Asking the application for an identity encoding keeps the HTML injectable, since a compressed body cannot have a tag appended to it, and compression over a loopback interface buys nothing to begin with.
+
+=>
+
+const HOP = new Set([
+  'accept-encoding',
+  'connection',
+  'content-length',
+  'host',
+  'keep-alive',
+  'proxy-authenticate',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+])
+
+const carried = (headers: Record<string, string>): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(headers).filter(([name]) => !HOP.has(name.toLowerCase())),
+  )
+
+const sent = (
+  request: HttpServerRequest.HttpServerRequest,
+): Effect.Effect<Uint8Array | undefined> =>
+  request.method === 'GET' || request.method === 'HEAD'
+    ? Effect.succeed(undefined)
+    : Effect.map(request.arrayBuffer, (raw) => new Uint8Array(raw)).pipe(
+        Effect.catchCause(() => Effect.succeed(undefined)),
+      )
+
+~
+
+A redirect is followed by the browser rather than by the proxy, so its destination has to name the proxy and not the application. Where the application sends a reader to an address on its own origin, Design keeps the path and drops the origin, and the reader stays inside the frame. An address anywhere else is left alone, because it was always meant to leave.
+
+=>
+
+const relocated = (held: Response, origin: string): Record<string, string> =>
+  Option.match(Option.fromNullishOr(held.headers.get('location')), {
+    onNone: () => ({}),
+    onSome: (where) => ({
+      location: where.startsWith(origin) ? where.slice(origin.length) : where,
+    }),
+  })
+
+~
+
+What comes home is either a page or anything else. A page is read as text so the tag can be appended; everything else passes through as the bytes it arrived as, wearing the type the application gave it. An application that is not answering yields a bad-gateway rather than a hang, so pointing Design at a port nothing is listening on reads as the mistake it is.
+
+=>
+
+const answering = (held: Response, origin: string, project: string, type: string) =>
+  type.includes('text/html')
+    ? Effect.map(Effect.promise(() => held.text()), (html) =>
+        HttpServerResponse.text(injected(html, project), {
+          status: held.status,
+          contentType: type,
+          headers: relocated(held, origin),
+        }),
+      )
+    : Effect.map(Effect.promise(() => held.arrayBuffer()), (raw) =>
+        HttpServerResponse.uint8Array(new Uint8Array(raw), {
+          status: held.status,
+          contentType: type,
+          headers: relocated(held, origin),
+        }),
+      )
+
+const silent = Effect.succeed(
+  HttpServerResponse.text('The application is not answering', { status: 502 }),
+)
+
+const forward = (origin: string, project: string) =>
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest
+    const url = new URL(request.url, 'http://localhost')
+    const body = yield* sent(request)
+    const held = yield* Effect.tryPromise(() =>
+      fetch(`${origin}${url.pathname}${url.search}`, {
+        method: request.method,
+        headers: { ...carried(request.headers), 'accept-encoding': 'identity' },
+        body,
+        redirect: 'manual',
+      }),
+    )
+    return yield* answering(
+      held,
+      origin,
+      project,
+      held.headers.get('content-type') ?? 'application/octet-stream',
+    )
+  }).pipe(Effect.catchCause(() => silent))
+
+## The server {Tangle}[design.ts]
+
+Design's own routes are the note routes the daemon serves, mounted under its corner rather than at a root, and the agent's tools beside them. The last route is every other request, which is the application.
+
+Order settles the rest. A router answers the most particular route that matches, so the mount is reached before the catch-all, and an application free to own every path but one keeps the paths it has.
+
+=>
+
+::[Where Design keeps itself]
+
+::[The tag the application never carries]
+
+::[Passing a request through]
+
+const routes = (origin: string, project: string) =>
+  Layer.mergeAll(
+    HttpRouter.add('POST', `${MOUNT}/notes/capture`, noteHandlers.capture),
+    HttpRouter.add('GET', `${MOUNT}/notes/feed`, noteHandlers.feed),
+    HttpRouter.add('GET', `${MOUNT}/notes/live`, noteHandlers.live),
+    HttpRouter.add('POST', `${MOUNT}/notes/resolve`, noteHandlers.resolve),
+    HttpRouter.add('POST', `${MOUNT}/notes/discard`, noteHandlers.discard),
+    HttpRouter.add('POST', `${MOUNT}/notes/edit`, noteHandlers.edit),
+    HttpRouter.add('GET', `${MOUNT}/notes.js`, noteHandlers.overlay),
+    mcpAt(`${MOUNT}/mcp`),
+    HttpRouter.add('*', '*', forward(origin, project)),
+  )
+
+export const designServer = (options: {
+  readonly port: number
+  readonly application: string
+  readonly project: string
+  readonly store: Layer.Layer<NoteStore>
+}) =>
+  HttpRouter.serve(routes(options.application, options.project)).pipe(
+    Layer.provide(options.store),
+    Layer.provide(NodeHttpServer.layer(() => createServer(), { port: options.port })),
+  )
+
+## Running it {Tangle}[design-serve.ts]
+
+Design starts from its own runtime edge, under the devtools logger, over the Node platform. The application it stands in front of is named by `LOOM_APP`, the project its notes belong to by `LOOM_PROJECT`, and the port it answers on by `PORT`.
+
+Naming the application rather than discovering it is deliberate. Design forwards to whatever is listening there and asks it for nothing, so the same command reaches a Vite dev server, a Rails app, or the site's own Effect server without knowing which it found.
+
+=>
+
+import { Effect as Runtime, Layer as Wiring } from 'effect'
+import { NodeRuntime, NodeServices } from '@effect/platform-node'
+import { devtoolsLogger } from './api'
+import { localStore } from './store'
+import { designServer } from './design'
+
+NodeRuntime.runMain(
+  Wiring.launch(
+    designServer({
+      port: Number(process.env.PORT ?? 5710),
+      application: process.env.LOOM_APP ?? 'http://localhost:5199',
+      project: process.env.LOOM_PROJECT ?? 'local',
+      store: localStore(),
+    }),
+  ).pipe(Runtime.provide(devtoolsLogger), Runtime.provide(NodeServices.layer)),
+)

@@ -12,7 +12,7 @@ The service runs from source rather than a bundle, so the package ships its reso
 
 ## The manifest {Tangle}[package.json]
 
-The manifest names the package and what it exports — the note schemas and the Vite plugin, the two modules a consumer reaches for. The store, the API, and the agent's tools are the service's own; a page reaches them over HTTP, not through an import. The service runs on the Node platform, which Bun runs unchanged. Its store leans on Effect's SQL layer with three drivers — Postgres for the shared service, and `bun:sqlite` or `node:sqlite` for the Vite plugin's file, one per runtime. The overlay leans on Foldkit, Effect, and `clsx`, and the build, which runs under Bun, on the Tailwind command line. The `build` script compiles the overlay and the plugin; `serve` runs the service straight from source. The `./vite` export resolves to the plugin's source under Bun and to the built `dist/vite.js` under Node, so each runtime loads the form it runs.
+The manifest names the package and what it exports — the note schemas, the proxy, and the store, the modules a host reaches for. The API and the agent's tools stay the service's own; a page reaches them over HTTP, not through an import. The service runs on the Node platform, which Bun runs unchanged. Its store leans on Effect's SQL layer with three drivers — Postgres for a shared service, and `bun:sqlite` or `node:sqlite` for the file a single machine keeps, one per runtime. The overlay leans on Foldkit, Effect, and `clsx`, and the build, which runs under Bun, on the Tailwind command line. The `build` script compiles the browser assets; `serve` runs the notes service straight from source, and `design` runs the proxy the same way.
 
 {{ version = ${version} }}
 
@@ -26,14 +26,13 @@ The manifest names the package and what it exports — the note schemas and the 
   "scripts": {
     "build": "bun build.ts",
     "serve": "bun src/serve.ts",
+    "design": "bun src/design-serve.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json"
   },
   "exports": {
     "./note": "./src/note.ts",
-    "./vite": {
-      "bun": "./src/vite.ts",
-      "default": "./dist/vite.js"
-    }
+    "./design": "./src/design.ts",
+    "./store": "./src/store.ts"
   },
   "dependencies": {
     "foldkit": "workspace:*",
@@ -106,8 +105,9 @@ The Bun configuration checks everything that runs under Bun: the Vite plugin, th
     "types": ["bun", "node"]
   },
   "include": [
-    "src/vite.ts",
     "build.ts",
+    "src/design.ts",
+    "src/design-serve.ts",
     "src/store.ts",
     "src/api.ts",
     "src/mcp.ts",
@@ -177,7 +177,7 @@ One base rule earns its place. Tailwind draws a border's style from a `--tw-bord
 
 ## The build {Tangle}[build.ts]
 
-The build produces the browser assets a page loads and the plugin a Node host loads. It compiles the overlay's Tailwind into a stylesheet, rewrites every `:root` to `:host` so the theme variables live inside the shadow root rather than the document, bundles the overlay into a single browser script, and splices the stylesheet into the `__LOOM_NOTES_CSS__` placeholder the overlay left for it. The stylesheet is escaped first, so quotes and newlines survive inside the string literal that carries it. It also bundles the Vite plugin into `dist/vite.js`, a Node module with the daemon's source inlined, so a Node-hosted Vite loads the plugin without following the extensionless imports only Bun resolves. It runs from a Bun runtime edge, the filesystem provided by Bun's services.
+The build produces the browser assets a page loads. It compiles the overlay's Tailwind into a stylesheet, rewrites every `:root` to `:host` so the theme variables live inside the shadow root rather than the document, bundles the overlay into a single browser script, and splices the stylesheet into the `__LOOM_NOTES_CSS__` placeholder the overlay left for it. The stylesheet is escaped first, so quotes and newlines survive inside the string literal that carries it. It runs from a Bun runtime edge, the filesystem provided by Bun's services.
 
 =>
 
@@ -229,19 +229,7 @@ const program = Effect.gen(function* () {
   const uiBundle = yield* Effect.promise(() => uiBuilt.outputs[0].text())
   yield* fs.writeFileString(join(dist, 'ui.js'), uiBundle)
 
-  const pluginBuilt = yield* Effect.tryPromise(() =>
-    Bun.build({
-      entrypoints: [join(src, 'vite.ts')],
-      target: 'node',
-      packages: 'external',
-    }),
-  )
-  yield* fs.writeFileString(
-    join(dist, 'vite.js'),
-    yield* Effect.promise(() => pluginBuilt.outputs[0].text()),
-  )
-
-  yield* Effect.log('built dist/overlay.js, dist/ui.js, and dist/vite.js')
+  yield* Effect.log('built dist/overlay.js and dist/ui.js')
 }).pipe(Effect.provide(BunServices.layer))
 
 BunRuntime.runMain(program)

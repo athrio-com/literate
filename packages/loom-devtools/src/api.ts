@@ -123,22 +123,35 @@ const handling = <R>(
     ),
   )
 
+export const noteHandlers = {
+  capture: handling(capture),
+  feed: handling(feed),
+  live,
+  resolve: handling(resolve),
+  discard: handling(discard),
+  edit: handling(edit),
+  overlay,
+} as const
+
 const routes = Layer.mergeAll(
-  HttpRouter.add('POST', '/notes/capture', handling(capture)),
-  HttpRouter.add('GET', '/notes/feed', handling(feed)),
-  HttpRouter.add('GET', '/notes/live', live),
-  HttpRouter.add('POST', '/notes/resolve', handling(resolve)),
-  HttpRouter.add('POST', '/notes/discard', handling(discard)),
-  HttpRouter.add('POST', '/notes/edit', handling(edit)),
-  HttpRouter.add('GET', '/notes.js', overlay),
+  HttpRouter.add('POST', '/notes/capture', noteHandlers.capture),
+  HttpRouter.add('GET', '/notes/feed', noteHandlers.feed),
+  HttpRouter.add('GET', '/notes/live', noteHandlers.live),
+  HttpRouter.add('POST', '/notes/resolve', noteHandlers.resolve),
+  HttpRouter.add('POST', '/notes/discard', noteHandlers.discard),
+  HttpRouter.add('POST', '/notes/edit', noteHandlers.edit),
+  HttpRouter.add('GET', '/notes.js', noteHandlers.overlay),
   HttpRouter.add('GET', '/ui.js', uiScript),
   HttpRouter.add('GET', '/', page),
 )
 
-const mcp = McpServer.toolkit(toolkit).pipe(
-  Layer.provide(handlers),
-  Layer.provide(McpServer.layerHttp({ name: 'loom', version: '0.0.9', path: '/mcp' })),
-)
+export const mcpAt = (path: HttpRouter.PathInput) =>
+  McpServer.toolkit(toolkit).pipe(
+    Layer.provide(handlers),
+    Layer.provide(McpServer.layerHttp({ name: 'loom', version: '0.0.9', path })),
+  )
+
+const mcp = mcpAt('/mcp')
 
 import { Logger } from 'effect'
 

@@ -232,3 +232,19 @@ export const sqliteStore = (filename: string): Layer.Layer<NoteStore> =>
   Layer.effect(NoteStore, NoteStore.make).pipe(
     Layer.provide(sqliteClientLayer(filename)),
   )
+
+import { mkdirSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { dirname, join } from 'node:path'
+
+export const notesFile = (): string =>
+  process.env.LOOM_NOTES_DB ?? join(homedir(), '.loom', 'notes.sqlite')
+
+export const localStore = (): Layer.Layer<NoteStore> =>
+  Layer.unwrap(
+    Effect.sync(() => {
+      const file = notesFile()
+      mkdirSync(dirname(file), { recursive: true })
+      return sqliteStore(file)
+    }),
+  )

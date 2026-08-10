@@ -293,9 +293,9 @@ export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
   static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(PgLive))
 }
 
-# A SQLite file for the plugin
+# A SQLite file on one machine
 
-The Vite plugin runs the same store over a SQLite file, so a Vite app carries the Devtools with no database to stand up. `sqliteStore` takes a filename and lays the store's `make` over a SQLite client that opens the file.
+A tool running on a laptop wants no database to stand up, so the same store runs over a SQLite file. `sqliteStore` takes a filename and lays the store's `make` over a SQLite client that opens the file.
 
 Which client it opens with depends on the runtime. Bun and Node each ship their own SQLite — `bun:sqlite` and `node:sqlite` — and neither module loads on the other, so `sqliteClientLayer` imports the matching driver at runtime and never names the wrong one. Under Bun it opens the file with `@effect/sql-sqlite-bun`, creating the file when it is missing; under Node, with `@effect/sql-sqlite-node`. Either way the schema and its migrations are unchanged, because the store's SQL is the portable subset both the SQLite and the Postgres dialects speak.
 
@@ -321,6 +321,30 @@ export const sqliteStore = (filename: string): Layer.Layer<NoteStore> =>
     Layer.provide(sqliteClientLayer(filename)),
   )
 
+~
+
+The tool chooses that file rather than taking one from whatever project it was started in. A note is keyed by its project already, so one store holds every project a machine works on, and an agent has one place to read them from instead of a database per checkout. `LOOM_NOTES_DB` overrides the choice; nothing else needs to.
+
+The directory is made before the client opens the file, since a driver asked for a database inside a directory that does not exist reports a failure that reads as a broken store rather than a missing folder.
+
+=>
+
+import { mkdirSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { dirname, join } from 'node:path'
+
+export const notesFile = (): string =>
+  process.env.LOOM_NOTES_DB ?? join(homedir(), '.loom', 'notes.sqlite')
+
+export const localStore = (): Layer.Layer<NoteStore> =>
+  Layer.unwrap(
+    Effect.sync(() => {
+      const file = notesFile()
+      mkdirSync(dirname(file), { recursive: true })
+      return sqliteStore(file)
+    }),
+  )
+
 # The module {Tangle}
 
 =>
@@ -343,4 +367,4 @@ export const sqliteStore = (filename: string): Layer.Layer<NoteStore> =>
 
 ::[The store service]
 
-::[A SQLite file for the plugin]
+::[A SQLite file on one machine]

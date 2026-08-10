@@ -6,14 +6,13 @@
   "scripts": {
     "build": "bun build.ts",
     "serve": "bun src/serve.ts",
+    "design": "bun src/design-serve.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json"
   },
   "exports": {
     "./note": "./src/note.ts",
-    "./vite": {
-      "bun": "./src/vite.ts",
-      "default": "./dist/vite.js"
-    }
+    "./design": "./src/design.ts",
+    "./store": "./src/store.ts"
   },
   "dependencies": {
     "foldkit": "workspace:*",

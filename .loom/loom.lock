@@ -21,6 +21,8 @@
     "packages/loom-devtools/docker-compose.yml",
     "packages/loom-devtools/package.json",
     "packages/loom-devtools/src/api.ts",
+    "packages/loom-devtools/src/design-serve.ts",
+    "packages/loom-devtools/src/design.ts",
     "packages/loom-devtools/src/mcp.ts",
     "packages/loom-devtools/src/note.ts",
     "packages/loom-devtools/src/overlay.css",

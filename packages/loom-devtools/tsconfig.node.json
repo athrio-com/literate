@@ -11,8 +11,9 @@
     "types": ["bun", "node"]
   },
   "include": [
-    "src/vite.ts",
     "build.ts",
+    "src/design.ts",
+    "src/design-serve.ts",
     "src/store.ts",
     "src/api.ts",
     "src/mcp.ts",

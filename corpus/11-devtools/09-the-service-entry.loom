@@ -6,20 +6,23 @@ Language: TypeScript
 
 # The service entry
 
-The service starts here. This is the runtime edge — the one place an Effect program begins — that launches the notes server on its port, under the devtools logger, over the Node platform. The container runs this file under Bun, which runs the Node platform unchanged, and a developer runs it the same way with `bun serve`.
+The service starts here. This is the runtime edge — the one place an Effect program begins — that launches the notes server on its port, under the devtools logger, over the Node platform. A developer runs it with `bun serve`, and it runs the same on Node.
 
 The port comes from the environment, and falls back to 5710 when nothing sets it. The devtools logger sits beneath the server, so every line the server writes lands in `devtools.log`, and the Node platform's services supply the filesystem the logger and the store draw on. `Layer.launch` runs the server until the process ends.
+
+The store is the local one — a SQLite file the service names for itself. A service on a laptop should need nothing stood up before it starts, so a database it must be handed is the wrong default. Where a team shares a store instead, `NoteStore.layer` over Postgres is the one to pass, and the choice reads at the call rather than in the environment.
 
 =>
 
 import { Effect, Layer } from 'effect'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { notesServer, devtoolsLogger } from './api'
+import { localStore } from './store'
 
 const port = Number(process.env.PORT ?? 5710)
 
 NodeRuntime.runMain(
-  Layer.launch(notesServer(port)).pipe(
+  Layer.launch(notesServer(port, localStore())).pipe(
     Effect.provide(devtoolsLogger),
     Effect.provide(NodeServices.layer),
   ),
