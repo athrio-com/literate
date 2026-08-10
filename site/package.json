@@ -11,7 +11,7 @@
     "prebuild": "bun run content",
     "build": "bunx --bun vite build",
     "serve": "bun src/server.ts",
-    "preview": "bunx --bun vite preview --port 5199"
+    "preview": "bun run build && bun run serve"
   },
   "dependencies": {
     "@athrio/foldkit-ssr": "workspace:*",

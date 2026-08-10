@@ -69,6 +69,8 @@ The `@athrio/loom-devtools` package is a development dependency alone, since its
 
 Development runs the same server production runs, so a developer reads the pages a reader would. The `dev` command starts two processes for that: Vite, which holds the client and answers on its own port, and the server in front of it on 5199, told by `LOOM_DEV` to render each page as it is asked for. Only the server is watched. It restarts on a change and Vite carries on, which is why a change shows up on the next reload rather than in the running page.
 
+Every other way of running the site goes through that same server. The `build` command writes the bundle to `dist`, `serve` runs the server over what it wrote — the pair the image runs — and `preview` is simply the two in order, for looking at the built site before shipping it. Vite's own preview server is not among them, and deliberately so: it hands out `dist` as files with nothing in front, so it renders no page, and what it shows is not what a reader would be sent.
+
 =>
 
 {
@@ -84,7 +86,7 @@ Development runs the same server production runs, so a developer reads the pages
     "prebuild": "bun run content",
     "build": "bunx --bun vite build",
     "serve": "bun src/server.ts",
-    "preview": "bunx --bun vite preview --port 5199"
+    "preview": "bun run build && bun run serve"
   },
   "dependencies": {
     "@athrio/foldkit-ssr": "workspace:*",
