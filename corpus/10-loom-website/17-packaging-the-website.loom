@@ -67,6 +67,8 @@ Each weave is pointed at a *file* rather than at a directory, because weaving ta
 
 The `@athrio/loom-devtools` package is a development dependency alone, since its plugin runs only while Vite serves and never reaches the bundle.
 
+Development runs the same server production runs, so a developer reads the pages a reader would. The `dev` command starts two processes for that: Vite, which holds the client and answers on its own port, and the server in front of it on 5199, told by `LOOM_DEV` to render each page as it is asked for. Only the server is watched. It restarts on a change and Vite carries on, which is why a change shows up on the next reload rather than in the running page.
+
 =>
 
 {
@@ -78,7 +80,7 @@ The `@athrio/loom-devtools` package is a development dependency alone, since its
     "weave:docs": "bunx @athrio/loom weave ../docs/index.loom src/docs.woven.json",
     "content": "bun run weave:docs",
     "predev": "bun run content",
-    "dev": "bunx --bun vite --port 5199",
+    "dev": "bunx --bun vite & vite=$!; trap 'kill $vite' EXIT; LOOM_DEV=1 bun --watch src/server.ts",
     "prebuild": "bun run content",
     "build": "bunx --bun vite build",
     "serve": "bun src/server.ts",
@@ -154,15 +156,28 @@ The build is Vite with the page as its input, targeting a runtime recent enough 
 
 It also adds the Loom Devtools plugin, `loomDevtools`. The plugin runs the Devtools while Vite serves — the notes server over a SQLite file, and the review bar injected into every page — so the website carries the devtools in development the way a browser's own ride a page, with nothing else to start. It runs only while Vite serves, never in the production build, so nothing of it reaches what the server renders. The project it is named for is the one its notes belong to.
 
+While serving, Vite sits behind the site's own server rather than in front of a reader, so it takes the port the server proxies to — `VITE_PORT`, or 5200, the same default the server reads. Its hot client rides along with every page and opens a socket back to wherever that page came from. Pages now come from the site's own server, which speaks no such protocol, so `clientPort` aims the socket at Vite by hand.
+
+What arrives down that socket is a reload rather than a patch. Foldkit accepts no update in place, so Vite falls back to reloading the page, and a reload is a whole render through the server — which is the point of running the server here at all. Foldkit hears the reload coming and preserves the model across it, so the page returns where the developer left it.
+
+Naming the site a multi-page one drops Vite's single-page fallback. A path outside the site's routes then comes back not-found in development exactly as it does in production, rather than quietly returning the shell. The server asks for `index.html` by name, which a multi-page Vite still transforms.
+
 =>
 
 import { defineConfig } from 'vite'
 import { fileURLToPath } from 'node:url'
 import { loomDevtools } from '@athrio/loom-devtools/vite'
 
+const vitePort = Number(process.env.VITE_PORT ?? 5200)
+
 export default defineConfig({
   esbuild: { target: 'es2022' },
+  appType: 'mpa',
   plugins: [loomDevtools({ project: 'loom-website' })],
+  server: {
+    port: vitePort,
+    hmr: { clientPort: vitePort },
+  },
   build: {
     target: 'es2022',
     outDir: 'dist',

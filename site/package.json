@@ -7,7 +7,7 @@
     "weave:docs": "bunx @athrio/loom weave ../docs/index.loom src/docs.woven.json",
     "content": "bun run weave:docs",
     "predev": "bun run content",
-    "dev": "bunx --bun vite --port 5199",
+    "dev": "bunx --bun vite & vite=$!; trap 'kill $vite' EXIT; LOOM_DEV=1 bun --watch src/server.ts",
     "prebuild": "bun run content",
     "build": "bunx --bun vite build",
     "serve": "bun src/server.ts",

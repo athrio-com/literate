@@ -6,9 +6,11 @@ Language: TypeScript
 
 # The server
 
-The server renders every page of the site to HTML on the way to the browser, so a reader — and a crawler — sees the page before the client boots. It is a small Effect HTTP server started from a Bun runtime edge: it renders each of the five routes once at startup, then answers whichever one a request asks for, along with the built assets. What passes to the client is the model, inlined for hydration to read.
+The server renders every page of the site to HTML on the way to the browser, so a reader — and a crawler — sees the page before the client boots. It is a small Effect HTTP server started from a Bun runtime edge, and the same server answers in development as in production. What a developer looks at is therefore what a reader gets. What passes to the client is the model, inlined for hydration to read.
 
 Rendering every route matters because the site navigates by ordinary links. A nav entry carries a real `href`, so a click leaves the page and asks the server for the next one, and a reader who reloads or arrives from outside asks for a route directly. A server that answered only the landing would give every other page a not-found.
+
+The two modes differ in one thing: where a page and an asset come from. In production both are built already, so the server renders all five routes once at startup from the shell in `dist` and serves the bundle beside it. In development nothing is built, so the server renders a page each time one is asked for and hands every other request to Vite. A request is read the same way either way, which is what keeps the two honest about each other.
 
 The server stays clear of the client runtime. It renders, inlines, and serves; the browser hydrates and takes over. So each thing it imports leaves the runtime out of its build — even the pre-boot capture script comes from `@athrio/foldkit-hydration/prehydration`, a deep path that skips the hydration strategy, because that strategy reaches into Foldkit's runtime and a server runs none of it.
 
@@ -28,7 +30,7 @@ if (!('window' in scope)) {
 
 The server loads the shim first, before any Foldkit module. From `effect` come `Effect`, the `FileSystem` that reads the built shell and assets, the `Option` that fills the model's empty fields and looks a path up among the rendered pages, the `Schema` that parses what the npm registry returns, and the `Context` and `Layer` that define the server and wire it. From `effect/unstable/http` come the request and the responses. `@effect/platform-bun` supplies the Bun HTTP server, its file services, and the runtime edge. Foldkit lends `renderStatic` for the render, and, through `@athrio/foldkit-ssr`, the render itself; `@athrio/foldkit-hydration/prehydration` lends the capture script the page runs before it boots.
 
-The site's own modules name the routes and their paths. The `Route` schema lists every page the model admits, and the `pathOf` function gives each route the path it answers on — the same function the Notes overlay stamps a note with, so a rendered page and a note agree on where the reader was standing.
+The site's own modules name the routes and their paths. The `Route` schema lists every page the model admits, and the `pathOf` function gives each route the path it answers on — the same function the Notes overlay stamps a note with, so a rendered page and a note agree on where the reader was standing. The `routeOf` function reads that mapping the other way, which is how the development server turns a path it has just been asked for into the route it must render.
 
 =>
 
@@ -47,7 +49,7 @@ import { PREHYDRATION_CAPTURE_SCRIPT } from '@athrio/foldkit-hydration/prehydrat
 import { FoldkitRender } from '@athrio/foldkit-ssr'
 import { view } from './view'
 import { Route, type Model } from './model'
-import { pathOf, seedNotes } from './devtools'
+import { pathOf, routeOf, seedNotes } from './devtools'
 
 const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 
@@ -147,38 +149,11 @@ const pageOf = (
     return withSeed(withTitle(withBody(shell, body), document.title), model)
   })
 
-## Rendering the whole site once
+## Everything rendered before the first request
 
-The site is rendered at startup and held, so no request pays for a render. It reads the built shell, asks npm for the latest release once, then renders a page for every route the model admits and keys each by the path it answers on.
+In production every page and every asset exists before a request arrives. The server reads the built shell, asks npm for the latest release once, and renders a page for every route the model admits, keying each by the path it answers on. `Route.literals` is that list, taken from the schema rather than repeated here, so a route added to the model gains a rendered page with no change to the server.
 
-`Route.literals` is that list, taken from the schema rather than repeated here, so a route added to the model gains a rendered page with no change to the server. `RenderedSite` is the result: the site, rendered, one page per path.
-
-=>
-
-export class RenderedSite extends Context.Service<RenderedSite>()('RenderedSite', {
-  make: Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
-    const render = yield* FoldkitRender
-    const shell = yield* fs.readFileString(join(distDir, 'index.html'))
-    const version = yield* latestVersion(seed.version)
-    const pages = yield* Effect.forEach(Route.literals, (route) =>
-      Effect.map(
-        pageOf(render, shell, { ...seed, route, version }),
-        (page) => [pathOf(route), page] as const,
-      ),
-    )
-    return { pages: new Map(pages) } as const
-  }),
-}) {
-  static readonly layer = Layer.effect(this, this.make).pipe(
-    Layer.provide(FoldkitRender.layer),
-    Layer.provide(BunServices.layer),
-  )
-}
-
-## Answering a request
-
-The server looks the request path up among the rendered pages. A path that names one returns it; anything else is a file under `dist` — the client bundle and its assets — with a plain not-found when there is none.
+Two answers come out of that work, and they are the whole of what a site owes the handler. The `pageAt` function looks a path up among the pages already rendered. The `assetAt` function reads a file from `dist` — the client bundle, the stylesheet, the marks — and falls back to a plain not-found when no such file exists. Both are handed the request's whole URL rather than its path, because the other site cares about the query and this one does not.
 
 =>
 
@@ -186,21 +161,127 @@ const notFound = Effect.succeed(
   HttpServerResponse.text('Not found', { status: 404 }),
 )
 
-const asset = (pathname: string) =>
-  HttpServerResponse.file(join(distDir, pathname)).pipe(
-    Effect.catchCause(() => notFound),
+const renderedSite = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem
+  const render = yield* FoldkitRender
+  const shell = yield* fs.readFileString(join(distDir, 'index.html'))
+  const version = yield* latestVersion(seed.version)
+  const rendered = yield* Effect.forEach(Route.literals, (route) =>
+    Effect.map(
+      pageOf(render, shell, { ...seed, route, version }),
+      (page) => [pathOf(route), page] as const,
+    ),
+  )
+  const pages = new Map(rendered)
+  return {
+    pageAt: (url: URL): Effect.Effect<Option.Option<string>> =>
+      Effect.succeed(Option.fromNullishOr(pages.get(url.pathname))),
+    assetAt: (url: URL) =>
+      HttpServerResponse.file(join(distDir, url.pathname)).pipe(
+        Effect.catchCause(() => notFound),
+      ),
+  } as const
+})
+
+## Nothing built, so render on the spot
+
+In development nothing is built. Vite holds the client instead — it transforms each module as the browser asks for it — so the server renders the HTML and hands Vite everything else. The reader's browser talks only to this server, on the one port; Vite listens behind it, at `VITE_PORT` or 5200, where the `dev` script puts it.
+
+What passes through carries its query, which is not a detail. Vite says what it means by a module in the query rather than the path: `?import` asks for the JSON page of documentation as a module, `?raw` asks for an operation's drawing as a string. Forward the path alone and Vite answers each honestly and uselessly, with the JSON as JSON and the drawing as an image, and the browser refuses a module that arrives wearing the wrong type.
+
+=>
+
+const VITE = `http://localhost:${Number(process.env.VITE_PORT ?? 5200)}`
+
+const fromVite = (target: string): Effect.Effect<HttpServerResponse.HttpServerResponse> =>
+  Effect.tryPromise(async () => {
+    const held = await fetch(`${VITE}${target}`)
+    return HttpServerResponse.uint8Array(new Uint8Array(await held.arrayBuffer()), {
+      status: held.status,
+      contentType: held.headers.get('content-type') ?? 'application/octet-stream',
+    })
+  }).pipe(Effect.catchCause(() => notFound))
+
+~
+
+The shell comes from Vite as well, fetched for each page rather than read from disk. Vite is what turns the authored page into one a browser can boot: it rewrites the module the page loads, and it lets the Devtools plugin hang its review bar on the page. A shell the server read for itself would carry neither.
+
+A server that cannot reach Vite still renders. It falls back to a bare shell holding the three spots the page substitutions look for, and says on the page what is missing — a clearer answer than a stalled request or a not-found.
+
+=>
+
+const WITHOUT_VITE =
+  '<!doctype html><html lang="en"><head><title>Loom</title></head>' +
+  '<body><p>Vite is not answering, so this page has no client. Run <code>bun run dev</code>.</p>' +
+  '<div id="root"></div></body></html>'
+
+const viteShell: Effect.Effect<string> = Effect.tryPromise(() =>
+  fetch(`${VITE}/index.html`).then((held) => held.text()),
+).pipe(Effect.catchCause(() => Effect.succeed(WITHOUT_VITE)))
+
+~
+
+The same two answers come back the other way round. The `pageAt` function renders on the spot: it asks `routeOf` whether the path names a route at all, and renders that route through the shell it has just fetched. The `assetAt` function is the proxy. The latest release is still read once, when the server starts, so a restart is what carries a new one onto the page.
+
+=>
+
+const liveSite = Effect.gen(function* () {
+  const render = yield* FoldkitRender
+  const version = yield* latestVersion(seed.version)
+  return {
+    pageAt: (url: URL): Effect.Effect<Option.Option<string>> =>
+      Option.match(routeOf(url.pathname), {
+        onNone: () => Effect.succeed(Option.none()),
+        onSome: (route) =>
+          Effect.map(
+            Effect.flatMap(viteShell, (shell) =>
+              pageOf(render, shell, { ...seed, route, version }),
+            ),
+            Option.some,
+          ),
+      }),
+    assetAt: (url: URL) => fromVite(`${url.pathname}${url.search}`),
+  } as const
+})
+
+## One site, wired two ways
+
+`Site` is what the handler asks for, and both halves above answer to it. Production wires the rendered site under it and development the live one, while the tag, the interface, and everything downstream stay as they are. Only the layer differs, which is what keeps the distance between the two modes down to one line at the entry point instead of a branch running through the server.
+
+=>
+
+export class Site extends Context.Service<Site>()('Site', {
+  make: renderedSite,
+}) {
+  static readonly layer = Layer.effect(this, this.make).pipe(
+    Layer.provide(FoldkitRender.layer),
+    Layer.provide(BunServices.layer),
   )
 
-const handle = (site: RenderedSite['Service'], pathname: string) =>
-  Option.match(Option.fromNullishOr(site.pages.get(pathname)), {
-    onSome: (page) =>
-      Effect.succeed(HttpServerResponse.text(page, { contentType: 'text/html' })),
-    onNone: () => asset(pathname),
-  })
+  static readonly liveLayer = Layer.effect(this, liveSite).pipe(
+    Layer.provide(FoldkitRender.layer),
+  )
+}
+
+## Answering a request
+
+The server asks the site for a page at the request URL. A path that names one returns it as HTML, and anything else is an asset — from `dist` or from Vite, according to which site is standing behind the tag.
+
+=>
+
+const handle = (site: Site['Service'], url: URL) =>
+  Effect.flatMap(
+    site.pageAt(url),
+    Option.match({
+      onSome: (page) =>
+        Effect.succeed(HttpServerResponse.text(page, { contentType: 'text/html' })),
+      onNone: () => site.assetAt(url),
+    }),
+  )
 
 ## Serving it {Tangle}[server.ts]
 
-The handler reads the request path and answers it. The server serves that handler over a Bun HTTP layer and launches from the Bun runtime edge.
+The handler reads the request path and answers it, and `LOOM_DEV` decides which site stands behind it. The server serves that handler over a Bun HTTP layer and launches from the Bun runtime edge. Both modes listen on the same port, so the address a developer keeps open is the address the site ships on.
 
 =>
 
@@ -212,22 +293,27 @@ The handler reads the request path and answers it. The server serves that handle
 
 ::[Rendering one page]
 
-::[Rendering the whole site once]
+::[Everything rendered before the first request]
+
+::[Nothing built, so render on the spot]
+
+::[One site, wired two ways]
 
 ::[Answering a request]
 
 const app = Effect.gen(function* () {
   const request = yield* HttpServerRequest.HttpServerRequest
-  const site = yield* RenderedSite
-  const pathname = new URL(request.url, 'http://localhost').pathname
-  return yield* handle(site, pathname)
+  const site = yield* Site
+  return yield* handle(site, new URL(request.url, 'http://localhost'))
 })
 
 const port = Number(process.env.PORT ?? 5199)
 
+const site = process.env.LOOM_DEV === '1' ? Site.liveLayer : Site.layer
+
 const server = HttpServer.serve(app).pipe(
   HttpServer.withLogAddress,
-  Layer.provide(RenderedSite.layer),
+  Layer.provide(site),
   Layer.provide(BunHttpServer.layer({ port })),
 )
 
