@@ -317,6 +317,11 @@ const design = (project: string, given: string, port: number) => {
   const application = addressOf(given)
   return Effect.gen(function* () {
     const directory = process.cwd()
+    yield* Effect.promise(async () => {
+      const { createRequire } = await import('node:module')
+      const scope = globalThis as { require?: unknown }
+      scope.require = scope.require ?? createRequire(import.meta.url)
+    })
     const proxy = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/design'),
     )

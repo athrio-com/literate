@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import { copyFileSync, existsSync } from 'node:fs'
 import { builtinModules, createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,8 +25,28 @@ const umd2esm = {
   },
 }
 
+const designAssets = {
+  name: 'design-assets',
+  closeBundle() {
+    const design = resolve(here, '..', 'loom-design')
+    const carried: ReadonlyArray<readonly [string, string]> = [
+      [resolve(design, 'dist', 'overlay.js'), 'overlay.js'],
+      [resolve(design, 'dist', 'ui.js'), 'ui.js'],
+      [resolve(design, 'src', 'ui.html'), 'ui.html'],
+    ]
+    for (const [from, name] of carried) {
+      if (!existsSync(from)) {
+        throw new Error(
+          `the CLI carries Design's ${name}, and ${from} is not built — run the Design build first`,
+        )
+      }
+      copyFileSync(from, resolve(here, 'dist', name))
+    }
+  },
+}
+
 export default defineConfig({
-  plugins: [umd2esm],
+  plugins: [umd2esm, designAssets],
   resolve: {
     conditions: ['node'],
     mainFields: ['main', 'module'],
@@ -51,7 +72,7 @@ export default defineConfig({
       fileName: () => 'main.js',
     },
     rollupOptions: {
-      external: [...nodeBuiltins, /^@athrio\/loom-design\//],
+      external: [...nodeBuiltins, 'bun:sqlite', 'node:sqlite'],
       output: { banner: '#!/usr/bin/env node' },
     },
   },

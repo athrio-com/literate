@@ -23,6 +23,7 @@
     "access": "public"
   },
   "scripts": {
+    "prebuild": "bun run --filter @athrio/loom-design build",
     "build": "vite build",
     "test": "bun test",
     "prepack": "bun run build"
