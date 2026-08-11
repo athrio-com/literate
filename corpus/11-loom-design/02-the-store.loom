@@ -1,12 +1,12 @@
 ---
 Part XI, Chapter 2: The store
-Package: packages/loom-devtools/src/store.ts
+Package: packages/loom-design/src/store.ts
 Language: TypeScript
 ---
 
 # The store
 
-The store is where notes live once they are made. It is a small SQL database, and the Devtools runs it two ways. The shared service keeps notes in PostgreSQL, a database it owns outside any project, so one store holds the notes of every app you point at — the stack-agnostic path any project reaches over the network. The Vite plugin keeps them in a SQLite file instead, one the plugin opens beside the app it serves, so a Vite project runs the Devtools with no database to stand up. The store's code neither knows nor cares which is underneath: Effect's SQL layer drives either, and everything below is written against the one SQL client.
+The store is where notes live once they are made. It is a small SQL database, and the Design runs it two ways. The shared service keeps notes in PostgreSQL, a database it owns outside any project, so one store holds the notes of every app you point at — the stack-agnostic path any project reaches over the network. The Vite plugin keeps them in a SQLite file instead, one the plugin opens beside the app it serves, so a Vite project runs the Design with no database to stand up. The store's code neither knows nor cares which is underneath: Effect's SQL layer drives either, and everything below is written against the one SQL client.
 
 The store does five things to a note: read a project's notes, record a new one, resolve one, discard one, and change one's words. It keeps a small registry of its projects too, each one's stable id paired with a name to show it by, so the agent can see which apps have been reviewed. Every note is keyed by the project it came from.
 

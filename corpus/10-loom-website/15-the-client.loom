@@ -38,7 +38,7 @@ import {
   Ticked,
   ToggledFullHeight,
 } from './model'
-import { aimableAt, highlightOf, pathOf, routeOf, seedNotes, targetOf } from './devtools'
+import { aimableAt, highlightOf, pathOf, routeOf, seedNotes, targetOf } from './design'
 import { CHARACTERS, RUN, struckBy } from './example'
 
 type Step = readonly [Model, ReadonlyArray<Command<Message>>]
@@ -198,7 +198,7 @@ const ApplyPicking = define('ApplyPicking', { picking: S.Boolean }, PickingAppli
 
 ## Filing a note
 
-Sending is the one devtools message that does more than set a field. An empty draft sends nothing, so a stray press of enter costs nothing. Otherwise the note takes the next number, the kind and pointer of whatever the reviewer aimed at, and the path of the page they are on; a note sent with nothing aimed at is a `chat` note about the page itself. Filing it clears the draft and the target together and swings the panel back to the open list, where the new note is.
+Sending is the one Design message that does more than set a field. An empty draft sends nothing, so a stray press of enter costs nothing. Otherwise the note takes the next number, the kind and pointer of whatever the reviewer aimed at, and the path of the page they are on; a note sent with nothing aimed at is a `chat` note about the page itself. Filing it clears the draft and the target together and swings the panel back to the open list, where the new note is.
 
 =>
 
@@ -232,7 +232,7 @@ Most messages set one field: the query, the focus clamped to the results, the lo
 
 Asking for full height is the one press that changes nothing at once. It runs the glide and waits: the page arrives at the card, `GrewCard` comes back, and only then does the height open. Giving the height back is immediate, since nothing has to travel first. Asking for a command's file toggles it, so pressing the same button twice closes what it opened. Selecting a section sets the active one and asks the preview to scroll to it. A section spotted while the reader scrolls sets the active one too, but runs nothing, so the outline follows the scroll rather than fighting it. Copying flashes the pressed button and runs its reset.
 
-The devtools messages mostly set a field as well, and the interesting ones are those that turn a tool off on the way past. Arming the picker shuts the notes panel, since a reviewer taking aim wants the page in front of them; disarming it leaves the panel as it found it. Escape cancels the aim. Picking a target disarms the picker, records what was aimed at, and opens the panel over the composer, which is where the reviewer is going next. Collapsing the bar puts away the panel and the picker with it, because a bar folded to a handle should leave nothing of itself on the page. Every message that changes whether the picker is armed also asks the command to write that to the document, so the cursor and the model never disagree.
+The Design messages mostly set a field as well, and the interesting ones are those that turn a tool off on the way past. Arming the picker shuts the notes panel, since a reviewer taking aim wants the page in front of them; disarming it leaves the panel as it found it. Escape cancels the aim. Picking a target disarms the picker, records what was aimed at, and opens the panel over the composer, which is where the reviewer is going next. Collapsing the bar puts away the panel and the picker with it, because a bar folded to a handle should leave nothing of itself on the page. Every message that changes whether the picker is armed also asks the command to write that to the document, so the cursor and the model never disagree.
 
 =>
 

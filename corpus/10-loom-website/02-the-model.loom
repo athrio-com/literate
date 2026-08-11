@@ -6,7 +6,7 @@ Language: TypeScript
 
 # The model
 
-The website is a Foldkit application, so it begins with the state a reader changes as they move through it. Every live region on the site draws from one flat struct: the page they are on, the chapter of the documentation they opened, the search palette over it, the document being typed out in the example, and the notes the devtools section has collected.
+The website is a Foldkit application, so it begins with the state a reader changes as they move through it. Every live region on the site draws from one flat struct: the page they are on, the chapter of the documentation they opened, the search palette over it, the document being typed out in the example, and the notes the Design section has collected.
 
 ## The state
 
@@ -20,7 +20,7 @@ Five fields carry the search palette, which opens over whatever page is showing:
 
 The player is the example's own state, held apart because it changes on every frame while the document is being typed. The version is the latest release, which the server reads from npm so the hero never falls behind. The copied field names the copy button flashing its confirmation, or the empty string when none is.
 
-Eight more fields belong to the devtools section, which runs its own tools over the page a reader is on rather than picturing them. The notes are the ones filed so far, and the sequence is the number the next one takes. Two flags say what the bar is showing: whether the notes panel stands open, and whether the bar has collapsed to its handle. The picking flag says the picker is armed and the next click files a note instead of following a link. The tab chooses which half of the notes the panel lists, the open ones or the resolved. What the reader aimed at is present only after they have clicked something, so it is an `Option` rather than a field with an empty meaning. The draft is the sentence being typed under it. The highlight is the rectangle drawn over whatever sits under the cursor, present only while the picker is armed and over something it may aim at.
+Eight more fields belong to the Design section, which runs its own tools over the page a reader is on rather than picturing them. The notes are the ones filed so far, and the sequence is the number the next one takes. Two flags say what the bar is showing: whether the notes panel stands open, and whether the bar has collapsed to its handle. The picking flag says the picker is armed and the next click files a note instead of following a link. The tab chooses which half of the notes the panel lists, the open ones or the resolved. What the reader aimed at is present only after they have clicked something, so it is an `Option` rather than a field with an empty meaning. The draft is the sentence being typed under it. The highlight is the rectangle drawn over whatever sits under the cursor, present only while the picker is armed and over something it may aim at.
 
 =>
 
@@ -83,7 +83,7 @@ export type Player = typeof Player.Type
 
 ## A note, and the thing it points at
 
-A note carries a number, the kind of thing it was left on, a pointer to that thing, the route the reader was on, the sentence itself, and whether it has been addressed. The three kinds are the ones devtools distinguishes everywhere: a `chat` note about the page as a whole, a `dom` note on an element, and a `loom` note on a fragment some `.loom` section wove. Each kind wears its own colour wherever a note appears.
+A note carries a number, the kind of thing it was left on, a pointer to that thing, the route the reader was on, the sentence itself, and whether it has been addressed. The three kinds are the ones Design distinguishes everywhere: a `chat` note about the page as a whole, a `dom` note on an element, and a `loom` note on a fragment some `.loom` section wove. Each kind wears its own colour wherever a note appears.
 
 A target is what the picker resolved an element to. Its label is the short name the picker paints beside the outline, and its pointer is the longer form the note keeps — for a woven fragment those differ, since the label names the section and the pointer names the chapter as well.
 
@@ -131,7 +131,7 @@ In the example they press play, pause it partway, send it back to the start, or 
 
 In the documentation they open a chapter, jump to one of its sections, and — scrolling by hand instead — let the outline follow them. They type into the palette and move its focus with the arrows. They copy a command, and a moment later the flash resets.
 
-In the devtools section they do more. They arm the picker and cancel it with escape, and while it is armed the pointer moves on and off the things it may aim at. They click one, and the section records the target. They open and close the notes panel, collapse the bar to its handle and pull it back out, and switch the panel between its open and resolved lists. On a single note they resolve it, put it back, or discard it. In the composer they clear the target they aimed at, type a sentence, and send it.
+In the Design section they do more. They arm the picker and cancel it with escape, and while it is armed the pointer moves on and off the things it may aim at. They click one, and the section records the target. They open and close the notes panel, collapse the bar to its handle and pull it back out, and switch the panel between its open and resolved lists. On a single note they resolve it, put it back, or discard it. In the composer they clear the target they aimed at, type a sentence, and send it.
 
 =>
 

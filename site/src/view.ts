@@ -1,7 +1,7 @@
 import { Match } from 'effect'
 import type { Document, Html } from 'foldkit/html'
 import { docsBar, footer, nav, pager, palette } from './chrome'
-import { devtools } from './devtools'
+import { design } from './design'
 import { example } from './example'
 import { documentationPage } from './docs-page'
 import { hero } from './hero'
@@ -52,7 +52,7 @@ const pageFor = (model: Model): Html =>
         example(model),
         vocabulary(),
         fromInitToEject(model),
-        devtools(model),
+        design(model),
       ]),
     ),
     Match.when('docs', () => documentation(model)),

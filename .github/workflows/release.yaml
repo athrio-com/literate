@@ -32,7 +32,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - { name: loom-devtools, dockerfile: packages/loom-devtools/Dockerfile }
+          - { name: loom-design, dockerfile: packages/loom-design/Dockerfile }
           - { name: loom-website, dockerfile: site/Dockerfile }
     steps:
       - uses: actions/checkout@v4

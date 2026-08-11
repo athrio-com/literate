@@ -8,7 +8,7 @@ import { FoldkitRender } from '@athrio/foldkit-ssr'
 import { view } from '../src/view'
 import { pager } from '../src/chrome'
 import { type Model, type Route } from '../src/model'
-import { seedNotes } from '../src/devtools'
+import { seedNotes } from '../src/design'
 
 // The router is the one place a broken link becomes a compile error rather than a 404, so
 // these cases render every route through the real SSR path — the same path the server uses.
@@ -241,9 +241,9 @@ describe('the box model, where it differs from the reset', () => {
     )
   })
 
-  it('leaves the devtools, the vocabulary card and the example card on the reset', () => {
+  it('leaves the Design section, the vocabulary card and the example card on the reset', () => {
     // the example card carries no border of its own any more, so the reset costs it nothing
-    ;['.dt-bar', '.dt-panel', '.mark-card', '.pl-card'].forEach((selector) =>
+    ;['.design-bar', '.design-panel', '.mark-card', '.pl-card'].forEach((selector) =>
       expect(ruleFor(selector)).not.toContain('content-box'),
     )
   })

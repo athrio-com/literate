@@ -112,6 +112,14 @@ Loom's website is a Foldkit application of five pages, set on paper. The landing
 
 
 
+
+
+
+
+
+
+
+
 One scheme governs all five, so the site reads as one thing: a warm cream ground under three steps of ink, two families of type on a fixed scale, and every measurement on a four-pixel grid. Loom's own woven mark ties it together — a carpet of coloured cells drawn from a grid of glyphs, small beside a name and whole in the hero.
 
 
@@ -120,7 +128,23 @@ One scheme governs all five, so the site reads as one thing: a warm cream ground
 
 
 
+
+
+
+
+
+
+
+
 Each page wears the same chrome. A centred nav carries the wordmark between its links, and a slash opens a search palette that indexes both the pages and the prose inside them. A pager closes each page by naming its neighbours, and the footer ends the site on its one dark ground.
+
+
+
+
+
+
+
+
 
 
 
@@ -139,16 +163,16 @@ The site renders on the server first, for a reader and a crawler, then hydrates 
 7. A Loom document, written out
 8. The whole vocabulary
 9. From init to eject
-10. The devtools point at this page
+10. Loom Design points at this page
 12. The documentation shell
 15. The client
 16. The server
 17. Packaging the website
 18. The image
 
-### Part XI — Loom Devtools
+### Part XI — Loom Design
 
-Loom Devtools rides along a running app: a bar you summon over the page to work on the app while you use it. It works against any app — woven from Loom or not — and writes nothing into the code you review. The bar gathers a few tools and is built to hold more. Today it carries Notes: you review by pointing, leaving a note on an element you click or a message you type, and a coding agent reads them over the Model Context Protocol and works through them. It attaches by standing in front of the app rather than by joining its build. The proxy forwards every request to the app on its own port and appends the overlay to the HTML on the way back, so the app's dependencies, its configuration, and the bundler it happens to use are all left alone, and a framework the tools have never met works the same as one they have. This part builds it up: the note the tools pass around, the store that keeps the notes — a SQLite file on one machine, Postgres where a team shares one — the server that answers the overlay and the agent, the overlay you point with, the agent's tools, and the proxy that stands in front. It then ships it — the package, the entry that launches it, and the setup page that hands you the overlay's script — all as `@athrio/loom-devtools`.
+Loom Design rides along a running app: a bar you summon over the page to work on the app while you use it. It works against any app — woven from Loom or not — and writes nothing into the code you review. The bar gathers a few tools and is built to hold more. Today it carries Notes: you review by pointing, leaving a note on an element you click or a message you type, and a coding agent reads them over the Model Context Protocol and works through them. It attaches by standing in front of the app rather than by joining its build. The proxy forwards every request to the app on its own port and appends the overlay to the HTML on the way back, so the app's dependencies, its configuration, and the bundler it happens to use are all left alone, and a framework the tools have never met works the same as one they have. This part builds it up: the note the tools pass around, the store that keeps the notes — a SQLite file on one machine, Postgres where a team shares one — the server that answers the overlay and the agent, the overlay you point with, the agent's tools, and the proxy that stands in front. It then ships it — the package, the entry that launches it, and the setup page that hands you the overlay's script — all as `@athrio/loom-design`.
 
 1. The note
 2. The store
@@ -164,7 +188,7 @@ Loom Devtools rides along a running app: a bar you summon over the page to work 
 
 ### Part XII — Releasing Loom
 
-Loom releases itself on every push. A gate runs first — the tests, and a check that the committed source still matches the corpus it tangles from — and a green push to the default branch releases. It publishes the npm packages through Trusted Publishing, so no token lives in the repository, and pushes the Docker images for the Devtools service and the website. This part is that pipeline: the gate that guards every change, the tool that publishes each package npm is missing, and the workflow that runs it and pushes the images on a push.
+Loom releases itself on every push. A gate runs first — the tests, and a check that the committed source still matches the corpus it tangles from — and a green push to the default branch releases. It publishes the npm packages through Trusted Publishing, so no token lives in the repository, and pushes the Docker images for the Design service and the website. This part is that pipeline: the gate that guards every change, the tool that publishes each package npm is missing, and the workflow that runs it and pushes the images on a push.
 
 1. Continuous integration
 2. The release tool

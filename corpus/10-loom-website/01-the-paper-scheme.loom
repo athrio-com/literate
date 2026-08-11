@@ -192,7 +192,7 @@ A link is set in body ink rather than in a colour of its own, and fades to muted
 
 Prose is the exception, because a sentence has no shape to read. A link inside a documentation article takes the accent, which is the one place on the site where a run of text has to announce that part of it is a link.
 
-That accent is not a link colour. It marks state: the rail's current chapter, the outline's current heading, a token chip, the devtools picker. Naming it for what it does keeps it from being sprinkled on anything merely clickable.
+That accent is not a link colour. It marks state: the rail's current chapter, the outline's current heading, a token chip, the Design picker. Naming it for what it does keeps it from being sprinkled on anything merely clickable.
 
 A selection washes the mark's green over the text at a quarter strength and leaves the ink alone. The browser's own blue belongs to no scheme on this page, and green is the one colour here that reads as a thing the reader did rather than a thing the page is saying.
 
@@ -1889,15 +1889,15 @@ None of the controls answers the cursor. They hold their ink whether it is over 
   .pl-bar { padding: 0 14px; }
 }
 
-## The devtools over the page
+## Loom Design over the page
 
-The devtools section is two columns of equal width, each holding to three hundred and eighty pixels, and it keeps both of them until the rail takes over at nine hundred. The vocabulary and the commands rail at nine hundred too, so a reader dragging a window edge sees the page turn at one width rather than at three. Its rail carries only two panes, which are each wide enough that the second runs past the window's edge — a row that never needs dragging is a row that only looks broken. It is the only section on the site whose parts leave the container: the notes panel and the picker's outline are fixed to the window, because devtools sits over an application rather than inside a page.
+The Design section is two columns of equal width, each holding to three hundred and eighty pixels, and it keeps both of them until the rail takes over at nine hundred. The vocabulary and the commands rail at nine hundred too, so a reader dragging a window edge sees the page turn at one width rather than at three. Its rail carries only two panes, which are each wide enough that the second runs past the window's edge — a row that never needs dragging is a row that only looks broken. It is the only section on the site whose parts leave the container: the notes panel and the picker's outline are fixed to the window, because Design sits over an application rather than inside a page.
 
 An armed picker changes the cursor everywhere, which is what a `data-picking` attribute on the root element is for. The rule reaches every element, so the crosshair holds over links and buttons that would otherwise assert their own cursor.
 
 =>
 
-.dt-grid {
+.design-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   column-gap: 44px;
@@ -1905,9 +1905,9 @@ An armed picker changes the cursor everywhere, which is what a `data-picking` at
   align-items: start;
 }
 
-.dt-col { min-width: 0; }
+.design-col { min-width: 0; }
 
-.dt-aim {
+.design-aim {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -1916,7 +1916,7 @@ An armed picker changes the cursor everywhere, which is what a `data-picking` at
 :root[data-picking] * { cursor: crosshair !important; }
 
 @media (max-width: 899px) {
-  .dt-grid {
+  .design-grid {
     display: flex;
     column-gap: 12px;
     margin: 0 calc(-1 * var(--side));
@@ -1927,9 +1927,9 @@ An armed picker changes the cursor everywhere, which is what a `data-picking` at
     scrollbar-width: none;
   }
 
-  .dt-grid::-webkit-scrollbar { display: none; }
+  .design-grid::-webkit-scrollbar { display: none; }
 
-  .dt-col {
+  .design-col {
     flex: none;
     width: clamp(300px, calc(100vw - 60px), 470px);
     scroll-snap-align: center;
@@ -1938,15 +1938,15 @@ An armed picker changes the cursor everywhere, which is what a `data-picking` at
 
 ~
 
-The bar is the shape a real devtools bar takes over a dev server: full width, a name at one end and its tools at the other, lifted off the paper by a shadow soft enough to read as hovering rather than as a card.
+The bar is the shape a real design bar takes over a dev server: full width, a name at one end and its tools at the other, lifted off the paper by a shadow soft enough to read as hovering rather than as a card.
 
 A tool's ground fills in when its tool is active — orange behind an armed picker, cream behind an open panel — and that fill is the only thing on the page saying the picker is armed once the reviewer is looking elsewhere.
 
 =>
 
-.dt-chrome { position: relative; }
+.design-chrome { position: relative; }
 
-.dt-bar {
+.design-bar {
   display: flex;
   align-items: center;
   height: 40px;
@@ -1958,11 +1958,11 @@ A tool's ground fills in when its tool is active — orange behind an armed pick
   color: var(--ink-2);
 }
 
-.dt-project { font-family: var(--mono); font-size: var(--t-code); }
+.design-project { font-family: var(--mono); font-size: var(--t-code); }
 
-.dt-tools { margin-left: auto; display: inline-flex; align-items: center; gap: 13px; }
+.design-tools { margin-left: auto; display: inline-flex; align-items: center; gap: 13px; }
 
-.dt-tool {
+.design-tool {
   appearance: none;
   border: 0;
   cursor: pointer;
@@ -1975,10 +1975,10 @@ A tool's ground fills in when its tool is active — orange behind an armed pick
   color: var(--ink-2);
 }
 
-.dt-tool.picking { background: rgba(232, 80, 31, 0.12); color: var(--accent); }
-.dt-tool.showing { background: #F0EADC; }
+.design-tool.picking { background: rgba(232, 80, 31, 0.12); color: var(--accent); }
+.design-tool.showing { background: #F0EADC; }
 
-.dt-count { font-family: var(--mono); font-size: var(--t-label); color: var(--init); }
+.design-count { font-family: var(--mono); font-size: var(--t-label); color: var(--init); }
 
 ~
 
@@ -1986,9 +1986,9 @@ Collapsing the bar leaves a handle at the right edge, drawn as a tab: rounded at
 
 =>
 
-.dt-handle-row { display: flex; justify-content: flex-end; height: 36px; align-items: flex-end; }
+.design-handle-row { display: flex; justify-content: flex-end; height: 36px; align-items: flex-end; }
 
-.dt-handle {
+.design-handle {
   appearance: none;
   cursor: pointer;
   display: inline-flex;
@@ -2011,7 +2011,7 @@ The stamped fragment is bordered in green at a little under half strength, which
 
 =>
 
-.dt-what {
+.design-what {
   margin: 0 0 20px;
   padding-left: 3px;
   font-size: var(--t-body);
@@ -2020,19 +2020,19 @@ The stamped fragment is bordered in green at a little under half strength, which
   text-wrap: pretty;
 }
 
-.dt-kind { font-family: var(--mono); }
-.dt-kind.chat { color: var(--blue); }
-.dt-kind.dom  { color: #7C4DE0; }
-.dt-kind.loom { color: var(--init); }
-.dt-kind.file { color: var(--ink); }
+.design-kind { font-family: var(--mono); }
+.design-kind.chat { color: var(--blue); }
+.design-kind.dom  { color: #7C4DE0; }
+.design-kind.loom { color: var(--init); }
+.design-kind.file { color: var(--ink); }
 
-.dt-woven {
+.design-woven {
   border: 1px solid rgba(0, 153, 107, 0.42);
   border-radius: var(--radius);
   padding: 13px 15px 15px;
 }
 
-.dt-woven-says {
+.design-woven-says {
   margin: 0;
   font-size: var(--t-body);
   line-height: var(--lead);
@@ -2040,7 +2040,7 @@ The stamped fragment is bordered in green at a little under half strength, which
   text-wrap: pretty;
 }
 
-.dt-woven-code {
+.design-woven-code {
   margin-top: var(--label-gap);
   font-family: var(--mono);
   font-size: var(--t-body);
@@ -2049,7 +2049,7 @@ The stamped fragment is bordered in green at a little under half strength, which
   white-space: pre-wrap;
 }
 
-.dt-woven-code .tok-keyword { color: #7E71A0; }
+.design-woven-code .tok-keyword { color: #7E71A0; }
 
 ~
 
@@ -2057,7 +2057,7 @@ The panel is fixed to the bottom-right corner of the window and capped in height
 
 =>
 
-.dt-panel {
+.design-panel {
   position: fixed;
   right: 24px;
   bottom: 24px;
@@ -2074,7 +2074,7 @@ The panel is fixed to the bottom-right corner of the window and capped in height
   box-shadow: 0 3px 10px rgba(20, 19, 15, 0.05);
 }
 
-.dt-panel-head {
+.design-panel-head {
   display: flex;
   align-items: center;
   gap: 11px;
@@ -2082,11 +2082,11 @@ The panel is fixed to the bottom-right corner of the window and capped in height
   border-bottom: 1px solid var(--rule-faint);
 }
 
-.dt-panel-title { font-size: var(--t-code); font-weight: 600; }
+.design-panel-title { font-size: var(--t-code); font-weight: 600; }
 
-.dt-tabs { display: flex; gap: 11px; }
+.design-tabs { display: flex; gap: 11px; }
 
-.dt-tab {
+.design-tab {
   appearance: none;
   border: 0;
   border-bottom: 1px solid transparent;
@@ -2098,9 +2098,9 @@ The panel is fixed to the bottom-right corner of the window and capped in height
   color: var(--ink-3);
 }
 
-.dt-tab.here { color: var(--ink); border-bottom-color: var(--accent); }
+.design-tab.here { color: var(--ink); border-bottom-color: var(--accent); }
 
-.dt-close {
+.design-close {
   margin-left: auto;
   appearance: none;
   border: 0;
@@ -2117,9 +2117,9 @@ A note's own row leads with a line of small facts — its number, its kind, its 
 
 =>
 
-.dt-list { flex: 1 1 auto; overflow: auto; display: flex; flex-direction: column; }
+.design-list { flex: 1 1 auto; overflow: auto; display: flex; flex-direction: column; }
 
-.dt-note {
+.design-note {
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -2127,7 +2127,7 @@ A note's own row leads with a line of small facts — its number, its kind, its 
   border-bottom: 1px solid var(--rule-faint);
 }
 
-.dt-note-head {
+.design-note-head {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -2135,22 +2135,22 @@ A note's own row leads with a line of small facts — its number, its kind, its 
   font-size: var(--t-label);
 }
 
-.dt-note-seq { color: var(--ink-3); }
+.design-note-seq { color: var(--ink-3); }
 
-.dt-note-pointer {
+.design-note-pointer {
   color: #7C4DE0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dt-note-route { margin-left: auto; flex: none; color: var(--ink-3); }
+.design-note-route { margin-left: auto; flex: none; color: var(--ink-3); }
 
-.dt-note-text { font-size: var(--t-code); line-height: var(--lead); color: var(--ink-2); }
+.design-note-text { font-size: var(--t-code); line-height: var(--lead); color: var(--ink-2); }
 
-.dt-note-acts { display: flex; gap: 13px; }
+.design-note-acts { display: flex; gap: 13px; }
 
-.dt-act {
+.design-act {
   appearance: none;
   border: 0;
   background: transparent;
@@ -2161,9 +2161,9 @@ A note's own row leads with a line of small facts — its number, its kind, its 
   color: var(--ink-3);
 }
 
-.dt-act.resolve { color: var(--init); }
+.design-act.resolve { color: var(--init); }
 
-.dt-empty {
+.design-empty {
   padding: 24px 14px;
   font-size: var(--t-code);
   line-height: 1.8;
@@ -2178,7 +2178,7 @@ The composer closes the panel. A chip above the field names what the reviewer ai
 
 =>
 
-.dt-composer {
+.design-composer {
   border-top: 1px solid var(--rule-faint);
   padding: 10px 12px;
   display: flex;
@@ -2186,7 +2186,7 @@ The composer closes the panel. A chip above the field names what the reviewer ai
   gap: 8px;
 }
 
-.dt-chip {
+.design-chip {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -2198,9 +2198,9 @@ The composer closes the panel. A chip above the field names what the reviewer ai
   font-size: var(--t-label);
 }
 
-.dt-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.design-chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.dt-chip-drop {
+.design-chip-drop {
   margin-left: auto;
   appearance: none;
   border: 0;
@@ -2212,7 +2212,7 @@ The composer closes the panel. A chip above the field names what the reviewer ai
   color: var(--accent-hover);
 }
 
-.dt-draft {
+.design-draft {
   height: 36px;
   padding: 0 9px;
   border: 1px solid var(--rule);
@@ -2224,9 +2224,9 @@ The composer closes the panel. A chip above the field names what the reviewer ai
   outline: none;
 }
 
-.dt-send-row { display: flex; align-items: center; gap: 8px; }
+.design-send-row { display: flex; align-items: center; gap: 8px; }
 
-.dt-pick-chip {
+.design-pick-chip {
   appearance: none;
   cursor: pointer;
   padding: 4px 8px;
@@ -2238,13 +2238,13 @@ The composer closes the panel. A chip above the field names what the reviewer ai
   color: var(--ink-2);
 }
 
-.dt-pick-chip.picking {
+.design-pick-chip.picking {
   border-color: var(--accent);
   background: rgba(232, 80, 31, 0.10);
   color: var(--accent-hover);
 }
 
-.dt-send {
+.design-send {
   margin-left: auto;
   appearance: none;
   border: 0;
@@ -2257,7 +2257,7 @@ The composer closes the panel. A chip above the field names what the reviewer ai
   font-size: var(--t-label);
 }
 
-.dt-send.ready { background: var(--ink); }
+.design-send.ready { background: var(--ink); }
 
 ~
 
@@ -2265,7 +2265,7 @@ The outline and its label are the last two rules on the page and the highest, si
 
 =>
 
-.dt-outline {
+.design-outline {
   position: fixed;
   z-index: 70;
   pointer-events: none;
@@ -2275,7 +2275,7 @@ The outline and its label are the last two rules on the page and the highest, si
   transition: opacity 90ms linear;
 }
 
-.dt-outline-label {
+.design-outline-label {
   position: fixed;
   z-index: 71;
   pointer-events: none;
@@ -2912,7 +2912,7 @@ The stylesheet is the three schemes first — colour, type and measure — then 
 
 ::[The document being typed]
 
-::[The devtools over the page]
+::[Loom Design over the page]
 
 ::[The pager]
 

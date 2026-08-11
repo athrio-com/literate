@@ -50,7 +50,7 @@ const view = (model: Model): Html =>
   h.div(
     [h.Class('card')],
     [
-      h.div([h.Class('title')], ['Loom ', h.span([h.Class('mint')], ['Devtools'])]),
+      h.div([h.Class('title')], ['Loom ', h.span([h.Class('mint')], ['Design'])]),
       h.div(
         [h.Class('lede')],
         [

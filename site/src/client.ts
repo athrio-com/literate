@@ -22,7 +22,7 @@ import {
   Ticked,
   ToggledFullHeight,
 } from './model'
-import { aimableAt, highlightOf, pathOf, routeOf, seedNotes, targetOf } from './devtools'
+import { aimableAt, highlightOf, pathOf, routeOf, seedNotes, targetOf } from './design'
 import { CHARACTERS, RUN, struckBy } from './example'
 
 type Step = readonly [Model, ReadonlyArray<Command<Message>>]

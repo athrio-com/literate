@@ -4,7 +4,7 @@ import { Effect, Layer, ManagedRuntime, Option } from 'effect'
 import { renderStatic } from 'foldkit/html'
 import { FoldkitRender } from '@athrio/foldkit-ssr'
 import { CHARACTERS, RUN, example, frameAt, struckBy, wholeDocument } from '../src/example'
-import { seedNotes } from '../src/devtools'
+import { seedNotes } from '../src/design'
 import { fromInitToEject } from '../src/operations'
 import { type Model, type Player } from '../src/model'
 

@@ -111,7 +111,7 @@ export const operationsCarpet: Carpet = {
   threads: { '.': NAVY, p: PAPER, g: '#00B37E', v: '#8B5CF6', o: '#FF6A3D' },
 }
 
-export const devtoolsCarpet: Carpet = {
+export const designCarpet: Carpet = {
   rows: ['....b.b', '...bb..', 'b..b...', '.booo..', '.boyo.b', '..ooo.v', '.b.....'],
   threads: { '.': NAVY, p: PAPER, b: '#2E6FF2', o: '#FF6A3D', y: '#FFC53D', v: '#8B5CF6' },
 }

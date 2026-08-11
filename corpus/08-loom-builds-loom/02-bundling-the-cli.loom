@@ -12,7 +12,7 @@ Vite bundles the CLI program, the language server's TypeScript source, and Effec
 
 The `node:` built-in modules stay external, since the runtime supplies them and the bundle need not carry them. Everything else — the language server's TypeScript source and Effect — is inlined into `dist/main.js`.
 
-The Devtools stay external too, for a different reason. They serve the overlay as a file read from their own package, resolved against the module doing the reading, so a copy inlined here would look for that file beside the CLI and never find it. Loom Design therefore loads the Devtools where they are installed rather than carrying a copy, and `loom design` reports plainly when they are not there.
+Design stays external too, for a different reason. They serve the overlay as a file read from their own package, resolved against the module doing the reading, so a copy inlined here would look for that file beside the CLI and never find it. Loom Design therefore loads Design where they are installed rather than carrying a copy, and `loom design` reports plainly when they are not there.
 
 The language server's `exports` field points to TypeScript source files rather than pre-compiled output. Bun runs these files directly, as do tools like `tsx` and code editors, with no compilation step. Vite inlines them at build time, so the published CLI is pure JavaScript. The `loom lsp` command pulls in the server, and with it Volar; some of Volar's dependencies — the `vscode-*-languageservice` packages and `jsonc-parser` — ship only UMD bundles the bundler cannot follow statically, so the `umd2esm` plugin rewrites each to its ESM sibling, the same trick the language-server build uses.
 
@@ -81,7 +81,7 @@ export default defineConfig({
       fileName: () => 'main.js',
     },
     rollupOptions: {
-      external: [...nodeBuiltins, /^@athrio\/loom-devtools\//],
+      external: [...nodeBuiltins, /^@athrio\/loom-design\//],
       output: { banner: '#!/usr/bin/env node' },
     },
   },

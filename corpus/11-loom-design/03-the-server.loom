@@ -1,6 +1,6 @@
 ---
 Part XI, Chapter 3: The server
-Package: packages/loom-devtools/src/api.ts
+Package: packages/loom-design/src/api.ts
 Language: TypeScript
 ---
 
@@ -48,7 +48,7 @@ const root = dirname(fileURLToPath(import.meta.url))
 
 Each write reaches the store, does its work, and replies, taking the store from the context the server provides. `capture` decodes a draft, records it, and returns the stamped note. `resolve` and `discard` name a note and settle it; `edit` names one and replaces its words. The three changes answer with a small acknowledgement, since the overlay reads the list back afterwards rather than the reply.
 
-A store failure is not swallowed here. When the store fails — a `DbError` from the database, a `DecodeError` from a corrupt row — the handler fails with it, and `handling`, the wrapper every store route runs through, logs the cause to the devtools log and answers the browser with a server error. The failure never becomes a defect that stops the daemon.
+A store failure is not swallowed here. When the store fails — a `DbError` from the database, a `DecodeError` from a corrupt row — the handler fails with it, and `handling`, the wrapper every store route runs through, logs the cause to the Design log and answers the browser with a server error. The failure never becomes a defect that stops the daemon.
 
 =>
 
@@ -84,7 +84,7 @@ const edit = Effect.gen(function* () {
 
 `feed` lists a project's notes. The project comes on the query string rather than in a body, since listing is a GET; without it, the request is incomplete and answers with a bad-request.
 
-The overlay's script sits beside the service, built into `dist/overlay.js` by the package's build. `overlay` serves that file, and when it is missing — no build has run yet — it logs the failure to the devtools log and answers with a not-found rather than swallowing it.
+The overlay's script sits beside the service, built into `dist/overlay.js` by the package's build. `overlay` serves that file, and when it is missing — no build has run yet — it logs the failure to the Design log and answers with a not-found rather than swallowing it.
 
 The script answers with `Cache-Control: no-store`, so a browser fetches it afresh on every load. The overlay is a dev tool that changes as you build it, and a cached copy would leave a page running yesterday's overlay.
 
@@ -166,7 +166,7 @@ const live = Effect.gen(function* () {
 
 # Catching a failed request
 
-Every route that touches the store runs through `handling`. It catches any failure a handler raises — a store `DbError`, a `DecodeError` from a corrupt row, a request body that will not decode — logs the cause to the devtools log, and answers with a server error. So a failed request is logged and answered, and the daemon serves the next rather than falling over: no request failure becomes a defect that stops it.
+Every route that touches the store runs through `handling`. It catches any failure a handler raises — a store `DbError`, a `DecodeError` from a corrupt row, a request body that will not decode — logs the cause to the Design log, and answers with a server error. So a failed request is logged and answered, and the daemon serves the next rather than falling over: no request failure becomes a defect that stops it.
 
 =>
 
@@ -231,7 +231,7 @@ const mcp = mcpAt('/mcp')
 
 # Logging
 
-The service runs in a container, so its log is its standard output — the stream Docker captures and `docker compose logs` reads. `devtoolsLogger` writes there, one line per event in logfmt, the format a log collector parses into fields.
+The service runs in a container, so its log is its standard output — the stream Docker captures and `docker compose logs` reads. `designLogger` writes there, one line per event in logfmt, the format a log collector parses into fields.
 
 The service runs under this logger, and the HTTP server logs each request through it, so the output carries a line per request and a line for every fault the store, the branch lookup, or the overlay raises. When the service misbehaves, its recent output says what it was doing.
 
@@ -239,7 +239,7 @@ The service runs under this logger, and the HTTP server logs each request throug
 
 import { Logger } from 'effect'
 
-export const devtoolsLogger = Logger.layer([Logger.consoleLogFmt])
+export const designLogger = Logger.layer([Logger.consoleLogFmt])
 
 # The server itself
 

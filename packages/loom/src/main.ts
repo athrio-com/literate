@@ -285,10 +285,10 @@ const design = (
   Effect.gen(function* () {
     const named = Option.getOrElse(project, () => basename(process.cwd()))
     const proxy = yield* Effect.tryPromise(
-      () => import('@athrio/loom-devtools/design'),
+      () => import('@athrio/loom-design/design'),
     )
     const store = yield* Effect.tryPromise(
-      () => import('@athrio/loom-devtools/store'),
+      () => import('@athrio/loom-design/store'),
     )
     yield* Console.log(
       `loom: Design on http://localhost:${port}, in front of ${application}, noting ${named}`,

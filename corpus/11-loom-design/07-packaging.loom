@@ -1,12 +1,12 @@
 ---
 Part XI, Chapter 7: Packaging
-Package: packages/loom-devtools/
+Package: packages/loom-design/
 Language: TypeScript
 ---
 
 # Packaging
 
-`@athrio/loom-devtools` is the Devtools service: the note schemas, the store, the HTTP API, the agent's tools, the browser overlay, and the Vite plugin that injects it — one package that runs as a standalone, self-hosted service. The schemas fix the shape a note takes, the contract the overlay speaks when it writes a note and the store speaks when it keeps one. The overlay is the panel a person annotates through, bundled because a browser cannot chase down Foldkit and Effect on its own, with its Tailwind stylesheet travelling into the shadow root beside it. The plugin is the native path for a Vite app: it injects the overlay's script the way the pasted tag does.
+`@athrio/loom-design` is the Design service: the note schemas, the store, the HTTP API, the agent's tools, the browser overlay, and the proxy that injects it — one package that runs as a standalone, self-hosted service. The schemas fix the shape a note takes, the contract the overlay speaks when it writes a note and the store speaks when it keeps one. The overlay is the panel a person annotates through, bundled because a browser cannot chase down Foldkit and Effect on its own, with its Tailwind stylesheet travelling into the shadow root beside it. The proxy injects that script into any application it stands in front of.
 
 The service runs from source rather than a bundle, so the package ships its resolved source alongside its built artifacts. The overlay is built into the one file a page loads, and the Vite plugin into a Node module a Node-hosted Vite can load. This chapter is the manifest, the two type configurations, the overlay's Tailwind input, and that build.
 
@@ -19,7 +19,7 @@ The manifest names the package and what it exports — the note schemas, the pro
 =>
 
 {
-  "name": "@athrio/loom-devtools",
+  "name": "@athrio/loom-design",
   "type": "module",
   "private": true,
   "version": "::[version]",

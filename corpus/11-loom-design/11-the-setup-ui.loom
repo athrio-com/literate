@@ -1,6 +1,6 @@
 ---
 Part XI, Chapter 11: The setup UI
-Package: packages/loom-devtools/
+Package: packages/loom-design/
 Language: TypeScript
 ---
 
@@ -70,7 +70,7 @@ const view = (model: Model): Html =>
   h.div(
     [h.Class('card')],
     [
-      h.div([h.Class('title')], ['Loom ', h.span([h.Class('mint')], ['Devtools'])]),
+      h.div([h.Class('title')], ['Loom ', h.span([h.Class('mint')], ['Design'])]),
       h.div(
         [h.Class('lede')],
         [
@@ -115,7 +115,7 @@ The shell is the one file a browser loads. It carries the theme in a style block
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Loom Devtools</title>
+<title>Loom Design</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,300;6..72,400&display=swap" rel="stylesheet" />

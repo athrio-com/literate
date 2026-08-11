@@ -1,6 +1,6 @@
 import { Effect as Runtime, Layer as Wiring } from 'effect'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
-import { devtoolsLogger } from './api'
+import { designLogger } from './api'
 import { localStore } from './store'
 import { designServer } from './design'
 
@@ -12,5 +12,5 @@ NodeRuntime.runMain(
       project: process.env.LOOM_PROJECT ?? 'local',
       store: localStore(),
     }),
-  ).pipe(Runtime.provide(devtoolsLogger), Runtime.provide(NodeServices.layer)),
+  ).pipe(Runtime.provide(designLogger), Runtime.provide(NodeServices.layer)),
 )

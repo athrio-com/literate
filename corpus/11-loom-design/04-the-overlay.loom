@@ -1,12 +1,12 @@
 ---
 Part XI, Chapter 4: The overlay
-Package: packages/loom-devtools/src/overlay.ts
+Package: packages/loom-design/src/overlay.ts
 Language: TypeScript
 ---
 
 # The overlay
 
-The overlay is Loom Devtools drawn into a running app. It is a small Foldkit application injected into the page as a bar pinned along the bottom of the screen. The bar names the project, carries a count of the notes still open, and holds the tools you work with — an aim to point at an element, and the notes card. When the bar is in the way you collapse it to a small handle at the edge, and click the handle to bring it back.
+The overlay is Loom Design drawn into a running app. It is a small Foldkit application injected into the page as a bar pinned along the bottom of the screen. The bar names the project, carries a count of the notes still open, and holds the tools you work with — an aim to point at an element, and the notes card. When the bar is in the way you collapse it to a small handle at the edge, and click the handle to bring it back.
 
 You leave a note in one of two ways. You type one as a message, or you arm the aim, hover to an element, and click it to leave an annotation on that element. An element woven from Loom keeps a Loom annotation, which leads back to the loom's prose and code; any other element keeps a plain DOM annotation.
 

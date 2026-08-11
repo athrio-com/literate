@@ -155,7 +155,7 @@ const mcp = mcpAt('/mcp')
 
 import { Logger } from 'effect'
 
-export const devtoolsLogger = Logger.layer([Logger.consoleLogFmt])
+export const designLogger = Logger.layer([Logger.consoleLogFmt])
 
 const app = Layer.mergeAll(
   routes,

@@ -24,7 +24,7 @@ import {
 import {
   broadSeam,
   carpetMark,
-  devtoolsCarpet,
+  designCarpet,
   downIcon,
   noteIcon,
   pickerIcon,
@@ -119,7 +119,7 @@ export const pathOf = (route: Route): string =>
 export const routeOf = (pathname: string): Option.Option<Route> =>
   Array.findFirst(Route.literals, (route) => pathOf(route) === pathname)
 
-const CHROME = '[data-dt-chrome]'
+const CHROME = '[data-design-chrome]'
 
 export const aimableAt = (node: EventTarget | null): Option.Option<Element> =>
   pipe(
@@ -162,7 +162,7 @@ export const seedNotes: ReadonlyArray<Note> = [
   {
     seq: 3,
     kind: 'loom',
-    pointer: '10-the-devtools / The two columns',
+    pointer: '10-loom-design / The two columns',
     route: '/',
     text: 'Cut this paragraph to two sentences.',
     addressed: true,
@@ -171,15 +171,15 @@ export const seedNotes: ReadonlyArray<Note> = [
 
 const bar = (model: Model): Html =>
   h.div(
-    [h.Class('dt-bar')],
+    [h.Class('design-bar')],
     [
-      h.span([h.Class('dt-project')], ['loom-website']),
+      h.span([h.Class('design-project')], ['loom-website']),
       h.span(
-        [h.Class('dt-tools')],
+        [h.Class('design-tools')],
         [
           h.button(
             [
-              h.Class(model.picking ? 'dt-tool picking' : 'dt-tool'),
+              h.Class(model.picking ? 'design-tool picking' : 'design-tool'),
               h.Type('button'),
               h.Title('Pick an element'),
               h.OnClick(ToggledPicker()),
@@ -188,16 +188,16 @@ const bar = (model: Model): Html =>
           ),
           h.button(
             [
-              h.Class(panelOpen(model) ? 'dt-tool showing' : 'dt-tool'),
+              h.Class(panelOpen(model) ? 'design-tool showing' : 'design-tool'),
               h.Type('button'),
               h.Title(model.notesOpen ? 'Hide notes' : `Notes (${openNotes(model).length})`),
               h.OnClick(ToggledNotes()),
             ],
-            [noteIcon(), h.span([h.Class('dt-count')], [String(openNotes(model).length)])],
+            [noteIcon(), h.span([h.Class('design-count')], [String(openNotes(model).length)])],
           ),
           h.button(
             [
-              h.Class('dt-tool'),
+              h.Class('design-tool'),
               h.Type('button'),
               h.Title('Hide the bar'),
               h.OnClick(CollapsedBar()),
@@ -211,16 +211,16 @@ const bar = (model: Model): Html =>
 
 const handle = (model: Model): Html =>
   h.div(
-    [h.Class('dt-handle-row')],
+    [h.Class('design-handle-row')],
     [
       h.button(
         [
-          h.Class('dt-handle'),
+          h.Class('design-handle'),
           h.Type('button'),
           h.Title('Show the bar'),
           h.OnClick(ExpandedBar()),
         ],
-        [upIcon(), h.span([h.Class('dt-count')], [String(openNotes(model).length)])],
+        [upIcon(), h.span([h.Class('design-count')], [String(openNotes(model).length)])],
       ),
     ],
   )
@@ -233,16 +233,16 @@ const panelOpen = (model: Model): boolean =>
 
 const kinds = (): Html =>
   h.p(
-    [h.Class('dt-what'), h.DataAttribute('pick', 'p.what')],
+    [h.Class('design-what'), h.DataAttribute('pick', 'p.what')],
     [
-      'Devtools unite complementary tools for a literate programming experience. Point at anything and leave a note on it. A ',
-      h.span([h.Class('dt-kind dom')], ['dom']),
+      'Loom Design unites complementary tools for a literate programming experience. Point at anything and leave a note on it. A ',
+      h.span([h.Class('design-kind dom')], ['dom']),
       " note carries the element's selector and the label you clicked; a ",
-      h.span([h.Class('dt-kind chat')], ['chat']),
+      h.span([h.Class('design-kind chat')], ['chat']),
       ' note carries the route you were on; a ',
-      h.span([h.Class('dt-kind loom')], ['loom']),
+      h.span([h.Class('design-kind loom')], ['loom']),
       ' note on rendered Loom source resolves back to the exact place in the ',
-      h.span([h.Class('dt-kind file')], ['.loom']),
+      h.span([h.Class('design-kind file')], ['.loom']),
       ' file that produced it.',
     ],
   )
@@ -250,15 +250,15 @@ const kinds = (): Html =>
 const wovenSample = (): Html =>
   h.div(
     [
-      h.Class('dt-woven'),
+      h.Class('design-woven'),
       h.DataAttribute('loom-chapter', '02-pricing'),
       h.DataAttribute('loom-section', 'Rounding money'),
     ],
     [
-      h.p([h.Class('dt-woven-says'), h.DataAttribute('pick', 'p')], [
+      h.p([h.Class('design-woven-says'), h.DataAttribute('pick', 'p')], [
         'Pick any element here to see notes get the loom tier.',
       ]),
-      h.div([h.Class('dt-woven-code'), h.DataAttribute('pick', 'div')], [
+      h.div([h.Class('design-woven-code'), h.DataAttribute('pick', 'div')], [
         h.span([h.Class('tok-keyword')], ['const']),
         ' foo = (n: number): string => "bar"',
       ]),
@@ -267,27 +267,27 @@ const wovenSample = (): Html =>
 
 const noteRow = (note: Note): Html =>
   h.div(
-    [h.Class('dt-note')],
+    [h.Class('design-note')],
     [
       h.div(
-        [h.Class('dt-note-head')],
+        [h.Class('design-note-head')],
         [
-          h.span([h.Class('dt-note-seq')], [`#${note.seq}`]),
-          h.span([h.Class(`dt-kind ${note.kind}`)], [note.kind]),
-          h.span([h.Class('dt-note-pointer')], [note.pointer]),
-          h.span([h.Class('dt-note-route')], [note.route]),
+          h.span([h.Class('design-note-seq')], [`#${note.seq}`]),
+          h.span([h.Class(`design-kind ${note.kind}`)], [note.kind]),
+          h.span([h.Class('design-note-pointer')], [note.pointer]),
+          h.span([h.Class('design-note-route')], [note.route]),
         ],
       ),
-      h.span([h.Class('dt-note-text')], [note.text]),
+      h.span([h.Class('design-note-text')], [note.text]),
       h.div(
-        [h.Class('dt-note-acts')],
+        [h.Class('design-note-acts')],
         [
           h.button(
-            [h.Class('dt-act resolve'), h.Type('button'), h.OnClick(ResolvedNote({ seq: note.seq }))],
+            [h.Class('design-act resolve'), h.Type('button'), h.OnClick(ResolvedNote({ seq: note.seq }))],
             [note.addressed ? 'reopen' : 'resolve'],
           ),
           h.button(
-            [h.Class('dt-act'), h.Type('button'), h.OnClick(DiscardedNote({ seq: note.seq }))],
+            [h.Class('design-act'), h.Type('button'), h.OnClick(DiscardedNote({ seq: note.seq }))],
             ['discard'],
           ),
         ],
@@ -312,9 +312,9 @@ const emptyLine = (tab: NoteTab): string =>
 const noteList = (model: Model): Html => {
   const shown = shownNotes(model)
   return h.div(
-    [h.Class('dt-list')],
+    [h.Class('design-list')],
     Array.isReadonlyArrayEmpty(shown)
-      ? [h.div([h.Class('dt-empty')], [emptyLine(model.noteTab)])]
+      ? [h.div([h.Class('design-empty')], [emptyLine(model.noteTab)])]
       : Array.map(shown, noteRow),
   )
 }
@@ -322,7 +322,7 @@ const noteList = (model: Model): Html => {
 const tab = (model: Model, which: NoteTab, label: string): Html =>
   h.button(
     [
-      h.Class(model.noteTab === which ? 'dt-tab here' : 'dt-tab'),
+      h.Class(model.noteTab === which ? 'design-tab here' : 'design-tab'),
       h.Type('button'),
       h.OnClick(ShowedNotes({ tab: which })),
     ],
@@ -337,12 +337,12 @@ const draftKey = (key: string, model: Model): Message =>
 
 const aimedChip = (target: Target): Html =>
   h.div(
-    [h.Class('dt-chip')],
+    [h.Class('design-chip')],
     [
-      h.span([h.Class('dt-chip-eye')], ['◎']),
-      h.span([h.Class('dt-chip-label')], [target.pointer]),
+      h.span([h.Class('design-chip-eye')], ['◎']),
+      h.span([h.Class('design-chip-label')], [target.pointer]),
       h.button(
-        [h.Class('dt-chip-drop'), h.Type('button'), h.OnClick(ClearedTarget())],
+        [h.Class('design-chip-drop'), h.Type('button'), h.OnClick(ClearedTarget())],
         ['✕'],
       ),
     ],
@@ -350,25 +350,25 @@ const aimedChip = (target: Target): Html =>
 
 const composer = (model: Model): Html =>
   h.div(
-    [h.Class('dt-composer')],
+    [h.Class('design-composer')],
     [
       ...Option.match(model.aimed, {
         onNone: (): ReadonlyArray<Html> => [],
         onSome: (target) => [aimedChip(target)],
       }),
       h.input([
-        h.Class('dt-draft'),
+        h.Class('design-draft'),
         h.Value(model.draft),
         h.Placeholder('Leave a note…'),
         h.OnInput((text) => DraftedNote({ text })),
         h.OnKeyDown((key) => draftKey(key, model)),
       ]),
       h.div(
-        [h.Class('dt-send-row')],
+        [h.Class('design-send-row')],
         [
           h.button(
             [
-              h.Class(model.picking ? 'dt-pick-chip picking' : 'dt-pick-chip'),
+              h.Class(model.picking ? 'design-pick-chip picking' : 'design-pick-chip'),
               h.Type('button'),
               h.OnClick(ToggledPicker()),
             ],
@@ -376,7 +376,7 @@ const composer = (model: Model): Html =>
           ),
           h.button(
             [
-              h.Class(model.draft.trim() === '' ? 'dt-send' : 'dt-send ready'),
+              h.Class(model.draft.trim() === '' ? 'design-send' : 'design-send ready'),
               h.Type('button'),
               h.OnClick(SentNote()),
             ],
@@ -389,15 +389,15 @@ const composer = (model: Model): Html =>
 
 const panel = (model: Model): Html =>
   h.div(
-    [h.Class('dt-panel'), h.DataAttribute('dt-chrome', '1')],
+    [h.Class('design-panel'), h.DataAttribute('design-chrome', '1')],
     [
       h.div(
-        [h.Class('dt-panel-head')],
+        [h.Class('design-panel-head')],
         [
-          h.span([h.Class('dt-panel-title')], ['Notes']),
-          h.span([h.Class('dt-tabs')], [tab(model, 'open', 'open'), tab(model, 'resolved', 'resolved')]),
+          h.span([h.Class('design-panel-title')], ['Notes']),
+          h.span([h.Class('design-tabs')], [tab(model, 'open', 'open'), tab(model, 'resolved', 'resolved')]),
           h.button(
-            [h.Class('dt-close'), h.Type('button'), h.OnClick(ClosedNotes())],
+            [h.Class('design-close'), h.Type('button'), h.OnClick(ClosedNotes())],
             ['✕'],
           ),
         ],
@@ -411,7 +411,7 @@ const outline = (highlight: Highlight): ReadonlyArray<Html> => [
   h.span(
     [
       h.AriaHidden(true),
-      h.Class('dt-outline'),
+      h.Class('design-outline'),
       h.Style({
         left: `${highlight.left}px`,
         top: `${highlight.top}px`,
@@ -424,41 +424,41 @@ const outline = (highlight: Highlight): ReadonlyArray<Html> => [
   h.span(
     [
       h.AriaHidden(true),
-      h.Class('dt-outline-label'),
+      h.Class('design-outline-label'),
       h.Style({ left: `${highlight.left}px`, top: `${highlight.top - 16}px` }),
     ],
     [highlight.label],
   ),
 ]
 
-export const devtools = (model: Model): Html =>
+export const design = (model: Model): Html =>
   h.div(
-    [h.Class('section'), h.Id('loom-devtools')],
+    [h.Class('section'), h.Id('loom-design')],
     [
       h.div(
         [h.Class('section-head')],
         [
-          carpetMark(devtoolsCarpet, '42px', broadSeam),
+          carpetMark(designCarpet, '42px', broadSeam),
           h.div(
             [h.Class('lines')],
             [
               h.span([h.Class('eyebrow'), h.DataAttribute('pick', 'span.eyebrow')], [
                 'Complementary tools',
               ]),
-              h.h2([h.DataAttribute('pick', 'h2#devtools')], ['Loom Devtools']),
+              h.h2([h.DataAttribute('pick', 'h2#design')], ['Loom Design']),
             ],
           ),
         ],
       ),
       h.div(
-        [h.Class('dt-grid')],
+        [h.Class('design-grid')],
         [
-          h.div([h.Class('dt-col')], [kinds()]),
+          h.div([h.Class('design-col')], [kinds()]),
           h.div(
-            [h.Class('dt-col dt-aim')],
+            [h.Class('design-col design-aim')],
             [
               h.div(
-                [h.Class('dt-chrome'), h.DataAttribute('dt-chrome', '1')],
+                [h.Class('design-chrome'), h.DataAttribute('design-chrome', '1')],
                 [model.barCollapsed ? handle(model) : bar(model)],
               ),
               wovenSample(),

@@ -451,7 +451,7 @@ export const passages: ReadonlyArray<Passage> = [
   },
   {
     route: 'home',
-    title: 'Loom Devtools',
+    title: 'Loom Design',
     text: 'Point at anything in your running app and leave a note on it; the picker resolves back to the .loom file that produced it.',
   },
 ]

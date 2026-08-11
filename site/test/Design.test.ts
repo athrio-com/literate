@@ -3,10 +3,10 @@ import { describe, expect, it } from 'bun:test'
 import { Effect, Layer, ManagedRuntime, Option } from 'effect'
 import { renderStatic } from 'foldkit/html'
 import { FoldkitRender } from '@athrio/foldkit-ssr'
-import { devtools, pathOf, seedNotes } from '../src/devtools'
+import { design, pathOf, seedNotes } from '../src/design'
 import { type Model, type Route } from '../src/model'
 
-// The devtools section is the one part of the site whose state a reader drives directly, so
+// The Design section is the one part of the site whose state a reader drives directly, so
 // these cases render it in each state the bar can be in rather than only at rest. The panel
 // and the outline leave the section entirely when the model says they should, and that is
 // what most of these assert: absence, not presence.
@@ -27,30 +27,30 @@ const runtime = ManagedRuntime.make(FoldkitRender.layer as Layer.Layer<FoldkitRe
 const render = (model: Model): string =>
   runtime.runSync(
     FoldkitRender.pipe(
-      Effect.flatMap((r) => r.renderToString(renderStatic(() => devtools(model)))),
+      Effect.flatMap((r) => r.renderToString(renderStatic(() => design(model)))),
     ),
   )
 
-describe('the devtools section', () => {
+describe('the Design section', () => {
   it('leads with its own head and stands the bar over the two columns', () => {
     const html = render(at())
-    expect(html).toContain('id="loom-devtools"')
+    expect(html).toContain('id="loom-design"')
     expect(html).toContain('Complementary tools')
-    expect(html).toContain('Loom Devtools')
-    expect(html).toContain('class="dt-bar"')
+    expect(html).toContain('Loom Design')
+    expect(html).toContain('class="design-bar"')
     expect(html).toContain('loom-website')
   })
 
   it('counts the open notes on the bar, not every note it holds', () => {
     // Two of the three seeded notes are open; the third is addressed.
-    expect(render(at())).toContain('class="dt-count">2<')
+    expect(render(at())).toContain('class="design-count">2<')
   })
 
   it('trades the bar for a handle when it is collapsed, keeping the count', () => {
     const html = render(at({ barCollapsed: true }))
-    expect(html).not.toContain('class="dt-bar"')
-    expect(html).toContain('class="dt-handle"')
-    expect(html).toContain('class="dt-count">2<')
+    expect(html).not.toContain('class="design-bar"')
+    expect(html).toContain('class="design-handle"')
+    expect(html).toContain('class="design-count">2<')
   })
 
   it('stamps the sample as woven Loom so a pick on it resolves to a chapter', () => {
@@ -60,16 +60,16 @@ describe('the devtools section', () => {
   })
 
   it('shows the panel only once it is opened', () => {
-    expect(render(at())).not.toContain('class="dt-panel"')
-    expect(render(at({ notesOpen: true }))).toContain('class="dt-panel"')
+    expect(render(at())).not.toContain('class="design-panel"')
+    expect(render(at({ notesOpen: true }))).toContain('class="design-panel"')
   })
 
   it('takes the panel away while the picker is armed, so the page is clear to aim at', () => {
-    expect(render(at({ notesOpen: true, picking: true }))).not.toContain('class="dt-panel"')
+    expect(render(at({ notesOpen: true, picking: true }))).not.toContain('class="design-panel"')
   })
 
   it('takes the panel away under a collapsed bar', () => {
-    expect(render(at({ notesOpen: true, barCollapsed: true }))).not.toContain('class="dt-panel"')
+    expect(render(at({ notesOpen: true, barCollapsed: true }))).not.toContain('class="design-panel"')
   })
 
   it('lists the open notes under the open tab and the addressed one under resolved', () => {
@@ -92,30 +92,30 @@ describe('the devtools section', () => {
 
   it('names what was aimed at in a chip, and arms the send button only for a draft', () => {
     const empty = render(at({ notesOpen: true }))
-    expect(empty).not.toContain('class="dt-chip"')
-    expect(empty).toContain('class="dt-send"')
+    expect(empty).not.toContain('class="design-chip"')
+    expect(empty).toContain('class="design-send"')
 
     const aiming = render(
       at({
         notesOpen: true,
         draft: 'Tighten this',
-        aimed: Option.some({ kind: 'dom', label: 'p.what', pointer: 'loom-devtools p.what' }),
+        aimed: Option.some({ kind: 'dom', label: 'p.what', pointer: 'loom-design p.what' }),
       }),
     )
-    expect(aiming).toContain('class="dt-chip"')
-    expect(aiming).toContain('loom-devtools p.what')
-    expect(aiming).toContain('class="dt-send ready"')
+    expect(aiming).toContain('class="design-chip"')
+    expect(aiming).toContain('loom-design p.what')
+    expect(aiming).toContain('class="design-send ready"')
   })
 
   it('paints the outline only where the model holds one', () => {
-    expect(render(at())).not.toContain('class="dt-outline"')
+    expect(render(at())).not.toContain('class="design-outline"')
 
     const html = render(
       at({
         highlight: Option.some({ label: 'button.cta', left: 40, top: 120, width: 118, height: 34 }),
       }),
     )
-    expect(html).toContain('class="dt-outline"')
+    expect(html).toContain('class="design-outline"')
     expect(html).toContain('button.cta')
     expect(html).toContain('left: 40px')
     expect(html).toContain('top: 104px')

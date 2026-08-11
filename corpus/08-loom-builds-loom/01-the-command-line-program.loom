@@ -143,7 +143,7 @@ const toc = (file: string) =>
 
 The primary language defaults to TypeScript, and the activation answer defaults to that same language, so a TypeScript workspace is two key-presses away. The activation answer is a space-separated list, since one workspace may run several languages. A prompt the author quits — with `Ctrl-C` — fails with `QuitError`, which `init` catches to leave with a word rather than a stack trace.
 
-Every run also connects the workspace to a coding agent. It merges a `loom` entry into `.mcp.json`, the file an agent reads to find its tools, pointing it at the Devtools service's `/mcp` and leaving any other servers there in place. Run twice, the merge adds nothing new.
+Every run also connects the workspace to a coding agent. It merges a `loom` entry into `.mcp.json`, the file an agent reads to find its tools, pointing it at the Design service's `/mcp` and leaving any other servers there in place. Run twice, the merge adds nothing new.
 
 =>
 
@@ -338,9 +338,9 @@ const set = (name: string, value: string) =>
 
 The address is the one argument, because Design cannot guess a port and should not pretend to. Two flags carry the rest: `--port` is where Design itself answers, and `--project` is the name its notes are filed under, defaulting to the directory the command was run in, which is the name a developer would have typed anyway.
 
-The Devtools load only when this command is reached. They bring a store, a SQL client, and the agent's tools with them, and a `tangle` should pay for none of it — the same bargain the language server strikes below.
+Design loads only when this command is reached. It brings a store, a SQL client, and the agent's tools with them, and a `tangle` should pay for none of it — the same bargain the language server strikes below.
 
-Whatever stops Design is printed as it happened rather than guessed at. A port already taken, an address nothing answers on, and Devtools that are not installed all end the same command, and a message naming the wrong one of them costs more time than no message at all.
+Whatever stops Design is printed as it happened rather than guessed at. A port already taken, an address nothing answers on, and Design that are not installed all end the same command, and a message naming the wrong one of them costs more time than no message at all.
 
 =>
 
@@ -352,10 +352,10 @@ const design = (
   Effect.gen(function* () {
     const named = Option.getOrElse(project, () => basename(process.cwd()))
     const proxy = yield* Effect.tryPromise(
-      () => import('@athrio/loom-devtools/design'),
+      () => import('@athrio/loom-design/design'),
     )
     const store = yield* Effect.tryPromise(
-      () => import('@athrio/loom-devtools/store'),
+      () => import('@athrio/loom-design/store'),
     )
     yield* Console.log(
       `loom: Design on http://localhost:${port}, in front of ${application}, noting ${named}`,

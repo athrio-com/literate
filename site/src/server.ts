@@ -13,7 +13,7 @@ import { PREHYDRATION_CAPTURE_SCRIPT } from '@athrio/foldkit-hydration/prehydrat
 import { FoldkitRender } from '@athrio/foldkit-ssr'
 import { view } from './view'
 import { type Model } from './model'
-import { routeOf, seedNotes } from './devtools'
+import { routeOf, seedNotes } from './design'
 
 const distDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 

@@ -15,10 +15,10 @@ services:
       timeout: 3s
       retries: 10
 
-  devtools:
+  Design:
     build:
       context: ../..
-      dockerfile: packages/loom-devtools/Dockerfile
+      dockerfile: packages/loom-design/Dockerfile
     environment:
       DATABASE_URL: postgres://loom:loom@postgres:5432/loom
       PORT: '5710'

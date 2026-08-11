@@ -1,13 +1,13 @@
 ---
-Part XI: Loom Devtools
+Part XI: Loom Design
 Chapter 1: The note
-Package: packages/loom-devtools/src/note.ts
+Package: packages/loom-design/src/note.ts
 Language: TypeScript
 ---
 
 # The note
 
-Loom Devtools rides along a running app: a bar you summon over the page to work on the app while you use it. Its first tool is Notes. You review by pointing — leaving a note on an element you click, or typing one as a message — and a coding agent reads them all over the Model Context Protocol and works through them. Devtools runs on your machine, against any app, and writes nothing into the code you review.
+Loom Design rides along a running app: a bar you summon over the page to work on the app while you use it. Its first tool is Notes. You review by pointing — leaving a note on an element you click, or typing one as a message — and a coding agent reads them all over the Model Context Protocol and works through them. Design runs on your machine, against any app, and writes nothing into the code you review.
 
 A note comes in three kinds: DOM annotations, Loom annotations, and chat notes. A DOM annotation points at an element by how to find it again in the page. A Loom annotation points instead at the Loom source the element was woven from, so it leads back to the loom's prose and code. A chat note stands alone, the way a message sent into a chat does. All three carry the page they were noted on and the words you wrote; each kind adds only what it needs to point where it points.
 

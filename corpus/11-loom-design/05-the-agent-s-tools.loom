@@ -1,6 +1,6 @@
 ---
 Part XI, Chapter 5: The agent's tools
-Package: packages/loom-devtools/src/mcp.ts
+Package: packages/loom-design/src/mcp.ts
 Language: TypeScript
 ---
 
@@ -58,7 +58,7 @@ export const toolkit = Toolkit.make(projects, notes, resolve, discard)
 
 # Surfacing a store failure
 
-A tool that cannot reach the store must tell the agent so, not fail in silence and not crash the daemon. `surface` is how every handler treats a store failure. It logs the fault to the devtools log with the tool's name, then raises it to the agent as an MCP error — an `AiError` the host reports back to the model. The daemon keeps running: a handler that raises an error answers that one call and serves the next, where the old `Effect.orDie` turned the same failure into a defect that could take the process down.
+A tool that cannot reach the store must tell the agent so, not fail in silence and not crash the daemon. `surface` is how every handler treats a store failure. It logs the fault to the Design log with the tool's name, then raises it to the agent as an MCP error — an `AiError` the host reports back to the model. The daemon keeps running: a handler that raises an error answers that one call and serves the next, where the old `Effect.orDie` turned the same failure into a defect that could take the process down.
 
 =>
 
@@ -70,7 +70,7 @@ const surface = <A, E>(tool: string, work: Effect.Effect<A, E>): Effect.Effect<A
 
 # The handlers
 
-The handlers are the tools' work, each reaching the store through the one `NoteStore` the layer provides. The store answers with bare arrays and void, so the handlers box each into the object its tool declares — `projects` and `notes` wrap their arrays, and `resolve` and `discard` do their work and acknowledge with `{ ok: true }`. `notes` keeps only a project's unaddressed notes. Every reach for the store passes through `surface`, so a `DbError` or a `DecodeError` reaches the agent as a reported error and the devtools log, never as a swallowed empty answer or a crash.
+The handlers are the tools' work, each reaching the store through the one `NoteStore` the layer provides. The store answers with bare arrays and void, so the handlers box each into the object its tool declares — `projects` and `notes` wrap their arrays, and `resolve` and `discard` do their work and acknowledge with `{ ok: true }`. `notes` keeps only a project's unaddressed notes. Every reach for the store passes through `surface`, so a `DbError` or a `DecodeError` reaches the agent as a reported error and the Design log, never as a swallowed empty answer or a crash.
 
 =>
 

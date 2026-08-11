@@ -24,9 +24,9 @@ The proxy is also where the overlay enters. As HTML passes through, Design appen
 
 Two mechanics keep the loop live. The proxy forwards the dev server's hot-module-replacement socket rather than terminating it, so a rebuild patches the frame while the shell holds its chat and its panels. The overlay re-enters on every navigation, so a full reload restores it without our help.
 
-## What the devtools already settled
+## What Design already settled
 
-The `@athrio/loom-devtools` package holds the parts of this we have built and proved, and chapter eleven of the corpus describes them across eleven looms. Loom Design keeps that core and replaces its edges.
+The `@athrio/loom-design` package holds the parts of this we have built and proved, and chapter eleven of the corpus describes them across eleven looms. Loom Design keeps that core and replaces its edges.
 
 A note carries an address and an observation. The `NoteSchema` union names three kinds: a `dom` note holds a CSS selector, a label, and a rectangle; a `loom` note holds a chapter and a section; a `chat` note holds text alone. Every note carries the project, the route it was made on, its text, a per-project sequence number, a timestamp, and whether an agent has addressed it.
 
@@ -108,11 +108,11 @@ That inversion is what buys a tool that works with any stack. A plugin reaches o
 
 ## What this frees the website to be
 
-Design attaching from outside means the website owes the devtools nothing, and that removes the last reason for the website to run a bundler at request time.
+Design attaching from outside means the website owes Design nothing, and that removes the last reason for the website to run a bundler at request time.
 
 Vite becomes a build rather than a server. It writes `dist`, and the Effect server reads it and renders. Development and production stop being two arrangements held in agreement and become one path run twice. The stylesheet reaches the browser as a link in the head in both, which closes a flash of unstyled content that measured 383 milliseconds in development against nothing in production.
 
-The site's Vite configuration drops the devtools plugin, the server drops its development layer and its proxy, and one of the four standing type errors goes with the plugin import.
+The site's Vite configuration drops the Design plugin, the server drops its development layer and its proxy, and one of the four standing type errors goes with the plugin import.
 
 ## The looms this replaces
 

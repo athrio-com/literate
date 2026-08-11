@@ -1,6 +1,6 @@
 ---
 Part XI, Chapter 6: The proxy
-Package: packages/loom-devtools/src/
+Package: packages/loom-design/src/
 Language: TypeScript
 ---
 
@@ -187,7 +187,7 @@ export const designServer = (options: {
 
 ## Running it {Tangle}[design-serve.ts]
 
-Design starts from its own runtime edge, under the devtools logger, over the Node platform. The application it stands in front of is named by `LOOM_APP`, the project its notes belong to by `LOOM_PROJECT`, and the port it answers on by `PORT`.
+Design starts from its own runtime edge, under the Design logger, over the Node platform. The application it stands in front of is named by `LOOM_APP`, the project its notes belong to by `LOOM_PROJECT`, and the port it answers on by `PORT`.
 
 Naming the application rather than discovering it is deliberate. Design forwards to whatever is listening there and asks it for nothing, so the same command reaches a Vite dev server, a Rails app, or the site's own Effect server without knowing which it found.
 
@@ -195,7 +195,7 @@ Naming the application rather than discovering it is deliberate. Design forwards
 
 import { Effect as Runtime, Layer as Wiring } from 'effect'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
-import { devtoolsLogger } from './api'
+import { designLogger } from './api'
 import { localStore } from './store'
 import { designServer } from './design'
 
@@ -207,5 +207,5 @@ NodeRuntime.runMain(
       project: process.env.LOOM_PROJECT ?? 'local',
       store: localStore(),
     }),
-  ).pipe(Runtime.provide(devtoolsLogger), Runtime.provide(NodeServices.layer)),
+  ).pipe(Runtime.provide(designLogger), Runtime.provide(NodeServices.layer)),
 )

@@ -52,7 +52,7 @@ jobs:
 
 ## Pushing the images
 
-The images job builds each service and pushes it to the container registry. It logs in with the workflow's own token, then builds `loom-devtools` and `loom-website` from their Dockerfiles, each with the whole repository as the build context. Every image carries three tags: `latest` and a short commit hash always move to this build, and `v<version>` records the shared version — so a rollback names a commit or a release, and a deployment tracking `latest` follows the default branch.
+The images job builds each service and pushes it to the container registry. It logs in with the workflow's own token, then builds `loom-design` and `loom-website` from their Dockerfiles, each with the whole repository as the build context. Every image carries three tags: `latest` and a short commit hash always move to this build, and `v<version>` records the shared version — so a rollback names a commit or a release, and a deployment tracking `latest` follows the default branch.
 
 =>
 
@@ -62,7 +62,7 @@ The images job builds each service and pushes it to the container registry. It l
     strategy:
       matrix:
         include:
-          - { name: loom-devtools, dockerfile: packages/loom-devtools/Dockerfile }
+          - { name: loom-design, dockerfile: packages/loom-design/Dockerfile }
           - { name: loom-website, dockerfile: site/Dockerfile }
     steps:
       - uses: actions/checkout@v4
