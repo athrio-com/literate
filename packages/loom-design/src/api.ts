@@ -148,7 +148,7 @@ const routes = Layer.mergeAll(
 export const mcpAt = (path: HttpRouter.PathInput) =>
   McpServer.toolkit(toolkit).pipe(
     Layer.provide(handlers),
-    Layer.provide(McpServer.layerHttp({ name: 'loom', version: '0.0.9', path })),
+    Layer.provide(McpServer.layerHttp({ name: 'loom', version: '0.0.10', path })),
   )
 
 const mcp = mcpAt('/mcp')

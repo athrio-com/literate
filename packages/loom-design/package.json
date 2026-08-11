@@ -2,7 +2,7 @@
   "name": "@athrio/loom-design",
   "type": "module",
   "private": true,
-  "version": "0.0.9",
+  "version": "0.0.10",
   "scripts": {
     "build": "bun build.ts",
     "serve": "bun src/serve.ts",
