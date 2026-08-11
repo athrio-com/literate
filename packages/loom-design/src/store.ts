@@ -35,6 +35,15 @@ const migrations: ReadonlyArray<{
         )`
       }),
   },
+  {
+    id: 2,
+    name: 'project directory and address',
+    run: (sql) =>
+      Effect.gen(function* () {
+        yield* sql`ALTER TABLE projects ADD COLUMN directory TEXT`
+        yield* sql`ALTER TABLE projects ADD COLUMN address TEXT`
+      }),
+  },
 ]
 
 const migrate = (sql: SqlClient.SqlClient): Effect.Effect<void, SqlError.SqlError> =>
@@ -163,12 +172,29 @@ const discardNote = (
 ): Effect.Effect<void, SqlError.SqlError> =>
   sql`DELETE FROM notes WHERE project = ${project} AND seq = ${seq}`.pipe(Effect.asVoid)
 
-type Project = { readonly id: string; readonly name: string }
+type Project = {
+  readonly id: string
+  readonly name: string
+  readonly directory: string | null
+  readonly address: string | null
+}
 
 const listProjects = (
   sql: SqlClient.SqlClient,
 ): Effect.Effect<ReadonlyArray<Project>, SqlError.SqlError> =>
-  sql<Project>`SELECT id, name FROM projects ORDER BY name`
+  sql<Project>`SELECT id, name, directory, address FROM projects ORDER BY name`
+
+const registerProject = (
+  sql: SqlClient.SqlClient,
+  id: string,
+  directory: string,
+  address: string,
+): Effect.Effect<void, SqlError.SqlError> =>
+  sql`
+    INSERT INTO projects (id, name, directory, address)
+    VALUES (${id}, ${id}, ${directory}, ${address})
+    ON CONFLICT (id) DO UPDATE SET directory = ${directory}, address = ${address}
+  `.pipe(Effect.asVoid)
 
 const ensureProject = (
   sql: SqlClient.SqlClient,
@@ -206,6 +232,8 @@ export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
       edit: (project: string, seq: number, text: string) => editNote(sql, project, seq, text),
       discard: (project: string, seq: number) => discardNote(sql, project, seq),
       projects: listProjects(sql),
+      register: (project: string, directory: string, address: string) =>
+        registerProject(sql, project, directory, address),
       changes,
     } as const
   }).pipe(Effect.orDie),

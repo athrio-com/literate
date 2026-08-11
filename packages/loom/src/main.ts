@@ -2,7 +2,7 @@ import { Cause, Console, Effect, Layer, Option, Result, Stream } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, resolve as resolvePath } from 'node:path'
+import { resolve as resolvePath } from 'node:path'
 import {
   DocumentSource,
   type TangledFile,
@@ -277,13 +277,20 @@ const set = (name: string, value: string) =>
     ),
   )
 
-const design = (
-  application: string,
-  project: Option.Option<string>,
-  port: number,
-) =>
-  Effect.gen(function* () {
-    const named = Option.getOrElse(project, () => basename(process.cwd()))
+const PORT_ONLY = /^[0-9]+$/
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
+
+const addressOf = (given: string): string =>
+  HAS_SCHEME.test(given)
+    ? given
+    : PORT_ONLY.test(given)
+      ? `http://localhost:${given}`
+      : `http://${given}`
+
+const design = (project: string, given: string, port: number) => {
+  const application = addressOf(given)
+  return Effect.gen(function* () {
+    const directory = process.cwd()
     const proxy = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/design'),
     )
@@ -291,13 +298,14 @@ const design = (
       () => import('@athrio/loom-design/store'),
     )
     yield* Console.log(
-      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${named}`,
+      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
     )
     yield* Layer.launch(
       proxy.designServer({
         port,
         application,
-        project: named,
+        project,
+        directory,
         store: store.localStore(),
       }),
     )
@@ -308,6 +316,7 @@ const design = (
       ).pipe(Effect.andThen(Effect.sync(() => void (process.exitCode = 1)))),
     ),
   )
+}
 
 const tangleCommand = Command.make(
   'tangle',
@@ -362,11 +371,11 @@ const setCommand = Command.make(
 const designCommand = Command.make(
   'design',
   {
-    application: Argument.string('application'),
+    project: Argument.string('name'),
+    application: Argument.string('address'),
     port: Flag.integer('port').pipe(Flag.withDefault(5710)),
-    project: Flag.string('project').pipe(Flag.optional),
   },
-  ({ application, port, project }) => design(application, project, port),
+  ({ project, application, port }) => design(project, application, port),
 )
 
 const loom = Command.make('loom').pipe(

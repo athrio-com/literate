@@ -334,9 +334,15 @@ const set = (name: string, value: string) =>
 
 ## Standing Design in front of an application
 
-`loom design <application>` starts Loom Design over an application already running somewhere else. Design forwards every request to that address and appends the notes overlay to the HTML coming back, so the application is reviewed exactly as it runs, with nothing added to its dependencies and nothing changed in its build.
+`loom design <name> <address>` starts Loom Design over an application already running somewhere else. Design forwards every request to that address and appends the notes overlay to the HTML coming back, so the application is reviewed exactly as it runs, with nothing added to its dependencies and nothing changed in its build.
 
-The address is the one argument, because Design cannot guess a port and should not pretend to. Two flags carry the rest: `--port` is where Design itself answers, and `--project` is the name its notes are filed under, defaulting to the directory the command was run in, which is the name a developer would have typed anyway.
+Both arguments are required, and the name comes first because it is the durable one. An address is where an application happens to be listening this morning; a name is what its notes are filed under for as long as the project exists. The command belongs in a project's own scripts beside the command that starts it, where the port is already pinned and the pair is written once.
+
+The directory is not asked for. A package manager runs a script at the project's root, so the working directory is the project, and Design records its absolute path against the name. That is what turns the registry from a list of labels into something an agent can act on: a note names an element on a route in a project, and finding the source it refers to takes a path.
+
+The address may be written short. A bare number is a port on this machine, since nothing else a person would type there is only digits, and a host with a port but no scheme takes `http://`. So `3000`, `localhost:3000`, and `http://localhost:3000` all name the same application, and the long form stays available for anything else — a different host, or a scheme that is not HTTP.
+
+Design and the application are started separately and in either order. Neither owns the other's lifetime, so restarting the application leaves Design standing — with its notes, and in time its panels and its pending edits — rather than taking it down and back up alongside.
 
 Design loads only when this command is reached. It brings a store, a SQL client, and the agent's tools with them, and a `tangle` should pay for none of it — the same bargain the language server strikes below.
 
@@ -344,13 +350,20 @@ Whatever stops Design is printed as it happened rather than guessed at. A port a
 
 =>
 
-const design = (
-  application: string,
-  project: Option.Option<string>,
-  port: number,
-) =>
-  Effect.gen(function* () {
-    const named = Option.getOrElse(project, () => basename(process.cwd()))
+const PORT_ONLY = /^[0-9]+$/
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
+
+const addressOf = (given: string): string =>
+  HAS_SCHEME.test(given)
+    ? given
+    : PORT_ONLY.test(given)
+      ? `http://localhost:${given}`
+      : `http://${given}`
+
+const design = (project: string, given: string, port: number) => {
+  const application = addressOf(given)
+  return Effect.gen(function* () {
+    const directory = process.cwd()
     const proxy = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/design'),
     )
@@ -358,13 +371,14 @@ const design = (
       () => import('@athrio/loom-design/store'),
     )
     yield* Console.log(
-      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${named}`,
+      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
     )
     yield* Layer.launch(
       proxy.designServer({
         port,
         application,
-        project: named,
+        project,
+        directory,
         store: store.localStore(),
       }),
     )
@@ -375,6 +389,7 @@ const design = (
       ).pipe(Effect.andThen(Effect.sync(() => void (process.exitCode = 1)))),
     ),
   )
+}
 
 ## Where the world ends
 
@@ -439,11 +454,11 @@ const setCommand = Command.make(
 const designCommand = Command.make(
   'design',
   {
-    application: Argument.string('application'),
+    project: Argument.string('name'),
+    application: Argument.string('address'),
     port: Flag.integer('port').pipe(Flag.withDefault(5710)),
-    project: Flag.string('project').pipe(Flag.optional),
   },
-  ({ application, port, project }) => design(application, project, port),
+  ({ project, application, port }) => design(project, application, port),
 )
 
 const loom = Command.make('loom').pipe(
@@ -492,7 +507,7 @@ import { Cause, Console, Effect, Layer, Option, Result, Stream } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, resolve as resolvePath } from 'node:path'
+import { resolve as resolvePath } from 'node:path'
 import {
   DocumentSource,
   type TangledFile,

@@ -6,7 +6,7 @@ Language: TypeScript
 
 # The agent's tools
 
-The agent reads the notes through a small set of tools it calls over the Model Context Protocol (MCP). Where the overlay writes notes over the HTTP API, the agent reads and settles them: it lists the projects and their open notes, then marks a note addressed or discards it once it has acted. The notes server mounts these tools at `/mcp`, on the same HTTP server the overlay talks to, and they reach the same SQLite store the overlay's notes land in.
+The agent reads the notes through a small set of tools it calls over the Model Context Protocol (MCP). Where the overlay writes notes over the HTTP API, the agent reads and settles them: it lists the projects and their open notes, then marks a note addressed or discards it once it has acted. The notes server mounts these tools at `/mcp`, on the same HTTP server the overlay talks to, and they reach the same store the overlay's notes land in.
 
 An MCP server exposes its work as named tools with typed arguments, which the host discovers and the model calls directly. That is what sets these apart from the overlay's HTTP API: the API is shaped for the browser, and the tools are shaped for the agent.
 
@@ -23,15 +23,25 @@ import { NoteStore } from './store'
 
 # The tools
 
-Four tools make up the agent's side of the review. `projects` names the projects the store holds, each with the id that keys its notes and the name to show it by. `notes` lists one project's unaddressed notes, in the order they were made — the work to do. `resolve` marks a note addressed once the agent has dealt with it, and `discard` drops one that no longer applies. The two that act take a project and a sequence; `notes` takes a project, and `projects` takes nothing.
+Four tools make up the agent's side of the review. `projects` names the projects the store holds, each with the id that keys its notes, the name to show it by, and the directory it lives in — an agent given a note has to reach the source, and a project's name is not a path. `notes` lists one project's unaddressed notes, in the order they were made — the work to do. `resolve` marks a note addressed once the agent has dealt with it, and `discard` drops one that no longer applies. The two that act take a project and a sequence; `notes` takes a project, and `projects` takes nothing.
 
 Every tool answers with an object, because a result the host renders has to carry content, and a bare array or an empty answer gives it none. `projects` answers under a `projects` field and `notes` under a `notes` field, each wrapping its array; `resolve` and `discard` acknowledge with `{ ok: true }`. So the agent always receives a typed object, never a bare value the host would reject.
 
 =>
 
 const projects = Tool.make('projects', {
-  description: 'List the projects the store holds, each with its id and name.',
-  success: S.Struct({ projects: S.Array(S.Struct({ id: S.String, name: S.String })) }),
+  description:
+    'List the projects the store holds, each with its id, the absolute directory it lives in, and the address it was last framed at.',
+  success: S.Struct({
+    projects: S.Array(
+      S.Struct({
+        id: S.String,
+        name: S.String,
+        directory: S.NullOr(S.String),
+        address: S.NullOr(S.String),
+      }),
+    ),
+  }),
 })
 
 const notes = Tool.make('notes', {

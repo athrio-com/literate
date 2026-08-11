@@ -4,8 +4,18 @@ import { NoteSchema } from './note'
 import { NoteStore } from './store'
 
 const projects = Tool.make('projects', {
-  description: 'List the projects the store holds, each with its id and name.',
-  success: S.Struct({ projects: S.Array(S.Struct({ id: S.String, name: S.String })) }),
+  description:
+    'List the projects the store holds, each with its id, the absolute directory it lives in, and the address it was last framed at.',
+  success: S.Struct({
+    projects: S.Array(
+      S.Struct({
+        id: S.String,
+        name: S.String,
+        directory: S.NullOr(S.String),
+        address: S.NullOr(S.String),
+      }),
+    ),
+  }),
 })
 
 const notes = Tool.make('notes', {

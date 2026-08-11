@@ -6,9 +6,9 @@ Language: TypeScript
 
 # The store
 
-The store is where notes live once they are made. It is a small SQL database, and the Design runs it two ways. The shared service keeps notes in PostgreSQL, a database it owns outside any project, so one store holds the notes of every app you point at — the stack-agnostic path any project reaches over the network. The Vite plugin keeps them in a SQLite file instead, one the plugin opens beside the app it serves, so a Vite project runs the Design with no database to stand up. The store's code neither knows nor cares which is underneath: Effect's SQL layer drives either, and everything below is written against the one SQL client.
+The store is where notes live once they are made. It is a small SQL database, and Design runs it two ways. On one machine it is a SQLite file Design names for itself, holding the notes of every project on that machine, so nothing has to be stood up before the tool starts. Where a team shares a store instead it is PostgreSQL, reached over the network. The store's code neither knows nor cares which is underneath: Effect's SQL layer drives either, and everything below is written against the one SQL client.
 
-The store does five things to a note: read a project's notes, record a new one, resolve one, discard one, and change one's words. It keeps a small registry of its projects too, each one's stable id paired with a name to show it by, so the agent can see which apps have been reviewed. Every note is keyed by the project it came from.
+The store does five things to a note: read a project's notes, record a new one, resolve one, discard one, and change one's words. It keeps a small registry of its projects too — each one's stable id, the directory it lives in, and the address it was last framed at — so an agent handed a note can find the source it refers to. Every note is keyed by the project it came from.
 
 # Connecting to Postgres
 
@@ -43,7 +43,9 @@ class DecodeError extends Data.TaggedError('DecodeError')<{
 
 The store carries its own migrations rather than a separate tool. `migrations` is the ordered list of changes to the schema, each with a number that never changes and the work that applies it. `migrate` runs the pending ones the moment the service starts: it ensures a `_migrations` table that records which numbers have run, reads those back, and applies every migration whose number is absent — each in its own transaction, recording the number as it goes. A migration already applied is skipped, so a restart is a no-op and a fresh database catches up in one pass.
 
-That is how a change reaches a consumer. Add a migration to the list, ship a new image, and the service applies it on the next start — no separate migration step, no tool to install. The first migration lays down the two tables the store keeps.
+That is how a change reaches a consumer. Add a migration to the list, ship a new release, and the service applies it on the next start — no separate migration step, no tool to install. The first migration lays down the two tables the store keeps.
+
+The second gives a project a directory and an address. A name alone says which project a note belongs to and nothing about where that project is, and an agent asked to act on a note needs the path to the files before it can read a line of them. Both columns are added rather than required, since a project registered before there was anywhere to record them keeps its notes and simply has neither.
 
 =>
 
@@ -67,6 +69,15 @@ const migrations: ReadonlyArray<{
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL
         )`
+      }),
+  },
+  {
+    id: 2,
+    name: 'project directory and address',
+    run: (sql) =>
+      Effect.gen(function* () {
+        yield* sql`ALTER TABLE projects ADD COLUMN directory TEXT`
+        yield* sql`ALTER TABLE projects ADD COLUMN address TEXT`
       }),
   },
 ]
@@ -225,18 +236,41 @@ const discardNote = (
 
 # The project registry
 
-The projects table is a registry the store keeps beside the notes, so the agent can see which apps have been reviewed. `listProjects` names every project in it, each id paired with a name that is the id — a project is known by the identifier its overlay script carries, and nothing renames it.
+The projects table is a registry the store keeps beside the notes, so the agent can see which apps have been reviewed and where they are. `listProjects` names every project in it, each id paired with a name that is the id — a project is known by the identifier its overlay script carries, and nothing renames it — and with the directory and address it was last framed at.
 
-A project earns a row the moment it needs one. `ensureProject` files a project under its own id, as both the key and the name, and does nothing when the project is already there — so recording a project's first note registers it. `backfillProjects` does the same for every project already in the notes table, once at startup, so a store that predates the registry fills itself in.
+Those two are what make the registry worth reading. A note names an element on a route in a project; an agent asked to act on one has to find the source, and a name is not a path. The directory is where the project lives, absolute, so it means the same thing from wherever the agent happens to be standing. Both may be absent, since a project can be registered by its first note rather than by Design.
 
 =>
 
-type Project = { readonly id: string; readonly name: string }
+type Project = {
+  readonly id: string
+  readonly name: string
+  readonly directory: string | null
+  readonly address: string | null
+}
 
 const listProjects = (
   sql: SqlClient.SqlClient,
 ): Effect.Effect<ReadonlyArray<Project>, SqlError.SqlError> =>
-  sql<Project>`SELECT id, name FROM projects ORDER BY name`
+  sql<Project>`SELECT id, name, directory, address FROM projects ORDER BY name`
+
+~
+
+Design registers the project it was pointed at, every time it starts. `registerProject` writes the name, the directory, and the address together, and overwrites the directory and the address on a project already there, because the last run is the one that says where the project is now — a repository moves, a port changes, and a registry that kept the first answer would age into a lie.
+
+=>
+
+const registerProject = (
+  sql: SqlClient.SqlClient,
+  id: string,
+  directory: string,
+  address: string,
+): Effect.Effect<void, SqlError.SqlError> =>
+  sql`
+    INSERT INTO projects (id, name, directory, address)
+    VALUES (${id}, ${id}, ${directory}, ${address})
+    ON CONFLICT (id) DO UPDATE SET directory = ${directory}, address = ${address}
+  `.pipe(Effect.asVoid)
 
 const ensureProject = (
   sql: SqlClient.SqlClient,
@@ -257,7 +291,7 @@ const backfillProjects = (sql: SqlClient.SqlClient): Effect.Effect<void, SqlErro
 
 # The store service
 
-`NoteStore` is the service the server and the agent's tools reach for. Its `make` takes a SQL client from the context, migrates the schema, backfills the registry from any notes that predate it, then binds every operation to that one client. Recording a note ensures its project has a registry row first, so a note never lands under a project the registry has not seen. The `make` names no database of its own — it asks only for a SQL client — so the same store runs on either backing.
+`NoteStore` is the service the server and the agent's tools reach for. Its `make` takes a SQL client from the context, migrates the schema, backfills the registry from any notes that predate it, then binds every operation to that one client. Recording a note ensures its project has a registry row first, so a note never lands under a project the registry has not seen, and `register` fills that row in with where the project is. The `make` names no database of its own — it asks only for a SQL client — so the same store runs on either backing.
 
 Recording a note does one more thing: it publishes the stamped note to `changes`, an in-memory channel every request shares. A watcher subscribes to it and hears each note the moment it lands, so a reader of the store need not come back and ask again. The channel is not a second copy of the store's history — a subscriber who joins late gets nothing from before they joined, since the table, not the channel, is the record of everything already there.
 
@@ -286,6 +320,8 @@ export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
       edit: (project: string, seq: number, text: string) => editNote(sql, project, seq, text),
       discard: (project: string, seq: number) => discardNote(sql, project, seq),
       projects: listProjects(sql),
+      register: (project: string, directory: string, address: string) =>
+        registerProject(sql, project, directory, address),
       changes,
     } as const
   }).pipe(Effect.orDie),
