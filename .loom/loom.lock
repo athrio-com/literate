@@ -23,6 +23,7 @@
     "packages/loom-design/src/api.ts",
     "packages/loom-design/src/design-serve.ts",
     "packages/loom-design/src/design.ts",
+    "packages/loom-design/src/identity.ts",
     "packages/loom-design/src/mcp.ts",
     "packages/loom-design/src/note.ts",
     "packages/loom-design/src/overlay.css",

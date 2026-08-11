@@ -112,28 +112,13 @@ const routes = (origin: string, project: string) =>
     HttpRouter.add('*', '*', forward(origin, project)),
   )
 
-const registered = (project: string, directory: string, application: string) =>
-  Layer.effectDiscard(
-    Effect.flatMap(NoteStore, (store) =>
-      store.register(project, directory, application).pipe(
-        Effect.catchCause((cause) =>
-          Effect.logWarning('could not register the project', cause),
-        ),
-      ),
-    ),
-  )
-
 export const designServer = (options: {
   readonly port: number
   readonly application: string
   readonly project: string
-  readonly directory: string
   readonly store: Layer.Layer<NoteStore>
 }) =>
-  Layer.mergeAll(
-    HttpRouter.serve(routes(options.application, options.project)),
-    registered(options.project, options.directory, options.application),
-  ).pipe(
+  HttpRouter.serve(routes(options.application, options.project)).pipe(
     Layer.provide(options.store),
     Layer.provide(NodeHttpServer.layer(() => createServer(), { port: options.port })),
   )

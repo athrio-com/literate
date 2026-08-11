@@ -1,5 +1,5 @@
 ---
-Part XI, Chapter 7: Packaging
+Part XI, Chapter 8: Packaging
 Package: packages/loom-design/
 Language: TypeScript
 ---
@@ -32,6 +32,7 @@ The manifest names the package and what it exports — the note schemas, the pro
   "exports": {
     "./note": "./src/note.ts",
     "./design": "./src/design.ts",
+    "./identity": "./src/identity.ts",
     "./store": "./src/store.ts"
   },
   "dependencies": {
@@ -108,6 +109,7 @@ The Bun configuration checks everything that runs under Bun: the Vite plugin, th
     "build.ts",
     "src/design.ts",
     "src/design-serve.ts",
+    "src/identity.ts",
     "src/store.ts",
     "src/api.ts",
     "src/mcp.ts",

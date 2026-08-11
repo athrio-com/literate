@@ -44,6 +44,11 @@ const migrations: ReadonlyArray<{
         yield* sql`ALTER TABLE projects ADD COLUMN address TEXT`
       }),
   },
+  {
+    id: 3,
+    name: 'project identity',
+    run: (sql) => sql`ALTER TABLE projects ADD COLUMN identity TEXT`.pipe(Effect.asVoid),
+  },
 ]
 
 const migrate = (sql: SqlClient.SqlClient): Effect.Effect<void, SqlError.SqlError> =>
@@ -177,23 +182,34 @@ type Project = {
   readonly name: string
   readonly directory: string | null
   readonly address: string | null
+  readonly identity: string | null
 }
 
 const listProjects = (
   sql: SqlClient.SqlClient,
 ): Effect.Effect<ReadonlyArray<Project>, SqlError.SqlError> =>
-  sql<Project>`SELECT id, name, directory, address FROM projects ORDER BY name`
+  sql<Project>`SELECT id, name, directory, address, identity FROM projects ORDER BY name`
+
+const findProject = (
+  sql: SqlClient.SqlClient,
+  name: string,
+): Effect.Effect<Option.Option<Project>, SqlError.SqlError> =>
+  sql<Project>`
+    SELECT id, name, directory, address, identity FROM projects WHERE id = ${name}
+  `.pipe(Effect.map(Array.head))
 
 const registerProject = (
   sql: SqlClient.SqlClient,
-  id: string,
+  name: string,
+  identity: string,
   directory: string,
   address: string,
 ): Effect.Effect<void, SqlError.SqlError> =>
   sql`
-    INSERT INTO projects (id, name, directory, address)
-    VALUES (${id}, ${id}, ${directory}, ${address})
-    ON CONFLICT (id) DO UPDATE SET directory = ${directory}, address = ${address}
+    INSERT INTO projects (id, name, directory, address, identity)
+    VALUES (${name}, ${name}, ${directory}, ${address}, ${identity})
+    ON CONFLICT (id) DO UPDATE SET
+      directory = ${directory}, address = ${address}, identity = ${identity}
   `.pipe(Effect.asVoid)
 
 const ensureProject = (
@@ -232,8 +248,13 @@ export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
       edit: (project: string, seq: number, text: string) => editNote(sql, project, seq, text),
       discard: (project: string, seq: number) => discardNote(sql, project, seq),
       projects: listProjects(sql),
-      register: (project: string, directory: string, address: string) =>
-        registerProject(sql, project, directory, address),
+      project: (name: string) => findProject(sql, name),
+      register: (
+        name: string,
+        identity: string,
+        directory: string,
+        address: string,
+      ) => registerProject(sql, name, identity, directory, address),
       changes,
     } as const
   }).pipe(Effect.orDie),

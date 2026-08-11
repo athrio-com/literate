@@ -151,7 +151,7 @@ const forward = (origin: string, project: string) =>
 
 Design's own routes are the note routes the daemon serves, mounted under its corner rather than at a root, and the agent's tools beside them. The last route is every other request, which is the application.
 
-Starting also registers the project. Design is the only party that knows all three of a project's name, the directory it was started in, and the address it answers on, so it writes them down where an agent will look — and a failure to write is logged rather than fatal, since a registry entry is worth less than the session it would have stopped.
+Registering the project is not done here. Settling which project this is can refuse — a name may belong to something else — and a server that has already begun answering is the wrong place to discover that, so the question is asked and answered before this layer is ever built.
 
 Order settles the rest. A router answers the most particular route that matches, so the mount is reached before the catch-all, and an application free to own every path but one keeps the paths it has.
 
@@ -176,28 +176,13 @@ const routes = (origin: string, project: string) =>
     HttpRouter.add('*', '*', forward(origin, project)),
   )
 
-const registered = (project: string, directory: string, application: string) =>
-  Layer.effectDiscard(
-    Effect.flatMap(NoteStore, (store) =>
-      store.register(project, directory, application).pipe(
-        Effect.catchCause((cause) =>
-          Effect.logWarning('could not register the project', cause),
-        ),
-      ),
-    ),
-  )
-
 export const designServer = (options: {
   readonly port: number
   readonly application: string
   readonly project: string
-  readonly directory: string
   readonly store: Layer.Layer<NoteStore>
 }) =>
-  Layer.mergeAll(
-    HttpRouter.serve(routes(options.application, options.project)),
-    registered(options.project, options.directory, options.application),
-  ).pipe(
+  HttpRouter.serve(routes(options.application, options.project)).pipe(
     Layer.provide(options.store),
     Layer.provide(NodeHttpServer.layer(() => createServer(), { port: options.port })),
   )
@@ -207,8 +192,6 @@ export const designServer = (options: {
 Design starts from its own runtime edge, under the Design logger, over the Node platform. The application it stands in front of is named by `LOOM_APP`, the project its notes belong to by `LOOM_PROJECT`, and the port it answers on by `PORT`.
 
 Naming the application rather than discovering it is deliberate. Design forwards to whatever is listening there and asks it for nothing, so the same command reaches a Vite dev server, a Rails app, or the site's own Effect server without knowing which it found.
-
-The project's directory is the one the entry was started in, as it is for `loom design`, since a tool run inside a project is standing in the place its notes will point back at.
 
 =>
 
@@ -224,7 +207,6 @@ NodeRuntime.runMain(
       port: Number(process.env.PORT ?? 5710),
       application: process.env.LOOM_APP ?? 'http://localhost:5199',
       project: process.env.LOOM_PROJECT ?? 'local',
-      directory: process.cwd(),
       store: localStore(),
     }),
   ).pipe(Runtime.provide(designLogger), Runtime.provide(NodeServices.layer)),

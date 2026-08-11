@@ -1,4 +1,4 @@
-import { Cause, Console, Effect, Layer, Option, Result, Stream } from 'effect'
+import { Cause, Console, Effect, Layer, Match, Option, Result, Stream } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -13,6 +13,7 @@ import { LoomWeaver } from '@athrio/loom-lang/weave/LoomWeaver'
 import { LoomContents } from '@athrio/loom-lang/weave/LoomContents'
 import { PackageConfig } from '@athrio/loom-lang/PackageConfig'
 import { LoomConfig } from '@athrio/loom-config/LoomConfig'
+import type { Standing } from '@athrio/loom-design/identity'
 import {
   addService,
   installedServices,
@@ -287,6 +288,31 @@ const addressOf = (given: string): string =>
       ? `http://localhost:${given}`
       : `http://${given}`
 
+const within = (one: string, other: string): boolean =>
+  one === other || one.startsWith(`${other}/`) || other.startsWith(`${one}/`)
+
+const refusalOf = (
+  standing: Standing,
+  project: string,
+  directory: string,
+): Option.Option<string> =>
+  Match.value(standing).pipe(
+    Match.tag('Taken', () =>
+      Option.some(
+        `loom: \`${project}\` is registered to another project, and its notes point elsewhere.\n` +
+          `      This directory is ${directory}.\n` +
+          `      Run Design here under a different name, or run it in the directory that owns \`${project}\`.`,
+      ),
+    ),
+    Match.tag('Misplaced', () =>
+      Option.some(
+        `loom: \`${project}\` is registered, but ${directory} carries no identity for it.\n` +
+          `      This is almost always the wrong directory. Run Design from the project it names.`,
+      ),
+    ),
+    Match.orElse(() => Option.none<string>()),
+  )
+
 const design = (project: string, given: string, port: number) => {
   const application = addressOf(given)
   return Effect.gen(function* () {
@@ -294,21 +320,44 @@ const design = (project: string, given: string, port: number) => {
     const proxy = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/design'),
     )
-    const store = yield* Effect.tryPromise(
+    const kept = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/store'),
     )
-    yield* Console.log(
-      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
+    const projects = yield* Effect.tryPromise(
+      () => import('@athrio/loom-design/identity'),
     )
-    yield* Layer.launch(
-      proxy.designServer({
-        port,
-        application,
-        project,
-        directory,
-        store: store.localStore(),
-      }),
-    )
+    const store = kept.localStore()
+    const standing = yield* projects.settle({
+      project,
+      directory,
+      address: application,
+      store,
+    })
+    yield* Option.match(refusalOf(standing, project, directory), {
+      onSome: (message) =>
+        Console.error(message).pipe(
+          Effect.andThen(Effect.sync(() => void (process.exitCode = 1))),
+        ),
+      onNone: () =>
+        Effect.gen(function* () {
+          const serving = yield* projects.servedFrom(application)
+          yield* Option.match(serving, {
+            onNone: () => Effect.void,
+            onSome: (from) =>
+              within(from, directory)
+                ? Effect.void
+                : Console.error(
+                    `loom: warning — the server on ${application} is running in ${from}, not in ${directory}`,
+                  ),
+          })
+          yield* Console.log(
+            `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
+          )
+          yield* Layer.launch(
+            proxy.designServer({ port, application, project, store }),
+          )
+        }),
+    })
   }).pipe(
     Effect.catchCause((cause) =>
       Console.error(

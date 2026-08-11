@@ -10,7 +10,6 @@ NodeRuntime.runMain(
       port: Number(process.env.PORT ?? 5710),
       application: process.env.LOOM_APP ?? 'http://localhost:5199',
       project: process.env.LOOM_PROJECT ?? 'local',
-      directory: process.cwd(),
       store: localStore(),
     }),
   ).pipe(Runtime.provide(designLogger), Runtime.provide(NodeServices.layer)),

@@ -342,6 +342,10 @@ The directory is not asked for. A package manager runs a script at the project's
 
 The address may be written short. A bare number is a port on this machine, since nothing else a person would type there is only digits, and a host with a port but no scheme takes `http://`. So `3000`, `localhost:3000`, and `http://localhost:3000` all name the same application, and the long form stays available for anything else — a different host, or a scheme that is not HTTP.
 
+Design settles which project this is before it serves anything. A name whose notes belong to another project, or a directory that carries no identity while the name is registered, stops the command with a message naming both sides — quietly rebinding a name would re-aim every note already filed under it at the wrong source. A project that has simply moved carries the same identity and starts without ceremony.
+
+One more check is a warning rather than a refusal. Design asks which process is listening at the address and where it is running from, and says so when that is somewhere other than this project — the common way to frame the wrong application is to leave yesterday's server on the port the command names.
+
 Design and the application are started separately and in either order. Neither owns the other's lifetime, so restarting the application leaves Design standing — with its notes, and in time its panels and its pending edits — rather than taking it down and back up alongside.
 
 Design loads only when this command is reached. It brings a store, a SQL client, and the agent's tools with them, and a `tangle` should pay for none of it — the same bargain the language server strikes below.
@@ -360,6 +364,31 @@ const addressOf = (given: string): string =>
       ? `http://localhost:${given}`
       : `http://${given}`
 
+const within = (one: string, other: string): boolean =>
+  one === other || one.startsWith(`${other}/`) || other.startsWith(`${one}/`)
+
+const refusalOf = (
+  standing: Standing,
+  project: string,
+  directory: string,
+): Option.Option<string> =>
+  Match.value(standing).pipe(
+    Match.tag('Taken', () =>
+      Option.some(
+        `loom: \`${project}\` is registered to another project, and its notes point elsewhere.\n` +
+          `      This directory is ${directory}.\n` +
+          `      Run Design here under a different name, or run it in the directory that owns \`${project}\`.`,
+      ),
+    ),
+    Match.tag('Misplaced', () =>
+      Option.some(
+        `loom: \`${project}\` is registered, but ${directory} carries no identity for it.\n` +
+          `      This is almost always the wrong directory. Run Design from the project it names.`,
+      ),
+    ),
+    Match.orElse(() => Option.none<string>()),
+  )
+
 const design = (project: string, given: string, port: number) => {
   const application = addressOf(given)
   return Effect.gen(function* () {
@@ -367,21 +396,44 @@ const design = (project: string, given: string, port: number) => {
     const proxy = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/design'),
     )
-    const store = yield* Effect.tryPromise(
+    const kept = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/store'),
     )
-    yield* Console.log(
-      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
+    const projects = yield* Effect.tryPromise(
+      () => import('@athrio/loom-design/identity'),
     )
-    yield* Layer.launch(
-      proxy.designServer({
-        port,
-        application,
-        project,
-        directory,
-        store: store.localStore(),
-      }),
-    )
+    const store = kept.localStore()
+    const standing = yield* projects.settle({
+      project,
+      directory,
+      address: application,
+      store,
+    })
+    yield* Option.match(refusalOf(standing, project, directory), {
+      onSome: (message) =>
+        Console.error(message).pipe(
+          Effect.andThen(Effect.sync(() => void (process.exitCode = 1))),
+        ),
+      onNone: () =>
+        Effect.gen(function* () {
+          const serving = yield* projects.servedFrom(application)
+          yield* Option.match(serving, {
+            onNone: () => Effect.void,
+            onSome: (from) =>
+              within(from, directory)
+                ? Effect.void
+                : Console.error(
+                    `loom: warning — the server on ${application} is running in ${from}, not in ${directory}`,
+                  ),
+          })
+          yield* Console.log(
+            `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
+          )
+          yield* Layer.launch(
+            proxy.designServer({ port, application, project, store }),
+          )
+        }),
+    })
   }).pipe(
     Effect.catchCause((cause) =>
       Console.error(
@@ -503,7 +555,7 @@ The program is built on Effect, a functional TypeScript library for composing an
 
 =>
 
-import { Cause, Console, Effect, Layer, Option, Result, Stream } from 'effect'
+import { Cause, Console, Effect, Layer, Match, Option, Result, Stream } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -518,6 +570,7 @@ import { LoomWeaver } from '@athrio/loom-lang/weave/LoomWeaver'
 import { LoomContents } from '@athrio/loom-lang/weave/LoomContents'
 import { PackageConfig } from '@athrio/loom-lang/PackageConfig'
 import { LoomConfig } from '@athrio/loom-config/LoomConfig'
+import type { Standing } from '@athrio/loom-design/identity'
 import {
   addService,
   installedServices,

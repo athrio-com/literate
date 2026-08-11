@@ -45,7 +45,9 @@ The store carries its own migrations rather than a separate tool. `migrations` i
 
 That is how a change reaches a consumer. Add a migration to the list, ship a new release, and the service applies it on the next start — no separate migration step, no tool to install. The first migration lays down the two tables the store keeps.
 
-The second gives a project a directory and an address. A name alone says which project a note belongs to and nothing about where that project is, and an agent asked to act on a note needs the path to the files before it can read a line of them. Both columns are added rather than required, since a project registered before there was anywhere to record them keeps its notes and simply has neither.
+The second gives a project a directory and an address. A name alone says which project a note belongs to and nothing about where that project is, and an agent asked to act on a note needs the path to the files before it can read a line of them.
+
+The third gives it an identity, which is the one thing about a project that never changes. A name can be typed at the wrong moment and a directory can be moved, so neither can say whether two runs mean the same project; an identity written into the project itself can. Every column here is added rather than required, since a project registered before there was anywhere to record them keeps its notes and simply has none.
 
 =>
 
@@ -79,6 +81,11 @@ const migrations: ReadonlyArray<{
         yield* sql`ALTER TABLE projects ADD COLUMN directory TEXT`
         yield* sql`ALTER TABLE projects ADD COLUMN address TEXT`
       }),
+  },
+  {
+    id: 3,
+    name: 'project identity',
+    run: (sql) => sql`ALTER TABLE projects ADD COLUMN identity TEXT`.pipe(Effect.asVoid),
   },
 ]
 
@@ -247,29 +254,42 @@ type Project = {
   readonly name: string
   readonly directory: string | null
   readonly address: string | null
+  readonly identity: string | null
 }
 
 const listProjects = (
   sql: SqlClient.SqlClient,
 ): Effect.Effect<ReadonlyArray<Project>, SqlError.SqlError> =>
-  sql<Project>`SELECT id, name, directory, address FROM projects ORDER BY name`
+  sql<Project>`SELECT id, name, directory, address, identity FROM projects ORDER BY name`
+
+const findProject = (
+  sql: SqlClient.SqlClient,
+  name: string,
+): Effect.Effect<Option.Option<Project>, SqlError.SqlError> =>
+  sql<Project>`
+    SELECT id, name, directory, address, identity FROM projects WHERE id = ${name}
+  `.pipe(Effect.map(Array.head))
 
 ~
 
-Design registers the project it was pointed at, every time it starts. `registerProject` writes the name, the directory, and the address together, and overwrites the directory and the address on a project already there, because the last run is the one that says where the project is now — a repository moves, a port changes, and a registry that kept the first answer would age into a lie.
+`findProject` reads one project by name, which is what settles whether a run is the same project as the last one. It answers with an `Option`, since a name nobody has registered is an ordinary answer rather than a failure.
+
+Design registers the project it was pointed at, every time it starts, and `registerProject` writes the identity, the directory, and the address together. It does overwrite — a repository moves, a port changes, and a registry that kept its first answer would age into a lie — but only ever after the caller has matched the identity written into the project against the one recorded here. The store writes what it is told; deciding whether the two are the same project happens before the write, and is the whole of what makes an overwrite safe.
 
 =>
 
 const registerProject = (
   sql: SqlClient.SqlClient,
-  id: string,
+  name: string,
+  identity: string,
   directory: string,
   address: string,
 ): Effect.Effect<void, SqlError.SqlError> =>
   sql`
-    INSERT INTO projects (id, name, directory, address)
-    VALUES (${id}, ${id}, ${directory}, ${address})
-    ON CONFLICT (id) DO UPDATE SET directory = ${directory}, address = ${address}
+    INSERT INTO projects (id, name, directory, address, identity)
+    VALUES (${name}, ${name}, ${directory}, ${address}, ${identity})
+    ON CONFLICT (id) DO UPDATE SET
+      directory = ${directory}, address = ${address}, identity = ${identity}
   `.pipe(Effect.asVoid)
 
 const ensureProject = (
@@ -320,8 +340,13 @@ export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
       edit: (project: string, seq: number, text: string) => editNote(sql, project, seq, text),
       discard: (project: string, seq: number) => discardNote(sql, project, seq),
       projects: listProjects(sql),
-      register: (project: string, directory: string, address: string) =>
-        registerProject(sql, project, directory, address),
+      project: (name: string) => findProject(sql, name),
+      register: (
+        name: string,
+        identity: string,
+        directory: string,
+        address: string,
+      ) => registerProject(sql, name, identity, directory, address),
       changes,
     } as const
   }).pipe(Effect.orDie),

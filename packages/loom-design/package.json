@@ -12,6 +12,7 @@
   "exports": {
     "./note": "./src/note.ts",
     "./design": "./src/design.ts",
+    "./identity": "./src/identity.ts",
     "./store": "./src/store.ts"
   },
   "dependencies": {

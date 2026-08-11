@@ -14,6 +14,7 @@
     "build.ts",
     "src/design.ts",
     "src/design-serve.ts",
+    "src/identity.ts",
     "src/store.ts",
     "src/api.ts",
     "src/mcp.ts",
