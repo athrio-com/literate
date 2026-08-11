@@ -14,7 +14,7 @@ The store does five things to a note: read a project's notes, record a new one, 
 
 `PgLive` is the connection. It reads one setting — `DATABASE_URL`, a Postgres connection string — as a redacted value, so the password never reaches a log or a trace. The layer opens a connection pool and provides the SQL client every operation below draws on.
 
-A database the service cannot reach is fatal, not a state to serve around: a wrong URL or an unreachable host makes the connection die, so the container exits and its supervisor restarts it rather than answering from a store it never opened. `Layer.orDie` is that choice — a connection failure becomes a defect that stops the process.
+A database the service cannot reach is fatal, not a state to serve around: a wrong URL or an unreachable host makes the connection die, so the process stops rather than answering from a store it never opened. `Layer.orDie` is that choice — a connection failure becomes a defect, and whoever started the service sees why it did not come up.
 
 =>
 

@@ -136,7 +136,71 @@ Loom's website is a Foldkit application of five pages, set on paper. The landing
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 One scheme governs all five, so the site reads as one thing: a warm cream ground under three steps of ink, two families of type on a fixed scale, and every measurement on a four-pixel grid. Loom's own woven mark ties it together — a carpet of coloured cells drawn from a grid of glyphs, small beside a name and whole in the hero.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -200,6 +264,38 @@ Each page wears the same chrome. A centred nav carries the wordmark between its 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 The site renders on the server first, for a reader and a crawler, then hydrates and takes over. This part builds it up — the scheme, the model, the marks, the chrome, each page in turn, then the client, the server, the package that ships them, and the image that carries the package to a host.
 
 1. The paper scheme
@@ -230,10 +326,8 @@ Loom Design rides along a running app: a bar you summon over the page to work on
 6. The proxy
 7. Knowing which project this is
 8. Packaging
-9. The local stack
-10. The service entry
-11. The image
-12. The setup UI
+9. The service entry
+10. The setup UI
 
 ### Part XII — Releasing Loom
 

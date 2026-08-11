@@ -6,7 +6,7 @@ Language: YAML
 
 # Releasing on a push
 
-When the gate passes on the default branch, this workflow ships. It publishes the npm packages and pushes the Docker images, and it does both on every push, so the registry always mirrors the default branch. Shipping on every push is only safe because each step is idempotent: the release tool publishes only versions npm is missing, and the images move their mutable tags without ever colliding on an immutable one.
+When the gate passes on the default branch, this workflow ships. It publishes the npm packages and pushes the website's image, and it does both on every push, so the registry always mirrors the default branch. Shipping on every push is only safe because each step is idempotent: the release tool publishes only versions npm is missing, and the image moves its mutable tags without ever colliding on an immutable one.
 
 The workflow triggers on the gate's completion rather than on the push directly, so it runs only after the tests and the tangle check have passed. Both jobs check the same condition — the gate succeeded, on the default branch — before they do anything, and both check out the exact commit the gate validated rather than whatever the default branch points at now.
 
@@ -52,7 +52,7 @@ jobs:
 
 ## Pushing the images
 
-The images job builds each service and pushes it to the container registry. It logs in with the workflow's own token, then builds `loom-design` and `loom-website` from their Dockerfiles, each with the whole repository as the build context. Every image carries three tags: `latest` and a short commit hash always move to this build, and `v<version>` records the shared version — so a rollback names a commit or a release, and a deployment tracking `latest` follows the default branch.
+The images job builds what ships as a container and pushes it to the registry. That is the website alone: Design is a command a developer runs on their own machine, so it ships on npm with the CLI rather than as an image. The job logs in with the workflow's own token, then builds `loom-website` from its Dockerfile, with the whole repository as the build context. The image carries three tags: `latest` and a short commit hash always move to this build, and `v<version>` records the shared version — so a rollback names a commit or a release, and a deployment tracking `latest` follows the default branch.
 
 =>
 
@@ -62,7 +62,6 @@ The images job builds each service and pushes it to the container registry. It l
     strategy:
       matrix:
         include:
-          - { name: loom-design, dockerfile: packages/loom-design/Dockerfile }
           - { name: loom-website, dockerfile: site/Dockerfile }
     steps:
       - uses: actions/checkout@v4

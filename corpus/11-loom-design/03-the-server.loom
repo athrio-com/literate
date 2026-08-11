@@ -231,7 +231,7 @@ const mcp = mcpAt('/mcp')
 
 # Logging
 
-The service runs in a container, so its log is its standard output — the stream Docker captures and `docker compose logs` reads. `designLogger` writes there, one line per event in logfmt, the format a log collector parses into fields.
+The service writes its log to standard output, which is the terminal a developer started it in and whatever collects it wherever it is hosted. `designLogger` writes there, one line per event in logfmt, a format a person can read and a collector can parse into fields.
 
 The service runs under this logger, and the HTTP server logs each request through it, so the output carries a line per request and a line for every fault the store, the branch lookup, or the overlay raises. When the service misbehaves, its recent output says what it was doing.
 
