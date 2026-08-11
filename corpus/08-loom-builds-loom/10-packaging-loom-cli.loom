@@ -10,7 +10,7 @@ The `@athrio/loom` package ships to npm as a single self-contained file. Vite bu
 
 ## The manifest {Tangle}[package.json]
 
-The `files` field restricts the published package to the `dist` directory, and the `bin` field maps the `loom` command to the bundle. The bundle inlines every dependency, so all dependencies belong in the `devDependencies` field.
+The `files` field restricts the published package to the `dist` directory, and the `bin` field maps the `loom` command to the bundle. The bundle inlines every dependency, so all dependencies belong in the `devDependencies` field. The Devtools are the exception the bundle makes: `loom design` loads them from where they are installed rather than from a copy, so they are listed here to be resolved while developing and are left out of the bundle.
 
 The `build` script bundles the tangled source files committed to the repository. Tangling the corpus is a separate step, performed with the published `loom` CLI rather than the in-progress source — using an unverified tangler to tangle the corpus that produces it would be circular. The `prepack` script re-bundles automatically before each publish. The `bun publish` command rewrites the `workspace:*` specifier for `@athrio/loom-lang` — Bun's protocol for local package references — into the real published version number.
 
@@ -49,6 +49,7 @@ The `build` script bundles the tangled source files committed to the repository.
   },
   "devDependencies": {
     "@athrio/loom-config": "workspace:*",
+    "@athrio/loom-devtools": "workspace:*",
     "@athrio/loom-lang": "workspace:*",
     "@athrio/loom-lang-services": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.97",

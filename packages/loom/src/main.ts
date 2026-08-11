@@ -1,8 +1,8 @@
-import { Console, Effect, Option, Result, Stream } from 'effect'
+import { Cause, Console, Effect, Layer, Option, Result, Stream } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { resolve as resolvePath } from 'node:path'
+import { basename, resolve as resolvePath } from 'node:path'
 import {
   DocumentSource,
   type TangledFile,
@@ -277,6 +277,38 @@ const set = (name: string, value: string) =>
     ),
   )
 
+const design = (
+  application: string,
+  project: Option.Option<string>,
+  port: number,
+) =>
+  Effect.gen(function* () {
+    const named = Option.getOrElse(project, () => basename(process.cwd()))
+    const proxy = yield* Effect.tryPromise(
+      () => import('@athrio/loom-devtools/design'),
+    )
+    const store = yield* Effect.tryPromise(
+      () => import('@athrio/loom-devtools/store'),
+    )
+    yield* Console.log(
+      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${named}`,
+    )
+    yield* Layer.launch(
+      proxy.designServer({
+        port,
+        application,
+        project: named,
+        store: store.localStore(),
+      }),
+    )
+  }).pipe(
+    Effect.catchCause((cause) =>
+      Console.error(
+        `loom: Design could not run in front of ${application}\n${Cause.pretty(cause)}`,
+      ).pipe(Effect.andThen(Effect.sync(() => void (process.exitCode = 1)))),
+    ),
+  )
+
 const tangleCommand = Command.make(
   'tangle',
   { path: Argument.string('path'), watch: Flag.boolean('watch') },
@@ -327,6 +359,16 @@ const setCommand = Command.make(
   ({ name, value }) => set(name, value),
 )
 
+const designCommand = Command.make(
+  'design',
+  {
+    application: Argument.string('application'),
+    port: Flag.integer('port').pipe(Flag.withDefault(5710)),
+    project: Flag.string('project').pipe(Flag.optional),
+  },
+  ({ application, port, project }) => design(application, project, port),
+)
+
 const loom = Command.make('loom').pipe(
   Command.withSubcommands([
     tangleCommand,
@@ -338,6 +380,7 @@ const loom = Command.make('loom').pipe(
     removeCommand,
     statusCommand,
     setCommand,
+    designCommand,
   ]),
 )
 

@@ -332,6 +332,50 @@ const set = (name: string, value: string) =>
     ),
   )
 
+## Standing Design in front of an application
+
+`loom design <application>` starts Loom Design over an application already running somewhere else. Design forwards every request to that address and appends the notes overlay to the HTML coming back, so the application is reviewed exactly as it runs, with nothing added to its dependencies and nothing changed in its build.
+
+The address is the one argument, because Design cannot guess a port and should not pretend to. Two flags carry the rest: `--port` is where Design itself answers, and `--project` is the name its notes are filed under, defaulting to the directory the command was run in, which is the name a developer would have typed anyway.
+
+The Devtools load only when this command is reached. They bring a store, a SQL client, and the agent's tools with them, and a `tangle` should pay for none of it — the same bargain the language server strikes below.
+
+Whatever stops Design is printed as it happened rather than guessed at. A port already taken, an address nothing answers on, and Devtools that are not installed all end the same command, and a message naming the wrong one of them costs more time than no message at all.
+
+=>
+
+const design = (
+  application: string,
+  project: Option.Option<string>,
+  port: number,
+) =>
+  Effect.gen(function* () {
+    const named = Option.getOrElse(project, () => basename(process.cwd()))
+    const proxy = yield* Effect.tryPromise(
+      () => import('@athrio/loom-devtools/design'),
+    )
+    const store = yield* Effect.tryPromise(
+      () => import('@athrio/loom-devtools/store'),
+    )
+    yield* Console.log(
+      `loom: Design on http://localhost:${port}, in front of ${application}, noting ${named}`,
+    )
+    yield* Layer.launch(
+      proxy.designServer({
+        port,
+        application,
+        project: named,
+        store: store.localStore(),
+      }),
+    )
+  }).pipe(
+    Effect.catchCause((cause) =>
+      Console.error(
+        `loom: Design could not run in front of ${application}\n${Cause.pretty(cause)}`,
+      ).pipe(Effect.andThen(Effect.sync(() => void (process.exitCode = 1)))),
+    ),
+  )
+
 ## Where the world ends
 
 The command program is nine subcommands. `loom tangle <path>` emits a `.loom`'s files, the path a file or a directory of them, recording each in the lock; with `--watch` it stays running and re-tangles as the looms change, so a dev server watching the output reacts to a loom edit. `loom orphans` lists the files across the workspace that the lock records but no loom still produces, one path per line for a shell to pipe into `rm`, and `--prune` removes them and rewrites the lock. `loom weave <path> <out>` projects a corpus into a `WovenCorpus` and writes it as JSON to `out`. `loom toc <path>` rewrites a book's table of contents from the corpus's own frontmatter. `loom init [dir]` scaffolds a `.loom/config.yaml` and an `.mcp.json`, defaulting to the working directory. `loom add <language>` and `loom remove <language>` turn a language's service on and off. `loom status` reports what the workspace has activated and what the store holds. `loom set <name> <value>` writes a workspace variable and re-tangles the corpus, so a version bump is one command. `@effect/cli` parses the line, dispatches to the matching command, and prints help when none matches. The run site provides every service the commands reach for — the tangler and its disk source, the weaver, the contents writer, the package config, the configuration, and the Node platform behind the prompts and the filesystem.
@@ -392,6 +436,16 @@ const setCommand = Command.make(
   ({ name, value }) => set(name, value),
 )
 
+const designCommand = Command.make(
+  'design',
+  {
+    application: Argument.string('application'),
+    port: Flag.integer('port').pipe(Flag.withDefault(5710)),
+    project: Flag.string('project').pipe(Flag.optional),
+  },
+  ({ application, port, project }) => design(application, project, port),
+)
+
 const loom = Command.make('loom').pipe(
   Command.withSubcommands([
     tangleCommand,
@@ -403,6 +457,7 @@ const loom = Command.make('loom').pipe(
     removeCommand,
     statusCommand,
     setCommand,
+    designCommand,
   ]),
 )
 
@@ -433,11 +488,11 @@ The program is built on Effect, a functional TypeScript library for composing an
 
 =>
 
-import { Console, Effect, Option, Result, Stream } from 'effect'
+import { Cause, Console, Effect, Layer, Option, Result, Stream } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { resolve as resolvePath } from 'node:path'
+import { basename, resolve as resolvePath } from 'node:path'
 import {
   DocumentSource,
   type TangledFile,
@@ -480,5 +535,7 @@ import {
 ::[Reporting the workspace]
 
 ::[Setting a workspace variable]
+
+::[Standing Design in front of an application]
 
 ::[Where the world ends]

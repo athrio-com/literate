@@ -51,7 +51,7 @@ export default defineConfig({
       fileName: () => 'main.js',
     },
     rollupOptions: {
-      external: [...nodeBuiltins],
+      external: [...nodeBuiltins, /^@athrio\/loom-devtools\//],
       output: { banner: '#!/usr/bin/env node' },
     },
   },

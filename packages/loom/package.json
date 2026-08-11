@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@athrio/loom-config": "workspace:*",
+    "@athrio/loom-devtools": "workspace:*",
     "@athrio/loom-lang": "workspace:*",
     "@athrio/loom-lang-services": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.97",
