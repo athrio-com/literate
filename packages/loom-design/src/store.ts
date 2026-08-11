@@ -1,11 +1,5 @@
-import { Config, Effect, Layer, Option } from 'effect'
+import { Effect, Layer, Option } from 'effect'
 import { SqlClient, SqlError } from 'effect/unstable/sql'
-import { PgClient } from '@effect/sql-pg'
-
-export const PgLive = PgClient.layerConfig({
-  url: Config.redacted('DATABASE_URL'),
-}).pipe(Layer.orDie)
-
 import { Data } from 'effect'
 
 class DecodeError extends Data.TaggedError('DecodeError')<{
@@ -229,39 +223,6 @@ const backfillProjects = (sql: SqlClient.SqlClient): Effect.Effect<void, SqlErro
     ON CONFLICT (id) DO NOTHING
   `.pipe(Effect.asVoid)
 
-import { Context, PubSub } from 'effect'
-
-export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
-  make: Effect.gen(function* () {
-    const sql = yield* SqlClient.SqlClient
-    yield* migrate(sql)
-    yield* backfillProjects(sql)
-    const changes = yield* PubSub.unbounded<Note>()
-    return {
-      list: (project: string) => readNotes(sql, project),
-      record: (draft: Draft) =>
-        ensureProject(sql, draft.project).pipe(
-          Effect.andThen(recordDraft(sql, draft)),
-          Effect.tap((note) => PubSub.publish(changes, note)),
-        ),
-      resolve: (project: string, seq: number) => resolveNote(sql, project, seq),
-      edit: (project: string, seq: number, text: string) => editNote(sql, project, seq, text),
-      discard: (project: string, seq: number) => discardNote(sql, project, seq),
-      projects: listProjects(sql),
-      project: (name: string) => findProject(sql, name),
-      register: (
-        name: string,
-        identity: string,
-        directory: string,
-        address: string,
-      ) => registerProject(sql, name, identity, directory, address),
-      changes,
-    } as const
-  }).pipe(Effect.orDie),
-}) {
-  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(PgLive))
-}
-
 const sqliteClientLayer = (
   filename: string,
 ): Layer.Layer<SqlClient.SqlClient> =>
@@ -297,3 +258,36 @@ export const localStore = (): Layer.Layer<NoteStore> =>
       return sqliteStore(file)
     }),
   )
+
+import { Context, PubSub } from 'effect'
+
+export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
+  make: Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient
+    yield* migrate(sql)
+    yield* backfillProjects(sql)
+    const changes = yield* PubSub.unbounded<Note>()
+    return {
+      list: (project: string) => readNotes(sql, project),
+      record: (draft: Draft) =>
+        ensureProject(sql, draft.project).pipe(
+          Effect.andThen(recordDraft(sql, draft)),
+          Effect.tap((note) => PubSub.publish(changes, note)),
+        ),
+      resolve: (project: string, seq: number) => resolveNote(sql, project, seq),
+      edit: (project: string, seq: number, text: string) => editNote(sql, project, seq, text),
+      discard: (project: string, seq: number) => discardNote(sql, project, seq),
+      projects: listProjects(sql),
+      project: (name: string) => findProject(sql, name),
+      register: (
+        name: string,
+        identity: string,
+        directory: string,
+        address: string,
+      ) => registerProject(sql, name, identity, directory, address),
+      changes,
+    } as const
+  }).pipe(Effect.orDie),
+}) {
+  static readonly layer = localStore()
+}

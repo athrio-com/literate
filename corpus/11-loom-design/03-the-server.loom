@@ -243,7 +243,7 @@ export const designLogger = Logger.layer([Logger.consoleLogFmt])
 
 # The server itself
 
-The application merges three layers on one router: the routes, the agent's tools at `/mcp`, and the cross-origin middleware that lets a browser on any origin call it. `notesServer` serves that application on a port, over a store and the Node HTTP platform. The store is a parameter, defaulting to the shared service's Postgres; the Vite plugin passes its own SQLite store in its place, and the same server runs on either. It leaves the logger and the platform to the runtime edge — the service entry or the plugin that launches it — the one place the platform is chosen.
+The application merges three layers on one router: the routes, the agent's tools at `/mcp`, and the cross-origin middleware that lets a browser on any origin call it. `notesServer` serves that application on a port, over a store and the Node HTTP platform. The store is a parameter defaulting to the local one, so an entry that wants the ordinary store names nothing, and a test that wants its own passes it. It leaves the logger and the platform to the runtime edge — the service entry or the plugin that launches it — the one place the platform is chosen.
 
 =>
 

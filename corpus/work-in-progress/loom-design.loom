@@ -32,7 +32,7 @@ A note carries an address and an observation. The `NoteSchema` union names three
 
 The `loom` kind already solves the anchoring problem we care about most. The overlay walks up from the picked element to the nearest ancestor carrying a `data-loom-chapter` and a `data-loom-section` attribute, and records those instead of a selector. A note anchored that way names the prose that specifies the code, so it survives every rebuild that leaves the section in place. Elements outside a marked section fall back to an identifier selector when one exists, and to a depth-limited path otherwise.
 
-The store keeps notes in SQL through Effect's SQL client, with SQLite for a single machine and Postgres for a shared one. It records each note under `(project, seq)`, publishes it on a `PubSub`, and marks an addressed note rather than deleting it.
+The store keeps notes in SQL through Effect's SQL client, over a SQLite file of its own. It records each note under `(project, seq)`, publishes it on a `PubSub`, and marks an addressed note rather than deleting it.
 
 The server exposes the capture and resolve routes, streams changes over `/notes/live`, and serves the overlay itself from `/notes.js`. Serving the overlay from the tool rather than bundling it into the application is the dependency direction Design needs, and it makes the proxy a short step rather than a rewrite.
 
@@ -42,7 +42,7 @@ Four tools give an agent the store: `projects` lists what the store holds, `note
 
 The Vite plugin binds Design to one bundler. It applies during `serve`, starts the note server from `configureServer`, and injects the overlay through `transformIndexHtml`. Every application that wants notes therefore edits its own build configuration and runs Vite. The proxy replaces all of it and asks the application for nothing.
 
-The Docker image and its Postgres service belong to a hosted deployment. A local tool starts in a second from a command, and SQLite already serves a single machine. We keep the Postgres backend for the day a team shares a store, and we stop presenting a container as the way to run Design on a laptop.
+The Docker image and its Postgres service belonged to a hosted deployment that does not exist. A local tool starts in a second from a command, and SQLite serves a single machine, so both are gone rather than carried unused. A shared store is a different product with different questions — who may read whose notes, and where it runs — and it gets built when those are answered, deliberately, rather than kept warm on the chance.
 
 ## A note is the first tier, and the cheapest
 

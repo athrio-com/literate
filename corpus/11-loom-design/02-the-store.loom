@@ -6,25 +6,11 @@ Language: TypeScript
 
 # The store
 
-The store is where notes live once they are made. It is a small SQL database, and Design runs it two ways. On one machine it is a SQLite file Design names for itself, holding the notes of every project on that machine, so nothing has to be stood up before the tool starts. Where a team shares a store instead it is PostgreSQL, reached over the network. The store's code neither knows nor cares which is underneath: Effect's SQL layer drives either, and everything below is written against the one SQL client.
+The store is where notes live once they are made: a SQLite file Design names for itself, holding the notes of every project on this machine. Nothing has to be stood up before the tool starts, which is the whole of what a local tool should ask of anyone.
+
+It is written against Effect's SQL client rather than against SQLite, so the SQL below is the portable subset any of that layer's backings speak. A shared store for a team is a different product with different questions — who may read whose notes, and where it runs — and it will be built when those are answered rather than carried unused until then.
 
 The store does five things to a note: read a project's notes, record a new one, resolve one, discard one, and change one's words. It keeps a small registry of its projects too — each one's stable id, the directory it lives in, and the address it was last framed at — so an agent handed a note can find the source it refers to. Every note is keyed by the project it came from.
-
-# Connecting to Postgres
-
-`PgLive` is the connection. It reads one setting — `DATABASE_URL`, a Postgres connection string — as a redacted value, so the password never reaches a log or a trace. The layer opens a connection pool and provides the SQL client every operation below draws on.
-
-A database the service cannot reach is fatal, not a state to serve around: a wrong URL or an unreachable host makes the connection die, so the process stops rather than answering from a store it never opened. `Layer.orDie` is that choice — a connection failure becomes a defect, and whoever started the service sees why it did not come up.
-
-=>
-
-import { Config, Effect, Layer, Option } from 'effect'
-import { SqlClient, SqlError } from 'effect/unstable/sql'
-import { PgClient } from '@effect/sql-pg'
-
-export const PgLive = PgClient.layerConfig({
-  url: Config.redacted('DATABASE_URL'),
-}).pipe(Layer.orDie)
 
 # What can fail
 
@@ -32,6 +18,8 @@ The store reaches past its own code to two things that can fail: the database it
 
 =>
 
+import { Effect, Layer, Option } from 'effect'
+import { SqlClient, SqlError } from 'effect/unstable/sql'
 import { Data } from 'effect'
 
 class DecodeError extends Data.TaggedError('DecodeError')<{
@@ -315,7 +303,7 @@ const backfillProjects = (sql: SqlClient.SqlClient): Effect.Effect<void, SqlErro
 
 Recording a note does one more thing: it publishes the stamped note to `changes`, an in-memory channel every request shares. A watcher subscribes to it and hears each note the moment it lands, so a reader of the store need not come back and ask again. The channel is not a second copy of the store's history — a subscriber who joins late gets nothing from before they joined, since the table, not the channel, is the record of everything already there.
 
-`NoteStore.layer` is the shared service's binding: it provides `PgLive`, so the store opens its own Postgres connection.
+`NoteStore.layer` is the ordinary binding: the local file, which is the only store there is.
 
 Setting the store up is fatal when it fails: a migration or a backfill that a broken database rejects makes `make` die, so the service exits rather than serve from a store it never prepared. Once running, a query failure is an ordinary typed error the caller handles; only the startup is all-or-nothing.
 
@@ -351,14 +339,14 @@ export class NoteStore extends Context.Service<NoteStore>()('NoteStore', {
     } as const
   }).pipe(Effect.orDie),
 }) {
-  static readonly layer = Layer.effect(this, this.make).pipe(Layer.provide(PgLive))
+  static readonly layer = localStore()
 }
 
 # A SQLite file on one machine
 
-A tool running on a laptop wants no database to stand up, so the same store runs over a SQLite file. `sqliteStore` takes a filename and lays the store's `make` over a SQLite client that opens the file.
+`sqliteStore` takes a filename and lays the store's `make` over a SQLite client that opens the file.
 
-Which client it opens with depends on the runtime. Bun and Node each ship their own SQLite — `bun:sqlite` and `node:sqlite` — and neither module loads on the other, so `sqliteClientLayer` imports the matching driver at runtime and never names the wrong one. Under Bun it opens the file with `@effect/sql-sqlite-bun`, creating the file when it is missing; under Node, with `@effect/sql-sqlite-node`. Either way the schema and its migrations are unchanged, because the store's SQL is the portable subset both the SQLite and the Postgres dialects speak.
+Which client it opens with depends on the runtime. Bun and Node each ship their own SQLite — `bun:sqlite` and `node:sqlite` — and neither module loads on the other, so `sqliteClientLayer` imports the matching driver at runtime and never names the wrong one. Under Bun it opens the file with `@effect/sql-sqlite-bun`, creating the file when it is missing; under Node, with `@effect/sql-sqlite-node`. Either way the schema and its migrations are unchanged, since only the driver differs.
 
 =>
 
@@ -410,8 +398,6 @@ export const localStore = (): Layer.Layer<NoteStore> =>
 
 =>
 
-::[Connecting to Postgres]
-
 ::[What can fail]
 
 ::[The schema, migrated at boot]
@@ -426,6 +412,6 @@ export const localStore = (): Layer.Layer<NoteStore> =>
 
 ::[The project registry]
 
-::[The store service]
-
 ::[A SQLite file on one machine]
+
+::[The store service]
