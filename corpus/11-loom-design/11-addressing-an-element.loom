@@ -1,0 +1,194 @@
+---
+Part XI, Chapter 11: Addressing an element
+Package: packages/loom-design/src/
+Language: TypeScript
+---
+
+# Addressing an element
+
+A note points at something. Turning what a person clicked into something a note can hold is one small pass, and it runs in whichever document holds the application — the frame's document when the shell is picking, its own document when the overlay is.
+
+Naming that document is what keeps the pass out of both hosts. Every element carries its own `ownerDocument`, so the walk reads the document off the element it was given rather than reaching for a global one. The shell hands it an element from the frame and the overlay hands it an element from the page, and neither has to say which.
+
+## What a picked element becomes
+
+An address is one of two things, and the difference is what the element sits inside.
+
+An element woven from a corpus carries a chapter and a section on some ancestor of it, and those two names are the durable address — they name the prose that specifies the code, so the note survives any rebuild that leaves the section in place. An element from anywhere else has no such ancestor, so the address falls back to a selector.
+
+Both kinds carry a label and a rectangle beside the address. The label is what the note list shows, and the rectangle is where the highlight is drawn.
+
+=>
+
+import { Array, Match, Option, Schema as S, pipe } from 'effect'
+import { LoomSourceSchema, RectSchema, type Rect } from './note'
+
+export const PendingSchema = S.Union([
+  S.Struct({ kind: S.tag('dom'), selector: S.String, label: S.String, rect: RectSchema }),
+  S.Struct({ kind: S.tag('loom'), source: LoomSourceSchema, label: S.String, rect: RectSchema }),
+])
+export type Pending = typeof PendingSchema.Type
+
+export const LOOM_ANCHOR = '[data-loom-chapter][data-loom-section]'
+
+## The rectangle, and where it is drawn
+
+A rectangle comes off the element in the coordinates of the viewport that laid it out. For the overlay that viewport is the page's own, and the highlight lands where the rectangle says.
+
+For the shell it is the frame's, and the shell draws over the parent document. So the shell shifts the rectangle by wherever the frame sits in its own page, and the two coordinate spaces meet at that one addition rather than throughout the picking code.
+
+=>
+
+export const rectOf = (el: Element): Rect => {
+  const box = el.getBoundingClientRect()
+  return { x: box.x, y: box.y, width: box.width, height: box.height }
+}
+
+export const shiftedBy = (rect: Rect, by: { readonly x: number; readonly y: number }): Rect => ({
+  x: rect.x + by.x,
+  y: rect.y + by.y,
+  width: rect.width,
+  height: rect.height,
+})
+
+## Naming an element a person can recognise
+
+A label says which element this is in the words a person would use. It is the tag name and the first forty characters of the text inside it, which together identify a button or a heading at a glance without turning into a paragraph in the note list.
+
+=>
+
+export const labelOf = (el: Element): string =>
+  `${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim().slice(0, 40)}"`
+
+## A selector, when there is nothing better
+
+An element with an identifier is addressed by it, since an identifier is unique in the document by definition and short enough to read.
+
+Everything else takes a path built from tag names. Each step names the tag, and adds `nth-of-type` only where the parent holds more than one of that tag — a selector that says `nav > ul > li:nth-of-type(3)` reads as a place in the document, while one that numbers every step reads as machine output.
+
+The path stops after five steps or at the body, whichever comes first. A path that climbs all the way to the root is longer, no more precise, and breaks on any change to the layers above the thing it means.
+
+=>
+
+const nthOfType = (el: Element): string => {
+  const tag = el.tagName.toLowerCase()
+  return Option.match(Option.fromNullishOr(el.parentElement), {
+    onNone: () => tag,
+    onSome: (parent) => {
+      const twins = Array.filter(
+        Array.fromIterable(parent.children),
+        (child) => child.tagName === el.tagName,
+      )
+      const nth = Option.getOrElse(Array.findFirstIndex(twins, (child) => child === el), () => 0) + 1
+      return twins.length > 1 ? `${tag}:nth-of-type(${nth})` : tag
+    },
+  })
+}
+
+const pathTo = (el: Element, budget: number): string =>
+  el.parentElement === null || el.parentElement === el.ownerDocument.body || budget === 0
+    ? nthOfType(el)
+    : `${pathTo(el.parentElement, budget - 1)} > ${nthOfType(el)}`
+
+export const selectorFor = (el: Element): string => (el.id === '' ? pathTo(el, 5) : `#${el.id}`)
+
+## The address itself
+
+The walk asks one question: does this element sit inside a woven section? `closest` climbs from the element to the nearest ancestor carrying both a chapter and a section, and the answer decides which of the two addresses the note gets.
+
+=>
+
+export const anchorOf = (el: Element): Pending =>
+  Option.match(Option.fromNullishOr(el.closest(LOOM_ANCHOR)), {
+    onSome: (woven) => ({
+      kind: 'loom' as const,
+      source: {
+        chapter: woven.getAttribute('data-loom-chapter') ?? '',
+        section: woven.getAttribute('data-loom-section') ?? '',
+      },
+      label: labelOf(el),
+      rect: rectOf(el),
+    }),
+    onNone: () => ({
+      kind: 'dom' as const,
+      selector: selectorFor(el),
+      label: labelOf(el),
+      rect: rectOf(el),
+    }),
+  })
+
+~
+
+The shell picks in one coordinate space and draws in another, so it moves the address it just built into the space it will draw in. Matching on the kind rather than spreading the union is what keeps `dom` a `dom` and `loom` a `loom` through the move.
+
+=>
+
+export const shiftedAnchor = (
+  pending: Pending,
+  by: { readonly x: number; readonly y: number },
+): Pending =>
+  Match.value(pending).pipe(
+    Match.withReturnType<Pending>(),
+    Match.when({ kind: 'dom' }, (annotation) => ({
+      ...annotation,
+      rect: shiftedBy(annotation.rect, by),
+    })),
+    Match.when({ kind: 'loom' }, (annotation) => ({
+      ...annotation,
+      rect: shiftedBy(annotation.rect, by),
+    })),
+    Match.exhaustive,
+  )
+
+~
+
+The highlight wears a shorter name than the note list does. While the cursor is moving there is room for one word, so a woven element shows its section and everything else shows its selector.
+
+=>
+
+export const tagFor = (el: Element): string =>
+  Option.match(Option.fromNullishOr(el.closest(LOOM_ANCHOR)), {
+    onSome: (woven) => woven.getAttribute('data-loom-section') ?? '',
+    onNone: () => selectorFor(el),
+  })
+
+## Asking an element what it is, across a frame
+
+A keyboard shortcut must not fire while someone is typing, so both hosts ask whether the focused element takes text. Asking that of an element inside a frame is where a plain `instanceof` quietly fails.
+
+Each browsing context builds its own constructors. An input inside the frame is an instance of the frame's `HTMLInputElement`, not the shell's, so the shell's `instanceof` returns false for every field in the application and the shortcut fires into the sentence being typed.
+
+The fix is to test against the element's own realm. `defaultView` on the element's document is the window that built it, and its constructors are the ones the element answers to.
+
+=>
+
+export const isEditable = (el: Element | null): boolean =>
+  pipe(
+    Option.fromNullishOr(el),
+    Option.flatMap((found) =>
+      Option.map(Option.fromNullishOr(found.ownerDocument.defaultView), (view) => ({ found, view })),
+    ),
+    Option.match({
+      onNone: () => false,
+      onSome: ({ found, view }) =>
+        found instanceof view.HTMLInputElement ||
+        found instanceof view.HTMLTextAreaElement ||
+        (found instanceof view.HTMLElement && found.isContentEditable),
+    }),
+  )
+
+## The module {Tangle}[address.ts]
+
+=>
+
+::[What a picked element becomes]
+
+::[The rectangle, and where it is drawn]
+
+::[Naming an element a person can recognise]
+
+::[A selector, when there is nothing better]
+
+::[The address itself]
+
+::[Asking an element what it is, across a frame]

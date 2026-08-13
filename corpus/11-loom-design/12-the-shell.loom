@@ -1,0 +1,1211 @@
+---
+Part XI, Chapter 12: The shell
+Package: packages/loom-design/src/
+Language: TypeScript
+---
+
+# The shell
+
+The shell is Loom Design's own page. It carries a bar across the top, the application in a frame beneath it, and the notes beside them — and unlike the overlay, none of it runs inside the application. The proxy puts both on one origin, so the shell reaches into the frame's document from outside and the application's page stays exactly as it shipped.
+
+Standing outside is what makes the shell durable. The application reloads, navigates, and rebuilds under a shell that never restarts, so a half-typed note survives a page load and one watcher outlives every rebuild the dev server does.
+
+## What the shell holds
+
+The shell knows where it is and what it has.
+
+Two facts come from the page and never change: the mount Design answers on, and the project a note belongs to. Two more describe the frame — the route the shell opened it at, and the route the application has since navigated to. Keeping those apart is what stops the frame reloading: the view builds the frame's address from the opening route alone, so a model change can never rewrite it.
+
+The frame's width is the width the application believes it has, and a zero means fill the stage.
+
+The rest is the work. The notes fetched so far, whether the last call reached the server, which tab the panel shows, whether the panel is open, and where the list rests. Then picking: whether it is armed, the element under the cursor, and the element captured but not yet written about. Then the words — the draft being typed, and, while a note is being edited, which note and its new text.
+
+=>
+
+import { Array, Effect, Match, Option, Queue, Schema as S, Stream } from 'effect'
+import { Command, Subscription } from 'foldkit'
+import { html } from 'foldkit/html'
+import type { Html, KeyboardModifiers } from 'foldkit/html'
+import { m } from 'foldkit/message'
+import { clsx } from 'clsx'
+import { NoteSchema, RectSchema, type Note } from './note'
+import {
+  PendingSchema,
+  anchorOf,
+  isEditable,
+  rectOf,
+  shiftedAnchor,
+  shiftedBy,
+  tagFor,
+  type Pending,
+} from './address'
+
+const HoverSchema = S.Struct({ rect: RectSchema, tag: S.String })
+type Hover = typeof HoverSchema.Type
+
+const TabSchema = S.Literals(['open', 'resolved'])
+type Tab = typeof TabSchema.Type
+
+export const Model = S.Struct({
+  base: S.String,
+  project: S.String,
+  entry: S.String,
+  route: S.String,
+  width: S.Number,
+  notes: S.Array(NoteSchema),
+  reachable: S.Boolean,
+  tab: TabSchema,
+  panel: S.Boolean,
+  atBottom: S.Boolean,
+  pendingScroll: S.Boolean,
+  picking: S.Boolean,
+  hover: S.optional(HoverSchema),
+  pending: S.optional(PendingSchema),
+  draft: S.String,
+  editing: S.optional(S.Number),
+  editText: S.String,
+})
+export type Model = typeof Model.Type
+
+## Everything that can happen
+
+The messages divide in three. The frame reports where it went. The person works — arms the picker, picks, types, sends, resolves, discards, edits, changes tab, sets a width. The server answers, or fails to.
+
+=>
+
+export const Navigated = m('Navigated', { route: S.String })
+export const Mirrored = m('Mirrored')
+export const Widened = m('Widened', { width: S.Number })
+
+export const ToggledPanel = m('ToggledPanel')
+export const ToggledPick = m('ToggledPick')
+export const Hovered = m('Hovered', { hover: HoverSchema })
+export const Picked = m('Picked', { pending: PendingSchema })
+export const Escaped = m('Escaped')
+
+export const DraftChanged = m('DraftChanged', { value: S.String })
+export const Sent = m('Sent')
+export const SelectedTab = m('SelectedTab', { tab: TabSchema })
+export const Resolved = m('Resolved', { seq: S.Number })
+export const Discarded = m('Discarded', { seq: S.Number })
+export const StartedEdit = m('StartedEdit', { seq: S.Number, text: S.String })
+export const EditChanged = m('EditChanged', { value: S.String })
+export const SavedEdit = m('SavedEdit')
+export const CancelledEdit = m('CancelledEdit')
+
+export const GotNotes = m('GotNotes', { notes: S.Array(NoteSchema) })
+export const Unreachable = m('Unreachable')
+export const AtBottom = m('AtBottom', { at: S.Boolean })
+export const JumpToBottom = m('JumpToBottom')
+export const Scrolled = m('Scrolled')
+
+export const Message = S.Union([
+  Navigated,
+  Mirrored,
+  Widened,
+  ToggledPanel,
+  ToggledPick,
+  Hovered,
+  Picked,
+  Escaped,
+  DraftChanged,
+  Sent,
+  SelectedTab,
+  Resolved,
+  Discarded,
+  StartedEdit,
+  EditChanged,
+  SavedEdit,
+  CancelledEdit,
+  GotNotes,
+  Unreachable,
+  AtBottom,
+  JumpToBottom,
+  Scrolled,
+])
+export type Message = typeof Message.Type
+
+const h = html<Message>()
+
+## Talking to the store
+
+Every call to the store goes out over the note routes the server already serves, and every one of them comes back as the whole feed. Reading the feed after each write is what keeps the panel honest without a second source of truth: the store decides what the notes are, and the shell never patches its own list.
+
+=>
+
+const feedUrl = (base: string, project: string): string =>
+  `${base}/notes/feed?project=${encodeURIComponent(project)}`
+
+const fetchFeed = (base: string, project: string) =>
+  Effect.tryPromise(() =>
+    fetch(feedUrl(base, project))
+      .then((response) => response.json())
+      .then((data) => GotNotes({ notes: S.decodeUnknownSync(S.Array(NoteSchema))(data) })),
+  ).pipe(Effect.catchCause(() => Effect.succeed(Unreachable())))
+
+const settle = (base: string, project: string, path: string, body: unknown) =>
+  Effect.tryPromise(() =>
+    fetch(`${base}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  ).pipe(
+    Effect.andThen(fetchFeed(base, project)),
+    Effect.catchCause(() => Effect.succeed(Unreachable())),
+  )
+
+const FetchNotes = Command.define(
+  'FetchNotes',
+  { base: S.String, project: S.String },
+  GotNotes,
+  Unreachable,
+)(({ base, project }) => fetchFeed(base, project))
+
+const SendChat = Command.define(
+  'SendChat',
+  { base: S.String, project: S.String, route: S.String, text: S.String },
+  GotNotes,
+  Unreachable,
+)(({ base, project, route, text }) =>
+  settle(base, project, '/notes/capture', { kind: 'chat', project, route, text }),
+)
+
+const SendAnnotation = Command.define(
+  'SendAnnotation',
+  { base: S.String, project: S.String, route: S.String, pending: PendingSchema, text: S.String },
+  GotNotes,
+  Unreachable,
+)(({ base, project, route, pending, text }) =>
+  settle(base, project, '/notes/capture', { ...pending, project, route, text }),
+)
+
+const SendResolve = Command.define(
+  'SendResolve',
+  { base: S.String, project: S.String, seq: S.Number },
+  GotNotes,
+  Unreachable,
+)(({ base, project, seq }) => settle(base, project, '/notes/resolve', { project, seq }))
+
+const SendDiscard = Command.define(
+  'SendDiscard',
+  { base: S.String, project: S.String, seq: S.Number },
+  GotNotes,
+  Unreachable,
+)(({ base, project, seq }) => settle(base, project, '/notes/discard', { project, seq }))
+
+const SendEdit = Command.define(
+  'SendEdit',
+  { base: S.String, project: S.String, seq: S.Number, text: S.String },
+  GotNotes,
+  Unreachable,
+)(({ base, project, seq, text }) => settle(base, project, '/notes/edit', { project, seq, text }))
+
+## The shell's address is the application's
+
+The address bar shows the shell, so the shell has to say where the application is — and it says so by simply being there. The proxy serves the shell at whatever address a person opens, so `localhost:5710/products/42` is the shell, and `/products/42` is the route it frames. There is no prefix to add and none to strip.
+
+That identity is what makes the page reloadable and worth sharing. It also means the shell has one job as the application moves: write the new route into its own address, replacing rather than pushing, since a frame's navigations already land in the session history the back button walks.
+
+=>
+
+const MOUNT = '/__loom'
+const FRAME_ID = 'loom-frame'
+
+const Mirror = Command.define('Mirror', { route: S.String }, Mirrored, Mirrored)(({ route }) =>
+  Effect.sync(() => {
+    history.replaceState(null, '', route)
+    return Mirrored()
+  }),
+)
+
+## Reaching into the frame
+
+Everything the shell does inside the application needs the frame's document, and that document is replaced every time the application loads a page. So each piece of frame work is written as an attach — given the frame and what is inside it, do the work and hand back the way to undo it — and one stream runs attaches over the frame's life.
+
+The stream waits for the frame element to exist, attaches once, and attaches again on every load. Before each attach it undoes the last, and it undoes the last again when the subscription that asked for it goes away. Without that final undo a picker turned off would go on reporting hovers from listeners nothing owns.
+
+Reading `contentDocument` is also the test for whether the frame is reachable at all. A frame that has wandered to another origin hands back nothing there, so the attach simply does not happen and the shell goes quiet rather than throwing.
+
+=>
+
+type Detach = () => void
+
+type View = Window & typeof globalThis
+
+type Inside = { readonly page: Document; readonly view: View }
+
+const frameOf = (): Option.Option<HTMLIFrameElement> =>
+  Option.flatMap(Option.fromNullishOr(document.getElementById(FRAME_ID)), (found) =>
+    found instanceof HTMLIFrameElement ? Option.some(found) : Option.none(),
+  )
+
+const insideOf = (frame: HTMLIFrameElement): Option.Option<Inside> =>
+  Option.flatMap(Option.fromNullishOr(frame.contentDocument), (page) =>
+    Option.map(Option.fromNullishOr(page.defaultView), (view) => ({ page, view })),
+  )
+
+const whileFramed = (
+  attach: (frame: HTMLIFrameElement, inside: Inside, offer: (message: Message) => void) => Detach,
+): Stream.Stream<Message> =>
+  Stream.callback<Message>((queue) =>
+    Effect.acquireRelease(
+      Effect.sync(() => {
+        const offer = (message: Message): void => {
+          Queue.offerUnsafe(queue, message)
+        }
+        const held: {
+          frame: HTMLIFrameElement | null
+          onLoad: (() => void) | null
+          detach: Detach
+        } = { frame: null, onLoad: null, detach: () => {} }
+
+        const enter = (frame: HTMLIFrameElement): void => {
+          held.detach()
+          held.detach = Option.match(insideOf(frame), {
+            onNone: () => () => {},
+            onSome: (inside) => attach(frame, inside, offer),
+          })
+        }
+
+        const find = (): void =>
+          Option.match(frameOf(), {
+            onNone: () => {
+              requestAnimationFrame(find)
+            },
+            onSome: (frame) => {
+              const onLoad = (): void => enter(frame)
+              frame.addEventListener('load', onLoad)
+              held.frame = frame
+              held.onLoad = onLoad
+              enter(frame)
+            },
+          })
+
+        find()
+        return held
+      }),
+      (held) =>
+        Effect.sync(() => {
+          held.detach()
+          if (held.frame !== null && held.onLoad !== null) {
+            held.frame.removeEventListener('load', held.onLoad)
+          }
+        }),
+    ).pipe(Effect.flatMap(() => Effect.never)),
+  )
+
+## Following where the application goes
+
+A full page load announces itself, so the attach reports the route the moment it runs. A single-page application announces nothing at all — it changes its route by calling into the history and re-rendering, and no event crosses to the shell.
+
+So the shell wraps the two history calls in the frame's own window and reports after each, listens for the back button beside them, and puts both originals back when it detaches. Wrapping rather than replacing is the point: the application's own call still runs, with its arguments and its effect intact, and the report is added after it.
+
+=>
+
+const routeOf = (view: View): string => `${view.location.pathname}${view.location.search}`
+
+const followingRoute = (inside: Inside, offer: (message: Message) => void): Detach => {
+  const { view } = inside
+  const report = (): void => offer(Navigated({ route: routeOf(view) }))
+  const pushed = view.history.pushState
+  const replaced = view.history.replaceState
+
+  view.history.pushState = (...args: Parameters<History['pushState']>): void => {
+    pushed.apply(view.history, args)
+    report()
+  }
+  view.history.replaceState = (...args: Parameters<History['replaceState']>): void => {
+    replaced.apply(view.history, args)
+    report()
+  }
+  view.addEventListener('popstate', report)
+  report()
+
+  return () => {
+    view.history.pushState = pushed
+    view.history.replaceState = replaced
+    view.removeEventListener('popstate', report)
+  }
+}
+
+## Keeping a new tab inside the frame
+
+A link bound for a new tab would leave the shell behind, so the shell catches the ones it can and navigates the frame instead. Three gestures mean the same thing — an anchor with a `_blank` target, a click holding a modifier, and a middle click — and one handler answers all three across the click and auxiliary-click events.
+
+Only an address on the application's own origin is diverted. Design proxies one origin and no other, and a third party almost always refuses to be framed, so pulling an outside link inward would replace a working new tab with a blank rectangle.
+
+Script asking for a window is the same intent said differently, so `open` is wrapped too. It hands back the frame's own window, which answers `focus`, `postMessage`, and a `closed` check the way a caller expects. A window a script did not open cannot be closed by one either, so the last method a caller might reach for is safely inert.
+
+=>
+
+const anchorFrom = (
+  target: EventTarget | null,
+  view: View,
+): Option.Option<HTMLAnchorElement> =>
+  target instanceof view.Element
+    ? Option.flatMap(Option.fromNullishOr(target.closest('a[href]')), (found) =>
+        found instanceof view.HTMLAnchorElement ? Option.some(found) : Option.none(),
+      )
+    : Option.none()
+
+const wantsAWindow = (event: MouseEvent, anchor: HTMLAnchorElement): boolean =>
+  anchor.target === '_blank' || event.metaKey || event.ctrlKey || event.button === 1
+
+const insideThisApp = (view: View, href: string): boolean =>
+  new URL(href, view.location.href).origin === view.location.origin
+
+const divertedTo = (event: MouseEvent, view: View): Option.Option<string> =>
+  Option.flatMap(anchorFrom(event.target, view), (anchor) =>
+    wantsAWindow(event, anchor) && insideThisApp(view, anchor.href)
+      ? Option.some(anchor.href)
+      : Option.none(),
+  )
+
+const keepingTabs = (inside: Inside): Detach => {
+  const { page, view } = inside
+  const onClick = (event: MouseEvent): void =>
+    Option.match(divertedTo(event, view), {
+      onNone: () => {},
+      onSome: (href) => {
+        event.preventDefault()
+        view.location.assign(href)
+      },
+    })
+  const opened = view.open
+
+  page.documentElement.addEventListener('click', onClick, { capture: true })
+  page.documentElement.addEventListener('auxclick', onClick, { capture: true })
+  view.open = (url?: string | URL): Window =>
+    Option.match(Option.fromNullishOr(url), {
+      onNone: () => view,
+      onSome: (where) => {
+        view.location.assign(String(where))
+        return view
+      },
+    })
+
+  return () => {
+    page.documentElement.removeEventListener('click', onClick, { capture: true })
+    page.documentElement.removeEventListener('auxclick', onClick, { capture: true })
+    view.open = opened
+  }
+}
+
+## The keys, wherever the focus is
+
+A keyboard shortcut has to work while the cursor is inside the application, and a keystroke there never reaches the shell's own document. So the frame forwards the ones the shell claims.
+
+Alt and a letter is the whole set — the picker, and the notes panel — and a modifier the application is unlikely to have taken keeps the two apart. Nothing fires while someone is typing, and the check asks the frame's own document who has focus, because an input inside the frame belongs to the frame's realm and not the shell's.
+
+=>
+
+const shortcut = (event: KeyboardEvent, page: Document): Option.Option<Message> =>
+  isEditable(page.activeElement) || !event.altKey || event.ctrlKey || event.metaKey
+    ? Option.none()
+    : Match.value(event.code).pipe(
+        Match.withReturnType<Option.Option<Message>>(),
+        Match.when('KeyA', () => Option.some(ToggledPick())),
+        Match.when('KeyN', () => Option.some(ToggledPanel())),
+        Match.orElse(() => Option.none()),
+      )
+
+const forwardingKeys = (inside: Inside, offer: (message: Message) => void): Detach => {
+  const { page } = inside
+  const onKey = (event: KeyboardEvent): void =>
+    Option.match(shortcut(event, page), {
+      onNone: () => {},
+      onSome: (message) => {
+        event.preventDefault()
+        offer(message)
+      },
+    })
+  const onEscape = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') offer(Escaped())
+  }
+
+  page.addEventListener('keydown', onKey, { capture: true })
+  page.addEventListener('keydown', onEscape, { capture: true })
+
+  return () => {
+    page.removeEventListener('keydown', onKey, { capture: true })
+    page.removeEventListener('keydown', onEscape, { capture: true })
+  }
+}
+
+~
+
+Those three attaches run together for as long as the shell does, so one stream carries all of them and undoes all of them at once.
+
+=>
+
+const framed: Stream.Stream<Message> = whileFramed((_frame, inside, offer) => {
+  const route = followingRoute(inside, offer)
+  const tabs = keepingTabs(inside)
+  const keys = forwardingKeys(inside, offer)
+  return () => {
+    route()
+    tabs()
+    keys()
+  }
+})
+
+## Picking inside the frame
+
+Picking listens in the frame and draws in the shell, so it does two things at the boundary between them.
+
+It translates. An element's rectangle comes back in the frame's coordinates, and the highlight is drawn over the shell's page, so the frame's own position is added to it. Reading that position on each event rather than once is what lets the highlight stay right while the stage scrolls or the width changes underneath it.
+
+It also gets out of the way of the other listeners. A click while picking must capture an element, never follow a link — and the handler that diverts new tabs is watching the same clicks. Capture order settles it: these listeners sit on the frame's document and the diverting ones sit on its root element, so a pick runs first and stops the event before the diverter ever sees it.
+
+The crosshair goes in as a stylesheet the attach owns and the detach removes, which is why turning the picker off restores every cursor the application set for itself.
+
+=>
+
+const pickingInside: Stream.Stream<Message> = whileFramed((frame, inside, offer) => {
+  const { page, view } = inside
+  const offsetOf = (): { readonly x: number; readonly y: number } => {
+    const box = frame.getBoundingClientRect()
+    return { x: box.x, y: box.y }
+  }
+  const elementOf = (target: EventTarget | null): Option.Option<Element> =>
+    target instanceof view.Element ? Option.some(target) : Option.none()
+
+  const onMove = (event: MouseEvent): void =>
+    Option.match(elementOf(event.target), {
+      onNone: () => {},
+      onSome: (el) =>
+        offer(Hovered({ hover: { rect: shiftedBy(rectOf(el), offsetOf()), tag: tagFor(el) } })),
+    })
+
+  const onClick = (event: MouseEvent): void =>
+    Option.match(elementOf(event.target), {
+      onNone: () => {},
+      onSome: (el) => {
+        event.preventDefault()
+        event.stopPropagation()
+        offer(Picked({ pending: shiftedAnchor(anchorOf(el), offsetOf()) }))
+      },
+    })
+
+  const crosshair = page.createElement('style')
+  crosshair.textContent = '*, *::before, *::after { cursor: crosshair !important }'
+  page.head.appendChild(crosshair)
+  page.addEventListener('mousemove', onMove, { capture: true })
+  page.addEventListener('click', onClick, { capture: true })
+
+  return () => {
+    crosshair.remove()
+    page.removeEventListener('mousemove', onMove, { capture: true })
+    page.removeEventListener('click', onClick, { capture: true })
+  }
+})
+
+## Watching the note list
+
+The list scrolls to the newest note when one is written, and offers a way back down when a reader has scrolled away from it. Both need the list element, which the view has not necessarily drawn yet, so the watch asks for it each frame until it appears.
+
+=>
+
+const NOTES_ID = 'loom-notes-list'
+
+const noteListElement = (): Element | null => document.getElementById(NOTES_ID)
+
+const ScrollNotes = Command.define('ScrollNotes', Scrolled)(
+  Effect.sync(() => {
+    requestAnimationFrame(() => {
+      const list = noteListElement()
+      if (list !== null) list.scrollTop = list.scrollHeight
+    })
+    return Scrolled()
+  }),
+)
+
+const nearBottom = (list: Element): boolean =>
+  list.scrollHeight - list.scrollTop - list.clientHeight < 40
+
+const bottomStream: Stream.Stream<Message> = Stream.callback<Message>((queue) =>
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      const watch: { list: Element | null; onScroll: (() => void) | null; live: boolean } = {
+        list: null,
+        onScroll: null,
+        live: true,
+      }
+      const attach = (): void => {
+        if (!watch.live) return
+        const list = noteListElement()
+        if (list === null) {
+          requestAnimationFrame(attach)
+          return
+        }
+        const onScroll = (): void => {
+          Queue.offerUnsafe(queue, AtBottom({ at: nearBottom(list) }))
+        }
+        list.addEventListener('scroll', onScroll, { passive: true })
+        watch.list = list
+        watch.onScroll = onScroll
+        onScroll()
+      }
+      attach()
+      return watch
+    }),
+    (watch) =>
+      Effect.sync(() => {
+        watch.live = false
+        if (watch.list !== null && watch.onScroll !== null) {
+          watch.list.removeEventListener('scroll', watch.onScroll)
+        }
+      }),
+  ).pipe(Effect.flatMap(() => Effect.never)),
+)
+
+## What the shell listens to
+
+Four subscriptions. The frame watch runs for the shell's whole life, keyed to nothing that changes. Picking runs only while it is armed. The note list watch runs while the panel is open. The shell's own keys run always, for the times the focus is on this side of the frame rather than inside it.
+
+=>
+
+const subscriptions = Subscription.make<Model, Message>()((entry) => ({
+  frame: entry(
+    { project: S.String },
+    {
+      modelToDependencies: (model) => ({ project: model.project }),
+      dependenciesToStream: () => framed,
+    },
+  ),
+  pick: entry(
+    { picking: S.Boolean },
+    {
+      modelToDependencies: (model) => ({ picking: model.picking }),
+      dependenciesToStream: ({ picking }) => (picking ? pickingInside : Stream.empty),
+    },
+  ),
+  bottomWatch: entry(
+    { panel: S.Boolean },
+    {
+      modelToDependencies: (model) => ({ panel: model.panel }),
+      dependenciesToStream: ({ panel }) => (panel ? bottomStream : Stream.empty),
+    },
+  ),
+  shellKeys: entry(
+    { project: S.String },
+    {
+      modelToDependencies: (model) => ({ project: model.project }),
+      dependenciesToStream: () =>
+        Subscription.fromEventFilterMap<KeyboardEvent, Message>({
+          target: document,
+          type: 'keydown',
+          options: { capture: true },
+          toMessage: (event) =>
+            event.key === 'Escape'
+              ? Option.some(Escaped())
+              : Option.match(shortcut(event, document), {
+                  onNone: () => Option.none<Message>(),
+                  onSome: (message) => {
+                    event.preventDefault()
+                    return Option.some(message)
+                  },
+                }),
+        }),
+    },
+  ),
+}))
+
+## How the shell answers
+
+Sending a note branches once, on whether an element was picked. With one, the note carries its address; without one, it is a message and carries only the route it was written on.
+
+=>
+
+const sent = (model: Model): readonly [Model, ReadonlyArray<Command.Command<Message>>] =>
+  model.pending === undefined
+    ? [
+        { ...model, draft: '', pendingScroll: true },
+        [
+          SendChat({
+            base: model.base,
+            project: model.project,
+            route: model.route,
+            text: model.draft,
+          }),
+        ],
+      ]
+    : [
+        { ...model, draft: '', pending: undefined, pendingScroll: true },
+        [
+          SendAnnotation({
+            base: model.base,
+            project: model.project,
+            route: model.route,
+            pending: model.pending,
+            text: model.draft,
+          }),
+        ],
+      ]
+
+const saved = (model: Model): readonly [Model, ReadonlyArray<Command.Command<Message>>] =>
+  model.editing === undefined
+    ? [model, []]
+    : [
+        { ...model, editing: undefined },
+        [
+          SendEdit({
+            base: model.base,
+            project: model.project,
+            seq: model.editing,
+            text: model.editText,
+          }),
+        ],
+      ]
+
+~
+
+Everything else is one branch per message, closed exhaustively so a message added later cannot slip through unhandled.
+
+Two of them are worth naming. A report from the frame writes the route into the shell's address as well as into the model, which is what makes the page reloadable. Picking an element opens the panel, since the next thing anyone does is write about what they picked.
+
+=>
+
+const update = (
+  model: Model,
+  message: Message,
+): readonly [Model, ReadonlyArray<Command.Command<Message>>] =>
+  Match.value(message).pipe(
+    Match.withReturnType<readonly [Model, ReadonlyArray<Command.Command<Message>>]>(),
+    Match.tagsExhaustive({
+      Navigated: ({ route }) => [{ ...model, route }, [Mirror({ route })]],
+      Mirrored: () => [model, []],
+      Widened: ({ width }) => [{ ...model, width }, []],
+      ToggledPanel: () =>
+        model.panel
+          ? [{ ...model, panel: false }, []]
+          : [
+              { ...model, panel: true, pendingScroll: true },
+              [FetchNotes({ base: model.base, project: model.project }), ScrollNotes()],
+            ],
+      ToggledPick: () => [{ ...model, picking: !model.picking, hover: undefined }, []],
+      Hovered: ({ hover }) => [{ ...model, hover }, []],
+      Picked: ({ pending }) => [
+        { ...model, picking: false, pending, hover: undefined, panel: true },
+        [],
+      ],
+      Escaped: () => [{ ...model, picking: false, pending: undefined, hover: undefined }, []],
+      DraftChanged: ({ value }) => [{ ...model, draft: value }, []],
+      Sent: () => (model.draft.trim() === '' ? [model, []] : sent(model)),
+      SelectedTab: ({ tab }) => [{ ...model, tab }, []],
+      Resolved: ({ seq }) => [
+        model,
+        [SendResolve({ base: model.base, project: model.project, seq })],
+      ],
+      Discarded: ({ seq }) => [
+        model,
+        [SendDiscard({ base: model.base, project: model.project, seq })],
+      ],
+      StartedEdit: ({ seq, text }) => [{ ...model, editing: seq, editText: text }, []],
+      EditChanged: ({ value }) => [{ ...model, editText: value }, []],
+      SavedEdit: () => saved(model),
+      CancelledEdit: () => [{ ...model, editing: undefined }, []],
+      GotNotes: ({ notes }) =>
+        model.pendingScroll
+          ? [
+              { ...model, notes, reachable: true, pendingScroll: false, atBottom: true },
+              [ScrollNotes()],
+            ]
+          : [{ ...model, notes, reachable: true }, []],
+      Unreachable: () => [{ ...model, reachable: false }, []],
+      AtBottom: ({ at }) => [{ ...model, atBottom: at }, []],
+      JumpToBottom: () => [{ ...model, atBottom: true }, [ScrollNotes()]],
+      Scrolled: () => [model, []],
+    }),
+  )
+
+## The bar across the top
+
+The bar is the site's own nav, doing a different job. It names the tool on the left, shows where the application is in the middle, and keeps the two controls at the right end — the picker, and the notes.
+
+The route is the one piece of chrome that changes constantly, so it reads as an address rather than as a label: lower case, untracked, and in secondary ink beside the tracked capitals around it.
+
+=>
+
+const wordmark = (): Html => h.span([h.Class('nav-word')], ['Loom Design'])
+
+const routeLabel = (model: Model): Html =>
+  h.span([h.Class('shell-route'), h.Title(model.route)], [model.route])
+
+const projectLabel = (model: Model): Html =>
+  h.span([h.Class('shell-project')], [model.project])
+
+~
+
+The widths are the instrument the frame makes possible. Each one is a viewport the application genuinely gets, so a reader sweeping the row watches real breakpoints turn rather than a picture being scaled. Fill is the resting state and comes first; the rest descend from a wide desktop to a phone.
+
+The pills are the palette's, brought onto paper: the chosen one takes the faint rule behind it and full ink, exactly as the nav marks the page a reader is already on.
+
+=>
+
+const WIDTHS: ReadonlyArray<{ readonly label: string; readonly width: number }> = [
+  { label: 'fill', width: 0 },
+  { label: '1440', width: 1440 },
+  { label: '1280', width: 1280 },
+  { label: '1024', width: 1024 },
+  { label: '768', width: 768 },
+  { label: '390', width: 390 },
+]
+
+const widthPill = (label: string, width: number, here: boolean): Html =>
+  h.button(
+    [
+      h.Class(clsx('shell-width', here && 'here')),
+      h.Type('button'),
+      h.Title(width === 0 ? 'Fill the stage' : `Render at ${width} pixels`),
+      h.OnClick(Widened({ width })),
+    ],
+    [label],
+  )
+
+const widthRow = (model: Model): Html =>
+  h.div(
+    [h.Class('shell-widths')],
+    Array.map(WIDTHS, (choice) =>
+      widthPill(choice.label, choice.width, choice.width === model.width),
+    ),
+  )
+
+~
+
+The two controls answer to the mouse and to the keyboard alike, so each says its shortcut in the title a reader hovers for. The picker wears the accent while it is armed, which is the one colour on this page that marks a state rather than a link — the scheme names the Design picker among the things it is for.
+
+The notes control carries the count of what is still open, and drops it when nothing is.
+
+=>
+
+const openCount = (notes: ReadonlyArray<Note>): number =>
+  Array.filter(notes, (note) => !note.addressed).length
+
+const pickControl = (model: Model): Html =>
+  h.button(
+    [
+      h.Class(clsx('shell-tool', model.picking && 'armed')),
+      h.Type('button'),
+      h.Title(model.picking ? 'Picking — escape to cancel' : 'Pick an element (Alt+A)'),
+      h.OnClick(ToggledPick()),
+    ],
+    ['◎ pick'],
+  )
+
+const notesControl = (model: Model): Html => {
+  const open = openCount(model.notes)
+  return h.button(
+    [
+      h.Class(clsx('shell-tool', model.panel && 'here')),
+      h.Type('button'),
+      h.Title('Notes (Alt+N)'),
+      h.OnClick(ToggledPanel()),
+    ],
+    ['notes', ...(open === 0 ? [] : [h.span([h.Class('shell-count')], [String(open)])])],
+  )
+}
+
+const bar = (model: Model): Html =>
+  h.div(
+    [h.Class('nav shell-nav')],
+    [
+      wordmark(),
+      projectLabel(model),
+      routeLabel(model),
+      h.div([h.Class('shell-gap')], []),
+      widthRow(model),
+      pickControl(model),
+      notesControl(model),
+    ],
+  )
+
+## The stage, and the sheet on it
+
+The application sits on paper as a white sheet with a soft shadow under it and no edge drawn around it, which is how this site shows a document being written. Nothing here says where the tool stops and the application starts except the change of ground, and that is enough.
+
+The frame's address is built from the route the shell opened at and never from the route it has since reached. Binding it to the live route would hand the frame a new address every time the application navigated, and the frame would answer by loading that address again — a reload on every step. So the model keeps both, and only the unchanging one reaches the view.
+
+=>
+
+const stage = (model: Model): Html =>
+  h.div(
+    [h.Class('shell-stage')],
+    [
+      h.iframe(
+        [
+          h.Id(FRAME_ID),
+          h.Class('shell-frame'),
+          h.Src(model.entry),
+          h.Title('The application'),
+          h.Allow('clipboard-write; fullscreen'),
+          h.Style(model.width === 0 ? { width: '100%' } : { width: `${model.width}px` }),
+        ],
+        [],
+      ),
+    ],
+  )
+
+~
+
+The highlight is drawn on the shell's page rather than inside the application, so nothing the application does to its own stacking can bury it and nothing it clips can cut it off. Its rectangle already carries the frame's offset, added where the event was read.
+
+=>
+
+const highlight = (hover: Hover): Html =>
+  h.div(
+    [
+      h.Class('shell-highlight'),
+      h.Style({
+        left: `${hover.rect.x}px`,
+        top: `${hover.rect.y}px`,
+        width: `${hover.rect.width}px`,
+        height: `${hover.rect.height}px`,
+      }),
+    ],
+    [h.span([h.Class('shell-highlight-tag')], [hover.tag])],
+  )
+
+## The notes, on the one dark ground
+
+The panel is the palette's navy card standing as a column. This site goes dark in exactly one place, where a reader has stopped reading the page and started working on it, and a panel of notes about the page is that same moment.
+
+A note shows its kind, what it points at, and the route it was left on, then the sentence itself. The three kinds carry the mark's own colours, lifted for the dark ground they sit on.
+
+=>
+
+const kindInk = (note: Note): string =>
+  Match.value(note).pipe(
+    Match.when({ kind: 'chat' }, () => 'chat'),
+    Match.when({ kind: 'dom' }, () => 'dom'),
+    Match.when({ kind: 'loom' }, () => 'loom'),
+    Match.exhaustive,
+  )
+
+const pointerOf = (note: Note): Option.Option<string> =>
+  Match.value(note).pipe(
+    Match.withReturnType<Option.Option<string>>(),
+    Match.when({ kind: 'dom' }, (annotation) => Option.some(annotation.selector)),
+    Match.when({ kind: 'loom' }, (annotation) => Option.some(annotation.source.section)),
+    Match.when({ kind: 'chat' }, () => Option.none()),
+    Match.exhaustive,
+  )
+
+const noteMeta = (note: Note): Html =>
+  h.div(
+    [h.Class('note-meta')],
+    [
+      h.span([h.Class(`note-kind ${kindInk(note)}`)], [note.kind]),
+      ...Option.match(pointerOf(note), {
+        onNone: () => [],
+        onSome: (pointer) => [h.span([h.Class('note-pointer')], [pointer])],
+      }),
+      h.span([h.Class('note-route')], [note.route]),
+    ],
+  )
+
+~
+
+The three things a person does to a note stay out of the way until the cursor reaches the note, which keeps a column of sentences reading as sentences. Resolving is offered only where there is something to resolve.
+
+=>
+
+const noteControl = (label: string, message: Message, tone: string): Html =>
+  h.button([h.Class(`note-do ${tone}`), h.Type('button'), h.OnClick(message)], [label])
+
+const noteControls = (note: Note): Html =>
+  h.div(
+    [h.Class('note-controls')],
+    [
+      noteControl('edit', StartedEdit({ seq: note.seq, text: note.text }), 'quiet'),
+      ...(note.addressed
+        ? []
+        : [noteControl('resolve', Resolved({ seq: note.seq }), 'done')]),
+      noteControl('discard', Discarded({ seq: note.seq }), 'quiet'),
+    ],
+  )
+
+const editRow = (editText: string): Html =>
+  h.div(
+    [h.Class('note-edit')],
+    [
+      h.textarea(
+        [
+          h.Class('note-field'),
+          h.Value(editText),
+          h.OnInput((value: string) => EditChanged({ value })),
+        ],
+        [],
+      ),
+      h.div(
+        [h.Class('note-edit-actions')],
+        [
+          h.button([h.Class('note-save'), h.Type('button'), h.OnClick(SavedEdit())], ['Save']),
+          h.button(
+            [h.Class('note-cancel'), h.Type('button'), h.OnClick(CancelledEdit())],
+            ['Cancel'],
+          ),
+        ],
+      ),
+    ],
+  )
+
+const noteRow = (note: Note, editing: number | undefined, editText: string): Html =>
+  note.seq === editing
+    ? editRow(editText)
+    : h.div(
+        [h.Class('note-row')],
+        [noteMeta(note), h.div([h.Class('note-text')], [note.text]), noteControls(note)],
+      )
+
+~
+
+The list shows one tab at a time, and says something useful when a tab is empty rather than showing a blank column. A server that is not answering says so above the list, because a panel that simply shows nothing looks the same as a project with no notes in it.
+
+=>
+
+const visibleNotes = (model: Model): ReadonlyArray<Note> =>
+  Array.filter(model.notes, (note) =>
+    model.tab === 'resolved' ? note.addressed : !note.addressed,
+  )
+
+const emptyState = (model: Model): Html =>
+  h.div(
+    [h.Class('note-empty')],
+    [
+      model.tab === 'resolved'
+        ? 'No resolved notes yet.'
+        : 'No open notes. Pick something in the frame, or type one below.',
+    ],
+  )
+
+const noteList = (model: Model): Html => {
+  const notes = visibleNotes(model)
+  return h.div(
+    [h.Id(NOTES_ID), h.Class('note-list')],
+    notes.length === 0
+      ? [emptyState(model)]
+      : Array.map(notes, (note) => noteRow(note, model.editing, model.editText)),
+  )
+}
+
+const banner = (): Html =>
+  h.div(
+    [h.Class('note-banner')],
+    [
+      h.div([h.Class('note-banner-head')], ["The notes server isn't answering."]),
+      h.div([h.Class('note-banner-say')], ['Design serves it from the same port as this page.']),
+    ],
+  )
+
+const tabButton = (label: string, value: Tab, active: boolean): Html =>
+  h.button(
+    [
+      h.Class(clsx('note-tab', active && 'here')),
+      h.Type('button'),
+      h.OnClick(SelectedTab({ tab: value })),
+    ],
+    [label],
+  )
+
+## Writing a note
+
+The composer is the same field whichever kind of note is being written, and what sits above it says which kind that is. With an element picked it names the element; with none, it invites a message.
+
+Enter sends, because that is what Enter does in a place people are writing sentences to be read by someone else. A modifier makes a new line, for the note that needs two.
+
+=>
+
+const composerKey =
+  (draft: string) =>
+  (key: string, mods: KeyboardModifiers): Option.Option<Message> => {
+    if (key !== 'Enter') return Option.none()
+    if (mods.ctrlKey || mods.metaKey) return Option.some(DraftChanged({ value: `${draft}\n` }))
+    if (mods.shiftKey) return Option.none()
+    return Option.some(Sent())
+  }
+
+const draftArea = (model: Model, placeholder: string): Html =>
+  h.textarea(
+    [
+      h.Class('note-field'),
+      h.Value(model.draft),
+      h.Placeholder(placeholder),
+      h.OnInput((value: string) => DraftChanged({ value })),
+      h.OnKeyDownPreventDefault(composerKey(model.draft)),
+    ],
+    [],
+  )
+
+const scrollDown = (): Html =>
+  h.button(
+    [
+      h.Class('note-jump'),
+      h.Type('button'),
+      h.Title('Jump to the latest'),
+      h.OnClick(JumpToBottom()),
+    ],
+    ['↓'],
+  )
+
+const composer = (model: Model): Html =>
+  h.div(
+    [h.Class('note-composer')],
+    [
+      ...(model.atBottom ? [] : [scrollDown()]),
+      ...Option.match(Option.fromNullishOr(model.pending), {
+        onNone: () => [],
+        onSome: (pending) => [h.div([h.Class('note-aimed')], [`◎ ${pending.label}`])],
+      }),
+      draftArea(
+        model,
+        model.pending === undefined
+          ? 'Leave a note…'
+          : 'What should this element say or do?',
+      ),
+      h.div(
+        [h.Class('note-send-row')],
+        [
+          ...(model.pending === undefined
+            ? []
+            : [
+                h.button(
+                  [h.Class('note-cancel'), h.Type('button'), h.OnClick(Escaped())],
+                  ['Cancel'],
+                ),
+              ]),
+          h.button(
+            [h.Class('note-send'), h.Type('button'), h.OnClick(Sent())],
+            [model.pending === undefined ? 'Send' : 'Add note'],
+          ),
+        ],
+      ),
+    ],
+  )
+
+const panel = (model: Model): Html =>
+  h.aside(
+    [h.Class('shell-panel')],
+    [
+      h.div(
+        [h.Class('note-head')],
+        [
+          tabButton('Open', 'open', model.tab === 'open'),
+          tabButton('Resolved', 'resolved', model.tab === 'resolved'),
+        ],
+      ),
+      ...(model.reachable ? [] : [banner()]),
+      noteList(model),
+      composer(model),
+    ],
+  )
+
+## The whole page
+
+The bar sits above a row, and the row is the stage and the panel. The panel is present or it is not — a hidden one still measured would leave the stage narrower than it is, and the frame's width is the one measurement on this page that has to be true.
+
+=>
+
+const view = (model: Model): Html =>
+  h.div(
+    [h.Class(clsx('shell', model.picking && 'picking'))],
+    [
+      bar(model),
+      h.div(
+        [h.Class('shell-body')],
+        [stage(model), ...(model.panel ? [panel(model)] : [])],
+      ),
+      ...(model.picking && model.hover !== undefined ? [highlight(model.hover)] : []),
+    ],
+  )
+
+## Where the shell starts
+
+The shell reads two things off the page the proxy served it. The project comes from an attribute, since only the server knows which application it was pointed at. The route is the address itself, which is what makes the page reloadable and shareable.
+
+The route read at startup becomes both the frame's opening address and the route the model reports, and only the second of them moves after that.
+
+=>
+
+import { makeElement, run } from 'foldkit/runtime'
+
+const projectOf = (): string =>
+  Option.match(Option.fromNullishOr(document.body.getAttribute('data-loom-project')), {
+    onNone: () => 'local',
+    onSome: (project) => project,
+  })
+
+const entryOf = (): string => `${location.pathname}${location.search}`
+
+const init = (): readonly [Model, ReadonlyArray<Command.Command<Message>>] => {
+  const project = projectOf()
+  const entry = entryOf()
+  return [
+    {
+      base: MOUNT,
+      project,
+      entry,
+      route: entry,
+      width: 0,
+      notes: [],
+      reachable: true,
+      tab: 'open',
+      panel: true,
+      atBottom: true,
+      pendingScroll: false,
+      picking: false,
+      draft: '',
+      editText: '',
+    },
+    [FetchNotes({ base: MOUNT, project })],
+  ]
+}
+
+export const start = (): void => {
+  const container = document.getElementById('shell')
+  if (container === null) return
+  run(makeElement({ Model, init, update, view, subscriptions, container }))
+}
+
+start()
+
+## The module {Tangle}[shell.ts]
+
+=>
+
+::[What the shell holds]
+
+::[Everything that can happen]
+
+::[Talking to the store]
+
+::[The shell's address is the application's]
+
+::[Reaching into the frame]
+
+::[Following where the application goes]
+
+::[Keeping a new tab inside the frame]
+
+::[The keys, wherever the focus is]
+
+::[Picking inside the frame]
+
+::[Watching the note list]
+
+::[What the shell listens to]
+
+::[How the shell answers]
+
+::[The bar across the top]
+
+::[The stage, and the sheet on it]
+
+::[The notes, on the one dark ground]
+
+::[Writing a note]
+
+::[The whole page]
+
+::[Where the shell starts]

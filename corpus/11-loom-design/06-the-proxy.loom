@@ -8,17 +8,19 @@ Language: TypeScript
 
 Loom Design stands in front of an application it did not write. The application answers on its own port and knows nothing about being watched; Design answers on another, forwards every request to it, and hands back what comes home. The browser therefore sees one origin, which is what makes the page readable from the tool around it.
 
-Forwarding is also where the overlay enters. As HTML passes through, Design appends the script tag that loads it. Nothing is added to the application's dependencies, nothing is changed in its build, and the bundler it happens to use never comes into it — the transport carries the injection instead, so a framework Design has never heard of works the same as one it has.
+Forwarding is also where Design puts itself into the page — or deliberately does not. A top-level page takes the overlay, appended as one script tag while the HTML passes through. A page inside the shell's frame takes nothing, because the shell already stands outside it and reads it from there. Either way the application changes no dependency and no build step, and a framework Design has never heard of works the same as one it has.
 
 ## Where Design keeps itself
 
-Design serves the application at every path but its own, so its own routes need a corner the application will not reach for. Everything Design answers itself sits under one mount, and everything else goes forward.
+Design serves the application at every path but its own, so its own routes need a corner the application will not reach for. Everything Design answers itself — the note routes, the agent's tools, the shell's own script and stylesheet — sits under one mount.
 
-The overlay finds those routes from where its script was served rather than from a port, so mounting them here rather than at a root costs nothing on the browser side.
+The shell is not under it. Opening the port is the whole command, so the address you open is the address the application uses: `localhost:5710/products/42` shows the shell with the application's `/products/42` inside it. Nothing to learn, nothing to prefix, and the route is mirrored for free because the shell's address already is the application's.
+
+One prefix stands for the unframed page, and only that page needs one. `/__loom/bare/products/42` serves the same route with the overlay over it and no shell around it — the surface a real device wants.
 
 =>
 
-import { Effect, Layer, Option } from 'effect'
+import { Effect, Layer, Match, Option } from 'effect'
 import {
   HttpRouter,
   HttpServerRequest,
@@ -26,10 +28,55 @@ import {
 } from 'effect/unstable/http'
 import { NodeHttpServer } from '@effect/platform-node'
 import { createServer } from 'node:http'
+import { readFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { mcpAt, noteHandlers } from './api'
 import { NoteStore } from './store'
 
 const MOUNT = '/__loom'
+const BARE = `${MOUNT}/bare`
+
+const here = dirname(fileURLToPath(import.meta.url))
+const noCache = { 'cache-control': 'no-store' }
+
+## Who is asking, and for what
+
+One address serves three answers, and the browser's own account of what it is fetching chooses between them. Every request declares a destination, and that one word carries everything Design needs to know.
+
+A person typing an address, or following a link at the top of the window, sends `document`. That is someone arriving to work, so they get the shell.
+
+The shell's frame then asks for the very same address and sends `iframe`. That is the application being shown, so it goes through untouched — and untouched is the point, because a response Design does not rewrite keeps its compression, its streaming, and its content security policy. Everything else the application fetches for itself, from a stylesheet to an interface call, says so too and passes through the same way.
+
+A missing destination means an older browser, and there the shell is not offered at all. Such a browser would never send `document` either, so it would sit behind a frame nothing could read; it gets the application with the overlay over it, which is the whole product as it stood before the shell. Degrading to the previous tool beats degrading to none.
+
+=>
+
+type Destination =
+  | { readonly kind: 'shell' }
+  | { readonly kind: 'bare'; readonly path: string }
+  | { readonly kind: 'application' }
+
+const destinationOf = (headers: Record<string, string>, path: string): Destination =>
+  path === BARE || path.startsWith(`${BARE}/`)
+    ? { kind: 'bare', path: path.slice(BARE.length) || '/' }
+    : Option.match(Option.fromNullishOr(headers['sec-fetch-dest']), {
+        onNone: () => ({ kind: 'bare' as const, path }),
+        onSome: (asked) =>
+          Match.value(asked).pipe(
+            Match.withReturnType<Destination>(),
+            Match.when('document', () => ({ kind: 'shell' as const })),
+            Match.orElse(() => ({ kind: 'application' as const })),
+          ),
+      })
+
+~
+
+Two answers can share an address, so every response says which question it answered. Without that, a browser holding the application's `/` in its cache would hand it back the next time someone opened `/` to reach the shell, and the tool would simply fail to appear.
+
+=>
+
+const varies = { vary: 'sec-fetch-dest' }
 
 ## The tag the application never carries
 
@@ -53,7 +100,7 @@ const injected = (html: string, project: string): string =>
 
 A forwarded request keeps its method, its path, its query, and its body, and drops the headers that describe the hop rather than the message. `host` would name the proxy to an application expecting itself, and the framing headers describe a connection that ends here.
 
-One header is set rather than dropped. Asking the application for an identity encoding keeps the HTML injectable, since a compressed body cannot have a tag appended to it, and compression over a loopback interface buys nothing to begin with.
+One header is set rather than dropped, and only for the page that gets rewritten. Asking the application for an identity encoding keeps the HTML injectable, since a compressed body cannot have a tag appended to it. A page nothing is appended to keeps whatever encoding it asked for, so the application's compression survives the trip.
 
 =>
 
@@ -76,6 +123,9 @@ const carried = (headers: Record<string, string>): Record<string, string> =>
     Object.entries(headers).filter(([name]) => !HOP.has(name.toLowerCase())),
   )
 
+const asking = (headers: Record<string, string>, inject: boolean): Record<string, string> =>
+  inject ? { ...carried(headers), 'accept-encoding': 'identity' } : carried(headers)
+
 const sent = (
   request: HttpServerRequest.HttpServerRequest,
 ): Effect.Effect<Uint8Array | undefined> =>
@@ -93,20 +143,31 @@ A redirect is followed by the browser rather than by the proxy, so its destinati
 
 const relocated = (held: Response, origin: string): Record<string, string> =>
   Option.match(Option.fromNullishOr(held.headers.get('location')), {
-    onNone: () => ({}),
+    onNone: () => ({ ...varies }),
     onSome: (where) => ({
+      ...varies,
       location: where.startsWith(origin) ? where.slice(origin.length) : where,
     }),
   })
 
 ~
 
-What comes home is either a page or anything else. A page is read as text so the tag can be appended; everything else passes through as the bytes it arrived as, wearing the type the application gave it. An application that is not answering yields a bad-gateway rather than a hang, so pointing Design at a port nothing is listening on reads as the mistake it is.
+What comes home takes one of two paths. The unframed page is read as text so the tag can be appended; everything else — the framed page, a stylesheet, an image, a JSON answer — passes through as the bytes it arrived as, wearing the type the application gave it.
+
+Only the two headers named here travel home with it. That is what lets the frame exist at all: an application declaring `X-Frame-Options: DENY`, or a policy naming `frame-ancestors`, would refuse to be framed, and neither header reaches the browser because the proxy carries neither.
+
+An application that is not answering yields a bad-gateway rather than a hang, so pointing Design at a port nothing is listening on reads as the mistake it is.
 
 =>
 
-const answering = (held: Response, origin: string, project: string, type: string) =>
-  type.includes('text/html')
+const answering = (
+  held: Response,
+  origin: string,
+  project: string,
+  type: string,
+  inject: boolean,
+) =>
+  type.includes('text/html') && inject
     ? Effect.map(Effect.promise(() => held.text()), (html) =>
         HttpServerResponse.text(injected(html, project), {
           status: held.status,
@@ -126,15 +187,15 @@ const silent = Effect.succeed(
   HttpServerResponse.text('The application is not answering', { status: 502 }),
 )
 
-const forward = (origin: string, project: string) =>
+const forward = (origin: string, project: string, path: string, inject: boolean) =>
   Effect.gen(function* () {
     const request = yield* HttpServerRequest.HttpServerRequest
     const url = new URL(request.url, 'http://localhost')
     const body = yield* sent(request)
     const held = yield* Effect.tryPromise(() =>
-      fetch(`${origin}${url.pathname}${url.search}`, {
+      fetch(`${origin}${path}${url.search}`, {
         method: request.method,
-        headers: { ...carried(request.headers), 'accept-encoding': 'identity' },
+        headers: asking(request.headers, inject),
         body,
         redirect: 'manual',
       }),
@@ -144,12 +205,105 @@ const forward = (origin: string, project: string) =>
       origin,
       project,
       held.headers.get('content-type') ?? 'application/octet-stream',
+      inject,
     )
   }).pipe(Effect.catchCause(() => silent))
 
+## Serving the shell
+
+The shell is three files, and the proxy hands out all three because the shell exists only where the proxy does.
+
+Two are static and go out as they are. The page is not: the project has to reach the shell somehow, and only the server knows which application it was pointed at, so the proxy writes it into the page on the way out. Every address gets the same page, because the route is the shell's business rather than the server's — the shell reads it off the address it was opened at and frames it.
+
+=>
+
+const asset = (path: string) =>
+  HttpServerResponse.file(path, { headers: noCache }).pipe(
+    Effect.catchCause((cause) =>
+      Effect.logWarning(`could not read ${path}`, cause).pipe(
+        Effect.andThen(
+          Effect.succeed(HttpServerResponse.text('Not found', { status: 404 })),
+        ),
+      ),
+    ),
+  )
+
+const shellScript = asset(join(here, '..', 'dist', 'shell.js'))
+const shellStyles = asset(join(here, 'shell.css'))
+
+const shellPage = (project: string) =>
+  Effect.tryPromise(() => readFile(join(here, 'shell.html'), 'utf8')).pipe(
+    Effect.map((page) =>
+      HttpServerResponse.text(page.replaceAll('__LOOM_PROJECT__', project), {
+        contentType: 'text/html',
+        headers: { ...noCache, ...varies },
+      }),
+    ),
+    Effect.catchCause((cause) =>
+      Effect.logWarning('could not read the shell page', cause).pipe(
+        Effect.andThen(
+          Effect.succeed(HttpServerResponse.text('Not found', { status: 404 })),
+        ),
+      ),
+    ),
+  )
+
+~
+
+One route stands for everything Design does not answer by name, and it hands each request to the answer its destination named.
+
+Deciding here rather than in the router is deliberate. The router matches on a path, and this is not a question about paths — the same address is the shell to a person and the application to the frame that person is looking at.
+
+=>
+
+const served = (origin: string, project: string) =>
+  Effect.gen(function* () {
+    const request = yield* HttpServerRequest.HttpServerRequest
+    const url = new URL(request.url, 'http://localhost')
+    return yield* Match.value(destinationOf(request.headers, url.pathname)).pipe(
+      Match.withReturnType<
+        Effect.Effect<
+          HttpServerResponse.HttpServerResponse,
+          never,
+          HttpServerRequest.HttpServerRequest
+        >
+      >(),
+      Match.when({ kind: 'shell' }, () => shellPage(project)),
+      Match.when({ kind: 'bare' }, ({ path }) => forward(origin, project, path, true)),
+      Match.when({ kind: 'application' }, () =>
+        forward(origin, project, url.pathname, false),
+      ),
+      Match.exhaustive,
+    )
+  })
+
+## The address, however it is written
+
+Whoever starts Design says where the application is, and says it in the shortest form that stays unambiguous. A bare number names a port on this machine. A host with no scheme means that host over plain HTTP. A string that already carries a scheme is taken exactly as written.
+
+The `addressOf` function settles which of those three a given string is, and returns a URL. Both entries that start Design read their address through it — the `loom design` command and Design's own entry below — so `5199`, `localhost:5199`, and `http://localhost:5199` all arrive at the same application.
+
+=>
+
+const PORT_ONLY = /^[0-9]+$/
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
+
+export const addressOf = (given: string): string =>
+  Match.value(given).pipe(
+    Match.when(
+      (written) => HAS_SCHEME.test(written),
+      (written) => written,
+    ),
+    Match.when(
+      (written) => PORT_ONLY.test(written),
+      (written) => `http://localhost:${written}`,
+    ),
+    Match.orElse((written) => `http://${written}`),
+  )
+
 ## The server {Tangle}[design.ts]
 
-Design's own routes are the note routes the daemon serves, mounted under its corner rather than at a root, and the agent's tools beside them. The last route is every other request, which is the application.
+Design's own routes are the note routes the daemon serves, the shell's two static files, and the agent's tools, all mounted under its corner rather than at a root. The last route is every other request, which is the shell or the application.
 
 Registering the project is not done here. Settling which project this is can refuse — a name may belong to something else — and a server that has already begun answering is the wrong place to discover that, so the question is asked and answered before this layer is ever built.
 
@@ -159,9 +313,15 @@ Order settles the rest. A router answers the most particular route that matches,
 
 ::[Where Design keeps itself]
 
+::[Who is asking, and for what]
+
 ::[The tag the application never carries]
 
 ::[Passing a request through]
+
+::[Serving the shell]
+
+::[The address, however it is written]
 
 const routes = (origin: string, project: string) =>
   Layer.mergeAll(
@@ -172,8 +332,10 @@ const routes = (origin: string, project: string) =>
     HttpRouter.add('POST', `${MOUNT}/notes/discard`, noteHandlers.discard),
     HttpRouter.add('POST', `${MOUNT}/notes/edit`, noteHandlers.edit),
     HttpRouter.add('GET', `${MOUNT}/notes.js`, noteHandlers.overlay),
+    HttpRouter.add('GET', `${MOUNT}/shell.js`, shellScript),
+    HttpRouter.add('GET', `${MOUNT}/shell.css`, shellStyles),
     mcpAt(`${MOUNT}/mcp`),
-    HttpRouter.add('*', '*', forward(origin, project)),
+    HttpRouter.add('*', '*', served(origin, project)),
   )
 
 export const designServer = (options: {
@@ -189,23 +351,30 @@ export const designServer = (options: {
 
 ## Running it {Tangle}[design-serve.ts]
 
-Design starts from its own runtime edge, under the Design logger, over the Node platform. The application it stands in front of is named by `LOOM_APP`, the project its notes belong to by `LOOM_PROJECT`, and the port it answers on by `PORT`.
+Design starts from its own runtime edge, under the Design logger, over the Node platform. This is the entry a developer working on Design runs, and the `loom design` command is the same server reached from the published tool.
+
+The application it stands in front of is written as the first word after the script, so `bun run dev 3000` moves Design in front of whatever answers on port 3000. When that word is missing the entry falls back to `LOOM_APP`, and when that is missing too, to port 5199 — the site. The project its notes belong to is named by `LOOM_PROJECT`, and the port Design itself answers on by `PORT`.
 
 Naming the application rather than discovering it is deliberate. Design forwards to whatever is listening there and asks it for nothing, so the same command reaches a Vite dev server, a Rails app, or the site's own Effect server without knowing which it found.
 
 =>
 
-import { Effect as Runtime, Layer as Wiring } from 'effect'
+import { Effect as Runtime, Layer as Wiring, Option } from 'effect'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { designLogger } from './api'
 import { localStore } from './store'
-import { designServer } from './design'
+import { addressOf, designServer } from './design'
+
+const written = Option.fromNullishOr(process.argv[2]).pipe(
+  Option.orElse(() => Option.fromNullishOr(process.env.LOOM_APP)),
+  Option.getOrElse(() => '5199'),
+)
 
 NodeRuntime.runMain(
   Wiring.launch(
     designServer({
       port: Number(process.env.PORT ?? 5710),
-      application: process.env.LOOM_APP ?? 'http://localhost:5199',
+      application: addressOf(written),
       project: process.env.LOOM_PROJECT ?? 'local',
       store: localStore(),
     }),

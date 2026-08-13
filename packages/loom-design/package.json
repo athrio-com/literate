@@ -4,6 +4,7 @@
   "private": true,
   "version": "0.0.10",
   "scripts": {
+    "dev": "bun build.ts --watch & builder=$!; trap 'kill $builder' EXIT; bun --watch src/design-serve.ts",
     "build": "bun build.ts",
     "serve": "bun src/serve.ts",
     "design": "bun src/design-serve.ts",

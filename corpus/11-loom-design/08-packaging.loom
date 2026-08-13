@@ -14,6 +14,8 @@ The service runs from source rather than a bundle, so the package ships its reso
 
 The manifest names the package and what it exports — the note schemas, the proxy, and the store, the modules a host reaches for. The API and the agent's tools stay the service's own; a page reaches them over HTTP, not through an import. The service runs on the Node platform, which Bun runs unchanged. Its store leans on Effect's SQL layer over SQLite, with a driver for each runtime — `bun:sqlite` or `node:sqlite` — since neither module loads on the other. The overlay leans on Foldkit, Effect, and `clsx`, and the build, which runs under Bun, on the Tailwind command line. The `build` script compiles the browser assets; `serve` runs the notes service straight from source, and `design` runs the proxy the same way.
 
+The `dev` script is the loop a developer works in, and it is the same shape the website uses. One command rebuilds the browser assets as their sources change and restarts the proxy as its own sources change, so editing the shell and reloading the page is the whole cycle. A word after the script name travels through to the proxy as the address of the application, which makes `bun run dev 3000` enough to stand Design in front of something other than the site.
+
 {{ version = ${version} }}
 
 =>
@@ -24,6 +26,7 @@ The manifest names the package and what it exports — the note schemas, the pro
   "private": true,
   "version": "::[version]",
   "scripts": {
+    "dev": "bun build.ts --watch & builder=$!; trap 'kill $builder' EXIT; bun --watch src/design-serve.ts",
     "build": "bun build.ts",
     "serve": "bun src/serve.ts",
     "design": "bun src/design-serve.ts",
@@ -59,7 +62,7 @@ The manifest names the package and what it exports — the note schemas, the pro
 
 The package holds code for two runtimes, and each needs its own view of the ambient types. The overlay and the note schemas run in a browser; the Vite plugin and the service run under Node or Bun, and the build under Bun. The two runtimes disagree about one handle — `import.meta.hot`, the hot-reload handle a dev server exposes. Vite gives that handle a `send` method and event listeners that carry a payload; Bun gives it neither. One configuration cannot hold both shapes at once, so the package keeps two: this browser configuration, and the Bun configuration below.
 
-The browser configuration is the one the type checker reads by default, and it checks the overlay and the schemas. It loads no global type package of its own, taking the hot-reload handle's shape from a one-line reference file instead. So the overlay and the Foldkit runtime it imports read `import.meta.hot` the way Vite defines it.
+The browser configuration is the one the type checker reads by default, and it checks the schemas, the addressing both hosts share, and the three pages that use them — the overlay, the shell, and the setup screen. It loads no global type package of its own, taking the hot-reload handle's shape from a one-line reference file instead. So the overlay and the Foldkit runtime it imports read `import.meta.hot` the way Vite defines it.
 
 =>
 
@@ -75,7 +78,14 @@ The browser configuration is the one the type checker reads by default, and it c
     "noEmit": true,
     "types": []
   },
-  "include": ["src/note.ts", "src/overlay.ts", "src/ui.ts", "src/vite-env.d.ts"]
+  "include": [
+    "src/note.ts",
+    "src/address.ts",
+    "src/overlay.ts",
+    "src/shell.ts",
+    "src/ui.ts",
+    "src/vite-env.d.ts"
+  ]
 }
 
 ## The hot-reload reference {Tangle}[src/vite-env.d.ts]
@@ -180,9 +190,13 @@ One base rule earns its place. Tailwind draws a border's style from a `--tw-bord
 
 The build produces the browser assets a page loads. It compiles the overlay's Tailwind into a stylesheet, rewrites every `:root` to `:host` so the theme variables live inside the shadow root rather than the document, bundles the overlay into a single browser script, and splices the stylesheet into the `__LOOM_NOTES_CSS__` placeholder the overlay left for it. The stylesheet is escaped first, so quotes and newlines survive inside the string literal that carries it. It runs from a Bun runtime edge, the filesystem provided by Bun's services.
 
+The shell and the setup screen are bundled the same way and carry no stylesheet with them. Each is a page of its own with a link in its head, so the styles arrive as a stylesheet rather than as a string spliced into a script — which is what a page outside a shadow root can do and a script injected into someone else's page cannot.
+
+Passing `--watch` keeps the build alive after that first pass. It watches the source directory and builds again whenever a file there changes, waiting a tenth of a second first so that saving three files in a row costs one build rather than three. A build that fails says so and the watch carries on, because a half-typed line should not end the session.
+
 =>
 
-import { Effect, FileSystem } from 'effect'
+import { Duration, Effect, FileSystem, Stream } from 'effect'
 import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -201,7 +215,7 @@ const forStringLiteral = (css: string): string =>
     .replaceAll('\r', '')
     .replaceAll('\n', '\\n')
 
-const program = Effect.gen(function* () {
+const build = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem
   yield* fs.makeDirectory(dist, { recursive: true })
 
@@ -224,13 +238,35 @@ const program = Effect.gen(function* () {
     bundle.replaceAll('__LOOM_NOTES_CSS__', forStringLiteral(css)),
   )
 
-  const uiBuilt = yield* Effect.tryPromise(() =>
-    Bun.build({ entrypoints: [join(src, 'ui.ts')], target: 'browser', minify: true }),
+  const bundled = (name: string) =>
+    Effect.tryPromise(() =>
+      Bun.build({ entrypoints: [join(src, `${name}.ts`)], target: 'browser', minify: true }),
+    ).pipe(
+      Effect.flatMap((result) => Effect.promise(() => result.outputs[0].text())),
+      Effect.flatMap((text) => fs.writeFileString(join(dist, `${name}.js`), text)),
+    )
+
+  yield* bundled('shell')
+  yield* bundled('ui')
+
+  yield* Effect.log('built dist/overlay.js, dist/shell.js and dist/ui.js')
+})
+
+const watching = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem
+  yield* Effect.log(`watching ${src} for changes`)
+  yield* fs.watch(src).pipe(
+    Stream.debounce(Duration.millis(100)),
+    Stream.runForEach(() =>
+      build.pipe(
+        Effect.catchCause((cause) => Effect.logError('the build failed', cause)),
+      ),
+    ),
   )
-  const uiBundle = yield* Effect.promise(() => uiBuilt.outputs[0].text())
-  yield* fs.writeFileString(join(dist, 'ui.js'), uiBundle)
+})
 
-  yield* Effect.log('built dist/overlay.js and dist/ui.js')
-}).pipe(Effect.provide(BunServices.layer))
+const program = process.argv.includes('--watch')
+  ? build.pipe(Effect.andThen(watching))
+  : build
 
-BunRuntime.runMain(program)
+BunRuntime.runMain(program.pipe(Effect.provide(BunServices.layer)))

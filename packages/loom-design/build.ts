@@ -1,4 +1,4 @@
-import { Effect, FileSystem } from 'effect'
+import { Duration, Effect, FileSystem, Stream } from 'effect'
 import { BunRuntime, BunServices } from '@effect/platform-bun'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -17,7 +17,7 @@ const forStringLiteral = (css: string): string =>
     .replaceAll('\r', '')
     .replaceAll('\n', '\\n')
 
-const program = Effect.gen(function* () {
+const build = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem
   yield* fs.makeDirectory(dist, { recursive: true })
 
@@ -40,13 +40,35 @@ const program = Effect.gen(function* () {
     bundle.replaceAll('__LOOM_NOTES_CSS__', forStringLiteral(css)),
   )
 
-  const uiBuilt = yield* Effect.tryPromise(() =>
-    Bun.build({ entrypoints: [join(src, 'ui.ts')], target: 'browser', minify: true }),
+  const bundled = (name: string) =>
+    Effect.tryPromise(() =>
+      Bun.build({ entrypoints: [join(src, `${name}.ts`)], target: 'browser', minify: true }),
+    ).pipe(
+      Effect.flatMap((result) => Effect.promise(() => result.outputs[0].text())),
+      Effect.flatMap((text) => fs.writeFileString(join(dist, `${name}.js`), text)),
+    )
+
+  yield* bundled('shell')
+  yield* bundled('ui')
+
+  yield* Effect.log('built dist/overlay.js, dist/shell.js and dist/ui.js')
+})
+
+const watching = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem
+  yield* Effect.log(`watching ${src} for changes`)
+  yield* fs.watch(src).pipe(
+    Stream.debounce(Duration.millis(100)),
+    Stream.runForEach(() =>
+      build.pipe(
+        Effect.catchCause((cause) => Effect.logError('the build failed', cause)),
+      ),
+    ),
   )
-  const uiBundle = yield* Effect.promise(() => uiBuilt.outputs[0].text())
-  yield* fs.writeFileString(join(dist, 'ui.js'), uiBundle)
+})
 
-  yield* Effect.log('built dist/overlay.js and dist/ui.js')
-}).pipe(Effect.provide(BunServices.layer))
+const program = process.argv.includes('--watch')
+  ? build.pipe(Effect.andThen(watching))
+  : build
 
-BunRuntime.runMain(program)
+BunRuntime.runMain(program.pipe(Effect.provide(BunServices.layer)))

@@ -4,13 +4,8 @@ import { html } from 'foldkit/html'
 import type { Html, KeyboardModifiers } from 'foldkit/html'
 import { m } from 'foldkit/message'
 import { clsx } from 'clsx'
-import { LoomSourceSchema, NoteSchema, RectSchema, type Note, type Rect } from './note'
-
-const PendingSchema = S.Union([
-  S.Struct({ kind: S.tag('dom'), selector: S.String, label: S.String, rect: RectSchema }),
-  S.Struct({ kind: S.tag('loom'), source: LoomSourceSchema, label: S.String, rect: RectSchema }),
-])
-type Pending = typeof PendingSchema.Type
+import { NoteSchema, RectSchema, type Note } from './note'
+import { PendingSchema, anchorOf, isEditable, rectOf, tagFor, type Pending } from './address'
 
 const HoverSchema = S.Struct({ rect: RectSchema, tag: S.String })
 type Hover = typeof HoverSchema.Type
@@ -167,63 +162,11 @@ const SendEdit = Command.define(
   Unreachable,
 )(({ base, project, seq, text }) => settle(base, project, '/notes/edit', { project, seq, text }))
 
-const rectOf = (el: Element): Rect => {
-  const box = el.getBoundingClientRect()
-  return { x: box.x, y: box.y, width: box.width, height: box.height }
-}
-
-const labelOf = (el: Element): string =>
-  `${el.tagName.toLowerCase()} "${(el.textContent ?? '').trim().slice(0, 40)}"`
-
-const nthOfType = (el: Element): string => {
-  const tag = el.tagName.toLowerCase()
-  return Option.match(Option.fromNullishOr(el.parentElement), {
-    onNone: () => tag,
-    onSome: (parent) => {
-      const twins = Array.filter(Array.fromIterable(parent.children), (child) => child.tagName === el.tagName)
-      const nth = Option.getOrElse(Array.findFirstIndex(twins, (child) => child === el), () => 0) + 1
-      return twins.length > 1 ? `${tag}:nth-of-type(${nth})` : tag
-    },
-  })
-}
-
-const pathTo = (el: Element, budget: number): string =>
-  el.parentElement === null || el.parentElement === document.body || budget === 0
-    ? nthOfType(el)
-    : `${pathTo(el.parentElement, budget - 1)} > ${nthOfType(el)}`
-
-const selectorFor = (el: Element): string => (el.id === '' ? pathTo(el, 5) : `#${el.id}`)
-
-const anchorOf = (el: Element): Pending =>
-  Option.match(Option.fromNullishOr(el.closest('[data-loom-chapter][data-loom-section]')), {
-    onSome: (loom) => ({
-      kind: 'loom' as const,
-      source: {
-        chapter: loom.getAttribute('data-loom-chapter') ?? '',
-        section: loom.getAttribute('data-loom-section') ?? '',
-      },
-      label: labelOf(el),
-      rect: rectOf(el),
-    }),
-    onNone: () => ({ kind: 'dom' as const, selector: selectorFor(el), label: labelOf(el), rect: rectOf(el) }),
-  })
-
-const tagFor = (el: Element): string =>
-  Option.match(Option.fromNullishOr(el.closest('[data-loom-chapter][data-loom-section]')), {
-    onSome: (loom) => loom.getAttribute('data-loom-section') ?? '',
-    onNone: () => selectorFor(el),
-  })
-
 const overlayHostId = 'loom-notes-overlay'
 const notesListId = 'loom-notes-list'
 
 const hostElement = (target: EventTarget | null): Option.Option<Element> =>
   target instanceof Element && target.id !== overlayHostId ? Option.some(target) : Option.none()
-
-const isEditable = (el: Element | null): boolean =>
-  el instanceof HTMLInputElement ||
-  el instanceof HTMLTextAreaElement ||
-  (el instanceof HTMLElement && el.isContentEditable)
 
 const isTyping = (): boolean =>
   isEditable(document.activeElement) ||

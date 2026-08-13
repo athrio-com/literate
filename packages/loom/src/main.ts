@@ -278,18 +278,22 @@ const set = (name: string, value: string) =>
     ),
   )
 
-const PORT_ONLY = /^[0-9]+$/
-const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
-
-const addressOf = (given: string): string =>
-  HAS_SCHEME.test(given)
-    ? given
-    : PORT_ONLY.test(given)
-      ? `http://localhost:${given}`
-      : `http://${given}`
-
 const within = (one: string, other: string): boolean =>
   one === other || one.startsWith(`${other}/`) || other.startsWith(`${one}/`)
+
+const opener = (): string =>
+  Match.value(process.platform).pipe(
+    Match.withReturnType<string>(),
+    Match.when('darwin', () => 'open'),
+    Match.when('win32', () => 'start'),
+    Match.orElse(() => 'xdg-open'),
+  )
+
+const opened = (address: string) =>
+  Effect.tryPromise(async () => {
+    const { spawn } = await import('node:child_process')
+    spawn(opener(), [address], { detached: true, stdio: 'ignore' }).unref()
+  }).pipe(Effect.catchCause(() => Effect.void))
 
 const refusalOf = (
   standing: Standing,
@@ -314,7 +318,6 @@ const refusalOf = (
   )
 
 const design = (project: string, given: string, port: number) => {
-  const application = addressOf(given)
   return Effect.gen(function* () {
     const directory = process.cwd()
     yield* Effect.promise(async () => {
@@ -325,6 +328,7 @@ const design = (project: string, given: string, port: number) => {
     const proxy = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/design'),
     )
+    const application = proxy.addressOf(given)
     const kept = yield* Effect.tryPromise(
       () => import('@athrio/loom-design/store'),
     )
@@ -357,6 +361,14 @@ const design = (project: string, given: string, port: number) => {
           })
           yield* Console.log(
             `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
+          )
+          yield* Console.log(
+            `loom: the application alone, with the notes bar over it, is on http://localhost:${port}/__loom/bare/`,
+          )
+          yield* Effect.forkDetach(
+            Effect.sleep('700 millis').pipe(
+              Effect.andThen(opened(`http://localhost:${port}`)),
+            ),
           )
           yield* Layer.launch(
             proxy.designServer({ port, application, project, store }),

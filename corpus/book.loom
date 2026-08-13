@@ -316,7 +316,11 @@ The site renders on the server first, for a reader and a crawler, then hydrates 
 
 ### Part XI — Loom Design
 
-Loom Design rides along a running app: a bar you summon over the page to work on the app while you use it. It works against any app — woven from Loom or not — and writes nothing into the code you review. The bar gathers a few tools and is built to hold more. Today it carries Notes: you review by pointing, leaving a note on an element you click or a message you type, and a coding agent reads them over the Model Context Protocol and works through them. It attaches by standing in front of the app rather than by joining its build. The proxy forwards every request to the app on its own port and appends the overlay to the HTML on the way back, so the app's dependencies, its configuration, and the bundler it happens to use are all left alone, and a framework the tools have never met works the same as one they have. This part builds it up: the note the tools pass around, the store that keeps the notes in a SQLite file of its own, the server that answers the overlay and the agent, the overlay you point with, the agent's tools, the proxy that stands in front, and how it settles which project it is looking at. It then ships it — the package, the entry that launches it, and the setup page that hands you the overlay's script — all as `@athrio/loom-design`.
+Loom Design works on a running app while you use it. It works against any app — woven from Loom or not — and writes nothing into the code you review. Today it carries Notes: you review by pointing, leaving a note on an element you click or a message you type, and a coding agent reads them over the Model Context Protocol and works through them. It attaches by standing in front of the app rather than by joining its build. The proxy forwards every request to the app on its own port, so the app's dependencies, its configuration, and the bundler it happens to use are all left alone, and a framework the tools have never met works the same as one they have.
+
+Design shows that app in one of two ways, and the browser's own account of what it is fetching decides which. A shell holds the app in a frame beside the notes, and reads the page from outside it — so the tool survives every reload, nothing of Design runs in the app, and the app's compression, streaming and security policy all come through untouched. A page opened on its own instead takes the overlay appended to its HTML, which is the only way to work on a real device, under a notch, or through a print stylesheet.
+
+This part builds it up: the note the tools pass around, the store that keeps the notes in a SQLite file of its own, the server that answers the overlay and the agent, the overlay you point with, the agent's tools, the proxy that stands in front, and how it settles which project it is looking at. It then ships it — the package, the entry that launches it, and the setup page that hands you the overlay's script — and closes on the shell: the address both hosts pick by, the shell itself, and the paper it is set on. All of it is `@athrio/loom-design`.
 
 1. The note
 2. The store
@@ -328,6 +332,9 @@ Loom Design rides along a running app: a bar you summon over the page to work on
 8. Packaging
 9. The service entry
 10. The setup UI
+11. Addressing an element
+12. The shell
+13. The shell on paper
 
 ### Part XII — Releasing Loom
 
