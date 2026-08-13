@@ -51,7 +51,9 @@ const umd2esm = {
 
 ~
 
-Vite's library mode builds a single entry point to `dist/main.js`. The bundle targets Node 20, so Node runs it directly and Bun, being Node-compatible, runs the same bundle unchanged. The CLI package uses the ESM format — ECMAScript modules — so Vite emits an ESM bundle with a `#!/usr/bin/env node` shebang, making it directly executable. The VS Code extension runs in the editor's CommonJS host, so its Vite config emits that format instead.
+Design's browser assets travel with the CLI as files rather than as code. The overlay, the shell, and the setup screen are scripts a browser loads and pages it renders, so nothing in the command-line program imports them — Design names each one by path when a request for it arrives. A bundler follows imports, so it never learns these exist, and this plugin copies them beside `dist/main.js` after the bundle is written.
+
+The list is written by hand, and that is where it fails. An asset added to Design and forgotten here breaks in a browser rather than in the build, because nothing compares this list against the paths Design asks for at runtime. The check below catches only the opposite mistake — a file named here that Design has not built stops the build and says which one.
 
 =>
 
@@ -61,7 +63,10 @@ const designAssets = {
     const design = resolve(here, '..', 'loom-design')
     const carried: ReadonlyArray<readonly [string, string]> = [
       [resolve(design, 'dist', 'overlay.js'), 'overlay.js'],
+      [resolve(design, 'dist', 'shell.js'), 'shell.js'],
       [resolve(design, 'dist', 'ui.js'), 'ui.js'],
+      [resolve(design, 'src', 'shell.html'), 'shell.html'],
+      [resolve(design, 'src', 'shell.css'), 'shell.css'],
       [resolve(design, 'src', 'ui.html'), 'ui.html'],
     ]
     for (const [from, name] of carried) {
@@ -74,6 +79,12 @@ const designAssets = {
     }
   },
 }
+
+~
+
+Vite's library mode builds a single entry point to `dist/main.js`. The bundle targets Node 20, so Node runs it directly and Bun, being Node-compatible, runs the same bundle unchanged. The CLI package uses the ESM format — ECMAScript modules — so Vite emits an ESM bundle with a `#!/usr/bin/env node` shebang, making it directly executable. The VS Code extension runs in the editor's CommonJS host, so its Vite config emits that format instead.
+
+=>
 
 export default defineConfig({
   plugins: [umd2esm, designAssets],

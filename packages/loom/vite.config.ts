@@ -31,7 +31,10 @@ const designAssets = {
     const design = resolve(here, '..', 'loom-design')
     const carried: ReadonlyArray<readonly [string, string]> = [
       [resolve(design, 'dist', 'overlay.js'), 'overlay.js'],
+      [resolve(design, 'dist', 'shell.js'), 'shell.js'],
       [resolve(design, 'dist', 'ui.js'), 'ui.js'],
+      [resolve(design, 'src', 'shell.html'), 'shell.html'],
+      [resolve(design, 'src', 'shell.css'), 'shell.css'],
       [resolve(design, 'src', 'ui.html'), 'ui.html'],
     ]
     for (const [from, name] of carried) {
