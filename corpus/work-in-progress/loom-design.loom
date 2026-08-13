@@ -14,35 +14,89 @@ Loom Design turns a running web application into a surface we point at, mark up,
 
 A design tool that generates its own pages owns everything it shows, so it answers questions about markup by rewriting the file. Loom Design shows an application it did not write. That single fact sets the architecture: we read a page we do not own, address the things inside it, and hand what we learn to an agent that changes the source.
 
-Design runs as a local web application. A shell page holds the chat, the panels, and the note list; a same-origin frame holds the application under work. Both live in one browser tab, in whichever browser we already use.
+Design runs as a local web application. A shell page holds the chat, the panels, and the note list; a same-origin frame beside them holds the application under work. Both live in one browser tab, in whichever browser we already use.
 
 ## Attaching without being installed
 
-Design serves on a local port and proxies the application through itself. The application answers on its own port; Design forwards every request, so the browser sees one origin and the frame becomes readable.
+Design serves on a local port and proxies the application through itself. The application answers on its own port, Design forwards every request, and the browser sees one origin. That single origin is what makes the framed application readable from the shell around it.
 
-The proxy is also where the overlay enters. As HTML passes through, Design appends a script tag that loads the overlay from the Design server. The application's build configuration stays untouched, its dependency list stays unchanged, and any framework works, because the transport carries the injection rather than the bundler.
+Proxying rather than installing is what makes the tool reach anything. A plugin reaches only the bundlers someone writes plugins for. A transport reaches everything that speaks HTTP, so a Vite dev server, a Rails application, and this site's own Effect server all attach the same way, and none of them changes a line to allow it.
 
-Two mechanics keep the loop live. The proxy forwards the dev server's hot-module-replacement socket rather than terminating it, so a rebuild patches the frame while the shell holds its chat and its panels. The overlay re-enters on every navigation, so a full reload restores it without our help.
+## The shell reads the frame from outside
+
+Because the proxy puts both on one origin, the shell reaches into the frame's document directly. It picks with `elementFromPoint`, reads the cascade with `getComputedStyle`, tests a rule with `matches`, and intercepts a click with a capture-phase listener. No code of Design's runs inside the application's page.
+
+That inversion pays three times. The tool outlives the application's navigations, so a full page load leaves the chat, the draft, and the open panel standing. The tool leaves the application's rendering context, so no ancestor `transform` re-parents it, no `overflow` clips it, and no `z-index` buries it. And the framed response passes through unrewritten, which returns the application's compression, its streaming, and its content security policy.
+
+## The viewport becomes an instrument
+
+A nested browsing context carries a viewport of its own, sized to the frame's content box. Inside the frame that box is what `100vh` measures, what a media query tests, and what `position: fixed` pins to — so the frame's width is the width the application believes it has.
+
+Design states that width rather than leaving it ambient. The shell's bar reads the frame's measure, names the breakpoint it falls in, and offers the standard widths to drop into. Dragging the frame narrower is a real resize to the application, so sweeping its breakpoints costs one gesture and never touches the window the shell itself sits in.
+
+One measure the frame does not carry is the safe area — the part of a phone's screen left clear by its notch, its rounded corners, and its home indicator. A page reads the distance inward from each screen edge to that area through `env(safe-area-inset-top)` and its three siblings, and pads itself by those distances so nothing it draws sits under the hardware.
+
+A nested browsing context resolves all four to zero, and `env()` cannot be assigned from a parent the way a custom property can. So the frame reports no hardware to avoid however narrow it is dragged, and padding computed from those four values comes to nothing. That work is checked on the device.
+
+## Where the application's route lives
+
+The address bar belongs to the shell, so the shell has to carry the application's route inside it. Design mounts itself under one reserved prefix and puts the route after it. The shell at `/__loom/design/products/42` frames the application at `/products/42`.
+
+A path carries that route, not a fragment, for one reason. A fragment never reaches the server, so a shell loaded from one would render its frame at the application's root and repoint it from script — a wasted load, a visible flash, and a spare history entry for it. The proxy reads a path, so the very first response already names the right page.
+
+The shell writes the route back as the application navigates, with `replaceState` rather than `pushState`. A frame's own navigations already land in the session history the browser's back button walks, so pushing would count every one of them twice.
+
+## Keeping a new tab inside the frame
+
+A link that opens a new tab would leave the shell behind, so Design catches the ones it can reach. A capture-phase listener on the frame's document intercepts an anchor bound for a new tab, a middle click, and a modifier click, and navigates the frame instead. Overriding `open` on the frame's window catches the same intent expressed from script, and hands back a stub for callers that go on to focus or close what they opened.
+
+Both are installed again whenever the frame loads a document, because a new document arrives with a new window and takes the old overrides with it.
+
+An address outside the application opens where it meant to. Design proxies one origin and no other, and most third parties refuse to be framed at all, so forcing one inside would show a blank frame rather than a page. The proxy already draws that line over a redirect's destination, and this is the same line.
+
+## What the transport still handles
+
+Design tells its own requests from the frame's by the destination the browser declares. A `Sec-Fetch-Dest: document` asks for the shell, and a `Sec-Fetch-Dest: iframe` asks for the application.
+
+The framed response is the design surface, and Design writes nothing into it. The application may compress it, stream it, and declare whatever content security policy it likes.
+
+Two things the proxy still does to that response. A framing header — `X-Frame-Options`, or a `frame-ancestors` policy — refuses the frame outright, so both come off. A redirect's `Location` keeps its path and drops its origin, so a reader sent onward stays inside the frame.
+
+The websocket upgrade has to be forwarded whichever way a page is served. The application's hot-module client opens it, and Design owns nothing of the application's configuration to point that client elsewhere. This is the hardest piece of the transport, and it is the piece still to build.
+
+Design rewrites no response at all, and dropping the injected bar is what bought that. The proxy no longer asks upstream for an identity encoding so a tag can be appended, no longer buffers a streamed body to put that tag on the end of it, and no longer reuses or strips a nonce-based content security policy that would refuse one. The application's compression, its streaming, and its policy reach the browser as the application sent them.
+
+## One address, read across a boundary
+
+Picking happens in the frame's document while the code that does it runs in the shell's. So the walk from a picked element to the address a note keeps reads the document off the element's own `ownerDocument` rather than reaching for a global one. It climbs to the nearest ancestor carrying a `data-loom-chapter` and a `data-loom-section` attribute, falls back to an identifier selector, and falls back again to a depth-limited path.
+
+Reaching into a frame costs one discipline that code running inside the page would not need. Each browsing context builds its own constructors, so an element from the frame fails `instanceof HTMLElement` against the shell's. Every guard on a picked element therefore tests against the frame's own window.
 
 ## What Design already settled
 
-The `@athrio/loom-design` package holds the parts of this we have built and proved, and chapter eleven of the corpus describes them across eleven looms. Loom Design keeps that core and replaces its edges.
+The `@athrio/loom-design` package holds the parts of this we have built and proved, and chapter eleven of the corpus describes them. Loom Design keeps that core and replaces its edges.
 
 A note carries an address and an observation. The `NoteSchema` union names three kinds: a `dom` note holds a CSS selector, a label, and a rectangle; a `loom` note holds a chapter and a section; a `chat` note holds text alone. Every note carries the project, the route it was made on, its text, a per-project sequence number, a timestamp, and whether an agent has addressed it.
 
-The `loom` kind already solves the anchoring problem we care about most. The overlay walks up from the picked element to the nearest ancestor carrying a `data-loom-chapter` and a `data-loom-section` attribute, and records those instead of a selector. A note anchored that way names the prose that specifies the code, so it survives every rebuild that leaves the section in place. Elements outside a marked section fall back to an identifier selector when one exists, and to a depth-limited path otherwise.
+The `loom` kind already solves the anchoring problem we care about most. A note anchored to a chapter and a section names the prose that specifies the code, so it survives every rebuild that leaves the section in place.
 
 The store keeps notes in SQL through Effect's SQL client, over a SQLite file of its own. It records each note under `(project, seq)`, publishes it on a `PubSub`, and marks an addressed note rather than deleting it.
 
-The server exposes the capture and resolve routes, streams changes over `/notes/live`, and serves the overlay itself from `/notes.js`. Serving the overlay from the tool rather than bundling it into the application is the dependency direction Design needs, and it makes the proxy a short step rather than a rewrite.
+The server exposes the capture and resolve routes and streams changes over `/notes/live`. Serving the browser code from the tool rather than from the application is the dependency direction Design needs, and it is what lets the shell ship the same way.
 
 Four tools give an agent the store: `projects` lists what the store holds, `notes` returns a project's unaddressed notes in the order we made them, `resolve` marks one addressed, and `discard` drops one that no longer applies.
 
 ## What we leave behind
 
-The Vite plugin binds Design to one bundler. It applies during `serve`, starts the note server from `configureServer`, and injects the overlay through `transformIndexHtml`. Every application that wants notes therefore edits its own build configuration and runs Vite. The proxy replaces all of it and asks the application for nothing.
+The Vite plugin bound Design to one bundler. It applied during `serve`, started the note server from `configureServer`, and injected the overlay through `transformIndexHtml`, so every application that wanted notes edited its own build configuration and ran Vite. The proxy replaced all of it and asks the application for nothing.
 
 The Docker image and its Postgres service belonged to a hosted deployment that does not exist. A local tool starts in a second from a command, and SQLite serves a single machine, so both are gone rather than carried unused. A shared store is a different product with different questions — who may read whose notes, and where it runs — and it gets built when those are answered, deliberately, rather than kept warm on the chance.
+
+The overlay goes with them, and the setup screen goes with the overlay. A bar injected into someone else's page was how Design reached an application before it framed one. The shell reaches further from outside, and it survives the navigations that reset a script living inside the page.
+
+The setup screen existed to hand over the tag that installed that bar, so it has nothing left to hand over.
+
+Removing them removes a whole plane of the tool: a script running inside a document Design does not own, a shadow root holding its styles apart from the page's, and the injection that put both there.
 
 ## A note is the first tier, and the cheapest
 
@@ -62,6 +116,8 @@ A structural edit changes the tree, and the tree gets rebuilt. Design records th
 
 Structural edits apply on appearance rather than on load. Design registers each pending address, watches the document for new nodes, and applies an operation when its target arrives. An edit inside a cart drawer waits while the drawer stays closed and lands when the drawer opens, which makes state-dependent markup ordinary rather than exceptional.
 
+The shell is what makes that watch cheap. One observer lives as long as the shell does, so a pending edit is registered once rather than re-registered by a script reborn on every page load.
+
 Repetition sets the limit of what an address can settle. Restyling one row of a list is unambiguous, because the fix belongs in the template either way. Moving one row is not, because the rendered tree holds nothing that separates this row from every row. Design asks at the moment of the edit, and a `data-loom-section` attribute answers the rest.
 
 ## Marks are a projection, not a record
@@ -76,17 +132,85 @@ Inside an artifact the agent writes rather than reads, so the whole apparatus of
 
 Extraction captures provenance in the same pass. Design writes a manifest beside the artifact mapping each element back to its section, its selector, and the tokens that applied, so merging the result reads a table instead of re-deriving intent from markup.
 
-## Agents read the store, and the shell calls an agent
+## Design holds the conversation
 
-An agent reaching into Design queries the store over MCP. The four existing tools grow to cover patches and element context, and the agent asks for a project's open work rather than searching a repository for it.
+An agent reaching into Design from outside queries the store over MCP, the protocol by which an agent calls another program's functions. The four existing tools grow to cover patches and element context, and an agent in a terminal asks for a project's open work rather than searching a repository for it.
 
-Design reaching out to an agent spawns one. Clicking *fix this* runs the agent headless with the note, the patch, and the context, reads its output, and lets the dev server show the result.
+That protocol carries tools, not conversations. An agent that calls Design lives somewhere else, which is why Design has nothing of its own to show a person talking to it. So Design hosts an agent as well. It keeps the messages, calls the model, runs the tools the model asks for, and streams the reply into the shell, while the browser sends what a person typed and draws what comes back.
+
+One set of verbs serves both arrangements. The MCP server keeps answering an agent outside, the hosted agent draws on the same tools, and a verb written once is available to a person pressing a button, to an agent in the shell, and to an agent in a terminal.
+
+## A reply arrives as blocks
+
+A reply is not a paragraph of text. It arrives as an ordered list of blocks, and the agent chooses which kinds carry what it has to say — prose, code, the difference between two versions, a table, a process's output, or a question with answers.
+
+The kinds are a closed set. Design decodes them as a schema union the moment they arrive and draws them with one function from a block to a view that an exhaustive match closes. Adding a kind is a case in the schema and a branch in that function. A kind nobody implemented fails while it is being decoded rather than while it is being drawn, so whatever reaches the page is something the shell knows how to render.
+
+This extends a wire format rather than wrapping one. A model's own reply is already an ordered list of blocks that arrive a piece at a time, so prose streams while it is being written and the other kinds land between runs of it, inside a single reply.
+
+The question kind pays for the whole arrangement. An agent asking which of three files to keep and a person pressing that same button unprompted are one drawn thing over one verb, so what the agent offers and what the shell offers cannot drift apart.
+
+A process's output is a kind too, rather than a mode of its own. What Design reads from a child process is a pipe and not a terminal, so output arrives a line at a time, without colour and without redrawing. A faithful terminal wants a pseudo-terminal, which is a native module, and that is a heavier dependency than a local tool should carry before something needs it.
+
+## An app the agent builds
+
+One kind is a page the agent writes — markup and script a person can work with — for the times the closed set has no answer.
+
+It renders inside a frame with a deliberately weak sandbox: scripts, and nothing else. Withholding the same-origin permission is what makes the rest hold. A frame granted both permissions reaches its own element in the parent document and removes the sandbox attribute from it.
+
+Messages are the only channel out of that frame, and identity comes from the window a message arrived from rather than the origin it claims. A frame with no origin of its own reports itself as `null`, so its claimed origin is worth nothing as a test.
+
+Through that channel the page asks Design to run a verb. The block names which verbs its page may ask for, Design decides, and the answer returns the same way — the same set of verbs once more, gated in one place.
+
+A policy declared inside the page stops it reaching the network. The sandbox stops the page from reading anything of Design's; only the policy stops it sending on what Design handed it.
+
+Three details decide whether such a page reads as part of the shell or as something dropped into it. A frame does not size itself to its content, so the page reports its height and Design sets the frame from it. A frame inherits none of the shell's stylesheet, so Design writes the scheme's tokens into the page. And the shell's own drawing replaces a frame whose identity it cannot follow, taking the page's state with it, so the frame is keyed to its block rather than to its position.
+
+The two homes for such a page differ in lifetime rather than in kind. Inside a reply the page is content: it belongs to that turn and goes when the conversation scrolls past it. In the shell the page is state: it outlives the turn that made it, so it needs a name, a place in the store, and a way to be replaced.
+
+This is the one place where what an agent produced runs rather than being read, which is why the sandbox and the gate are the feature rather than the packaging around it.
 
 ## Working state stays out of the repository
 
 Notes and patches are the work in progress, not the product. They change constantly, they answer queries, and they would bury a repository's history. The store keeps them under a project key in a data directory of its own, and the corpus keeps the prose and the code.
 
 Export stays explicit. A patch does not travel with a clone, and Design says so rather than implying otherwise.
+
+## A project is a directory, and registering one is a button
+
+A project is a directory and a name. Registering one writes an identity file into that directory and records the directory, the address, and the identity in the store, so a later run tells this project apart from a different one wearing its name.
+
+Today only the command registers. The entry a developer runs serves without registering anything, and a note captured under an unfamiliar name creates a project carrying neither a directory nor an identity. Those are one fault seen twice. Registration belongs to the service, so that whoever starts it registers the same way, and so that a note cannot bring a project into being by arriving.
+
+Registering is mechanical, which makes it a button as readily as a verb. A person makes a project by naming it and choosing a directory, empty or already full. An agent makes one by calling the verb behind that button. One path with two callers is what stops the two from drifting.
+
+What an agent adds is the reading around that verb. It opens the repository, proposes how the application runs, checks that the address answers, and says so when something does not line up — which means the shell needs somewhere for a disagreement to land, and not only a place for answers.
+
+Whether the identity file travels with the repository is still open. Committed, a teammate's clone adopts the same project and their notes join ours. Ignored, every clone registers a project of its own. That answer decides who a project belongs to, and it is worth giving deliberately rather than falling into.
+
+## Design runs the application
+
+The command-line chapter states that Design and the application start separately and in either order, and that neither owns the other's lifetime. Half of that still holds, and half is given up deliberately.
+
+Design starts the application, from a command the project keeps. Nothing attaches to an application already running: a project is stopped, or it is running under Design. A port already held is a refusal naming the process that holds it and the directory that process runs from, rather than a third state to carry everywhere.
+
+Refusing costs less than modelling that third state, because of what the state costs when it is wrong. An application Design did not start may be yesterday's server on the same port, and then every note is filed against the wrong source, silently, with nothing later in the design to catch it.
+
+Every process Design starts is scoped to Design, so stopping one is a stop rather than a request. That is the half of independence given up: quitting Design takes the applications with it. The half kept is the half that mattered — restarting the application leaves Design standing, with its notes and its conversation intact.
+
+A started process leads a process group of its own, and stopping signals the group. A command such as `bun run dev` is a wrapper that starts a shell that starts the real server, so a signal sent to the wrapper alone leaves that server running and holding its port. An orphan surviving a single signal is the failure this avoids.
+
+Asking whether the thing answering is the thing Design started has a cheap form and an expensive one. The cheap form asks the operating system which process holds the port and which directory it runs from, and compares that directory with the project's. The expensive form asks an agent to fetch the page and judge it. The cheap form is the gate, and the expensive one answers only where the cheap form cannot decide.
+
+Two neighbours of quitting are not quitting, and both want settling before this is built. A closed browser tab is a client leaving rather than the service stopping. And Design's own development loop restarts its server whenever its source changes, which would take a person's application down on every save.
+
+## Design is one application, not a set of scripts
+
+Loom Design is a web application: an Effect server and a Foldkit client, built together and shipped as one package. The server proxies, keeps the store, answers the API, and carries the agent's tools. The client is the shell — the conversation, the panels, the frame, and the note list — and it is the only client there is.
+
+Being one application decides how it is built. One entry, one build, and an index the build writes its own asset references into. Nothing names a script or a stylesheet by hand, so no two places can disagree about a name, and nothing is copied beside anything.
+
+The shell's layout adapts rather than branching. A phone opens the shell and gets the shell, laid out for a phone. There is no second, smaller tool for small screens.
 
 ## One command
 
@@ -96,7 +220,7 @@ Design ships as a package we run rather than an application we install.
 loom design
 ```
 
-The command starts the server, opens the browser, and proxies the application. No signing, no notarization, no update channel, no per-architecture build, and no browser bundled inside. Working in the browser we already use is the point, so Design speaks the platform — `elementFromPoint` for picking, an injected stylesheet for overrides, `getComputedStyle` and the CSSOM for provenance — and reaches for a browser protocol nowhere.
+The command starts Design and opens the shell. The application starts from there, under the project that keeps its command. No signing, no notarization, no update channel, no per-architecture build, and no browser bundled inside. Working in the browser we already use is the point, so Design speaks the platform — `elementFromPoint` for picking, an injected stylesheet for overrides, `getComputedStyle` and the CSSOM for provenance — and reaches for a browser protocol nowhere.
 
 ## Why the proxy belongs outside the product
 
@@ -104,19 +228,17 @@ The website's own server briefly proxied Vite so that it could render in develop
 
 A proxy inside the product makes the shipping server unable to answer alone. The website inherited a build tool's transport, its module graph, its not-found, and its socket, and every one of those became a defect to patch. A proxy outside the product inverts the dependency. Design stands in front of an application that does not know it exists, and the application ships nothing on Design's behalf.
 
-That inversion is what buys a tool that works with any stack. A plugin reaches only the bundlers someone writes plugins for. A transport reaches everything that speaks HTTP. Leaving the bundler and leaving the container are therefore one decision rather than two.
-
 ## What this frees the website to be
 
 Design attaching from outside means the website owes Design nothing, and that removes the last reason for the website to run a bundler at request time.
 
 Vite becomes a build rather than a server. It writes `dist`, and the Effect server reads it and renders. Development and production stop being two arrangements held in agreement and become one path run twice. The stylesheet reaches the browser as a link in the head in both, which closes a flash of unstyled content that measured 383 milliseconds in development against nothing in production.
 
-The site's Vite configuration drops the Design plugin, the server drops its development layer and its proxy, and one of the four standing type errors goes with the plugin import.
+## The looms this covers
 
-## The looms this replaces
+Chapter eleven holds the note, the store, the server, the agent's tools, the proxy, the project's identity, packaging, the service entry, and the addressing. The three that described the arrangement Design left behind — the Vite plugin, the local stack, and the image — went from it already, and the overlay and the setup UI follow them.
 
-Chapter eleven holds eleven looms. Three of them describe the arrangement Design leaves behind: the Vite plugin, the local stack, and the image. The other eight stand: the note, the store, the server, the overlay, the agent's tools, packaging, the service entry, and the setup UI.
+What this design adds to that chapter is the shell and the paper scheme it wears. What it changes is the proxy, which now serves the shell, tells a framed request from a top-level one, clears the headers that would refuse a frame, and rewrites nothing.
 
 So this is a replacement of edges around a proved core, and the work is smaller than the change in direction suggests.
 
@@ -129,18 +251,6 @@ Custom properties enumerate off the computed style of the document element, so a
 The subtree is the easy half. The cascade above the extraction root is the whole problem: inherited properties and custom properties are declared on ancestors the artifact will not contain, so extraction has to flatten them onto the artifact's own root. An extraction that copies the subtree and forgets what it inherited produces an artifact that looks plausible and is wrong, which is worse than one that fails.
 
 The mechanical pass therefore clones the subtree, collects matching rules in source order inside their media and layer wrappers, flattens the inherited properties and the token block onto the root, carries the font faces, and rewrites relative URLs against the application's origin. The manifest records what each of those steps decided.
-
-## What the transport must handle
-
-Four hazards sit in the proxy, and each is certain rather than possible.
-
-The websocket upgrade has to be forwarded. The website's own proxy avoided this by pointing the hot-module client at a port directly, which was available only because it owned the application's configuration. Design owns nothing of the application, so it must proxy the upgrade itself. This is the one genuinely hard piece of the transport.
-
-Compressed responses cannot be injected into, so the proxy asks upstream for an identity encoding. Over a loopback interface compression buys nothing anyway.
-
-Streamed HTML has to be injected into as it passes, or buffered. Buffering is simpler and costs little on a local machine, but it ends streaming, so the choice belongs in the design rather than in the moment the first streaming application arrives.
-
-A content security policy is mostly answered by the single origin the proxy creates, since a policy naming `self` now covers the overlay. A policy built on a nonce still refuses an injected tag, so the proxy reuses the page's nonce or strips the header. Redirects need their `Location` rewritten to stay inside the frame.
 
 ## The limit of an address
 
