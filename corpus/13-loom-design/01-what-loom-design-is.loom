@@ -1,0 +1,24 @@
+---
+Part XIII: Loom Design
+Chapter 1: What Loom Design is
+Language: Prose
+---
+
+# What is Loom Design
+
+Loom Design is an open source, local-first app for AI-assisted software engineering with visual feedback. With Loom Design, developers can create new apps or refine existing ones while keeping their tech stack intact. Loom Design default output is the literate source which then tangled into standard code that runs as the application.
+
+## Features
+
+- MCP-driven UI
+- Design Canvas with screen checkpoints
+- Chat with agent
+- Notes
+- DOM anchored notes
+- Loom source anchored notes
+- Design Patching
+- Desing Snapshoting
+- Desing Prototyping
+- Artifacts
+- Files browser
+- Source reader
