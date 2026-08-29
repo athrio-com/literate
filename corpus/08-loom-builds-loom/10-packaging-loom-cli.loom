@@ -10,7 +10,9 @@ The `@athrio/loom` package ships to npm as a single self-contained file. Vite bu
 
 ## The manifest {Tangle}[package.json]
 
-The `files` field restricts the published package to the `dist` directory, and the `bin` field maps the `loom` command to the bundle. The bundle inlines every dependency, so all dependencies belong in the `devDependencies` field. Design is inlined like everything else, so it is a development dependency too. Its own assets are built first — the `prebuild` step — because the bundle carries them.
+The `files` field restricts the published package to the `dist` directory, and the `bin` field maps the `loom` command to the bundle. The bundle inlines every dependency, so all dependencies belong in the `devDependencies` field. Loom Design is not among them. Athrio Media OÜ owns both products but licenses them differently — this package under MIT, Design under terms of its own — so `loom design` runs Design's binary and this package neither imports nor builds it.
+
+The `typecheck` script is the one this package went without, and the cost showed. Vite strips types rather than checking them, so `main.ts` shipped for months with an identifier that resolved to nothing — a failure message reaching for a variable that had gone out of scope, which would have thrown a `ReferenceError` on the one path it was written for. A type checker reads the whole file whether or not a path runs.
 
 The `build` script bundles the tangled source files committed to the repository. Tangling the corpus is a separate step, performed with the published `loom` CLI rather than the in-progress source — using an unverified tangler to tangle the corpus that produces it would be circular. The `prepack` script re-bundles automatically before each publish. The `bun publish` command rewrites the `workspace:*` specifier for `@athrio/loom-lang` — Bun's protocol for local package references — into the real published version number.
 
@@ -22,7 +24,7 @@ The `build` script bundles the tangled source files committed to the repository.
   "name": "@athrio/loom",
   "version": "::[version]",
   "description": "Tangle Loom literate sources into real source files.",
-  "license": "Apache-2.0 OR MIT",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "loom": "dist/main.js"
@@ -43,14 +45,13 @@ The `build` script bundles the tangled source files committed to the repository.
     "access": "public"
   },
   "scripts": {
-    "prebuild": "bun run --filter @athrio/loom-design build",
     "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json",
     "test": "bun test",
     "prepack": "bun run build"
   },
   "devDependencies": {
     "@athrio/loom-config": "workspace:*",
-    "@athrio/loom-design": "workspace:*",
     "@athrio/loom-lang": "workspace:*",
     "@athrio/loom-lang-services": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.97",
@@ -73,3 +74,36 @@ The `tsconfig.json` extends the workspace-root `tsconfig.base.json` and covers t
   },
   "include": ["src"]
 }
+
+## The licence {Tangle}[LICENSE]
+
+npm ships a package's `LICENSE` whatever the `files` field says, and until now this package shipped none — an installer had the SPDX expression in the manifest and no text to read. The file below is that text.
+
+It carries the MIT licence in full. Loom was dual-licensed under MIT and Apache-2.0 for a while, inheriting a Rust convention rather than a decision; the Apache branch bought a patent grant nobody was obliged to take, and dropping it left one licence to read and one string to keep consistent.
+
+It also says what is *not* here. Athrio sells Loom Design under a licence of its own, and a reader who finds a permissive text here should not conclude it reaches that product too.
+
+=>
+
+MIT License
+
+Copyright (c) 2026 Athrio Media OÜ and Loom contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+

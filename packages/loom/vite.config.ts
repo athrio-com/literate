@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite'
-import { copyFileSync, existsSync } from 'node:fs'
 import { builtinModules, createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -25,31 +24,8 @@ const umd2esm = {
   },
 }
 
-const designAssets = {
-  name: 'design-assets',
-  closeBundle() {
-    const design = resolve(here, '..', 'loom-design')
-    const carried: ReadonlyArray<readonly [string, string]> = [
-      [resolve(design, 'dist', 'overlay.js'), 'overlay.js'],
-      [resolve(design, 'dist', 'shell.js'), 'shell.js'],
-      [resolve(design, 'dist', 'ui.js'), 'ui.js'],
-      [resolve(design, 'src', 'shell.html'), 'shell.html'],
-      [resolve(design, 'src', 'shell.css'), 'shell.css'],
-      [resolve(design, 'src', 'ui.html'), 'ui.html'],
-    ]
-    for (const [from, name] of carried) {
-      if (!existsSync(from)) {
-        throw new Error(
-          `the CLI carries Design's ${name}, and ${from} is not built — run the Design build first`,
-        )
-      }
-      copyFileSync(from, resolve(here, 'dist', name))
-    }
-  },
-}
-
 export default defineConfig({
-  plugins: [umd2esm, designAssets],
+  plugins: [umd2esm],
   resolve: {
     conditions: ['node'],
     mainFields: ['main', 'module'],

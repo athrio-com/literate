@@ -45,7 +45,7 @@ export type TableOfContents = typeof TableOfContentsSchema.Type
 
 `TableOfContentsBuilder` is the pass, the same shape as `WeaveBuilder`: one `build` method that wraps a pure function in an Effect so the compiler composes it like any other projection. `buildContents` is that function, and the weave calls it directly.
 
-It reads the corpus once for the descriptions the author wrote, gathers every chapter that declares a place, and folds each part into a `TocPart` — its number and name from the part's declaration, its description from the map, and its chapters from the ones that name it, in order. The parts come out numbered-first, so the book reads Part I to Part XII and then its numberless parts, however the corpus happened to load. A chapter that names no part at all is loose, gathered on its own.
+It reads the corpus once for the descriptions the author wrote, gathers every chapter that declares a place, and folds each part into a `TocPart` — its number and name from the part's declaration, its description from the map, and its chapters from the ones that name it, in order. The parts come out numbered-first, so the book reads Part I to Part XI and then its numberless parts, however the corpus happened to load. A chapter that names no part at all is loose, gathered on its own.
 
 =>
 

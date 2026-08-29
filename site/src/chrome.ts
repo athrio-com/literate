@@ -796,7 +796,7 @@ export const footer = (): Html =>
           h.div(
             [h.Class('footer-bottom')],
             [
-              h.span([], ['© Quadrivium Academy 2026']),
+              h.span([], ['© Athrio Media OÜ 2026']),
             ],
           ),
         ],

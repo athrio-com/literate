@@ -1,8 +1,10 @@
-import { Cause, Console, Effect, Layer, Match, Option, Result, Stream } from 'effect'
+import { Cause, Console, Data, Effect, Option, Result, Stream } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/unstable/cli'
+import { ChildProcess } from 'effect/unstable/process'
 import { NodeRuntime, NodeServices } from '@effect/platform-node'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { resolve as resolvePath } from 'node:path'
+import { createRequire } from 'node:module'
+import { dirname, resolve as resolvePath } from 'node:path'
 import {
   DocumentSource,
   type TangledFile,
@@ -13,7 +15,6 @@ import { LoomWeaver } from '@athrio/loom-lang/weave/LoomWeaver'
 import { LoomContents } from '@athrio/loom-lang/weave/LoomContents'
 import { PackageConfig } from '@athrio/loom-lang/PackageConfig'
 import { LoomConfig } from '@athrio/loom-config/LoomConfig'
-import type { Standing } from '@athrio/loom-design/identity'
 import {
   addService,
   installedServices,
@@ -278,111 +279,51 @@ const set = (name: string, value: string) =>
     ),
   )
 
-const within = (one: string, other: string): boolean =>
-  one === other || one.startsWith(`${other}/`) || other.startsWith(`${one}/`)
+class DesignMissing extends Data.TaggedError('DesignMissing')<{
+  readonly directory: string
+}> {}
 
-const opener = (): string =>
-  Match.value(process.platform).pipe(
-    Match.withReturnType<string>(),
-    Match.when('darwin', () => 'open'),
-    Match.when('win32', () => 'start'),
-    Match.orElse(() => 'xdg-open'),
+const manifestOf = (base: string) =>
+  Effect.try(() =>
+    createRequire(base).resolve('@athrio/loom-design/package.json'),
   )
 
-const opened = (address: string) =>
-  Effect.tryPromise(async () => {
-    const { spawn } = await import('node:child_process')
-    spawn(opener(), [address], { detached: true, stdio: 'ignore' }).unref()
-  }).pipe(Effect.catchCause(() => Effect.void))
-
-const refusalOf = (
-  standing: Standing,
-  project: string,
-  directory: string,
-): Option.Option<string> =>
-  Match.value(standing).pipe(
-    Match.tag('Taken', () =>
-      Option.some(
-        `loom: \`${project}\` is registered to another project, and its notes point elsewhere.\n` +
-          `      This directory is ${directory}.\n` +
-          `      Run Design here under a different name, or run it in the directory that owns \`${project}\`.`,
-      ),
-    ),
-    Match.tag('Misplaced', () =>
-      Option.some(
-        `loom: \`${project}\` is registered, but ${directory} carries no identity for it.\n` +
-          `      This is almost always the wrong directory. Run Design from the project it names.`,
-      ),
-    ),
-    Match.orElse(() => Option.none<string>()),
+const designBinary = Effect.gen(function* () {
+  const directory = process.cwd()
+  const manifest = yield* manifestOf(resolvePath(directory, 'index.js')).pipe(
+    Effect.catch(() => manifestOf(import.meta.url)),
+    Effect.mapError(() => new DesignMissing({ directory })),
   )
+  return resolvePath(dirname(manifest), 'dist', 'loom-design.js')
+})
 
-const design = (project: string, given: string, port: number) => {
-  return Effect.gen(function* () {
-    const directory = process.cwd()
-    yield* Effect.promise(async () => {
-      const { createRequire } = await import('node:module')
-      const scope = globalThis as { require?: unknown }
-      scope.require = scope.require ?? createRequire(import.meta.url)
-    })
-    const proxy = yield* Effect.tryPromise(
-      () => import('@athrio/loom-design/design'),
-    )
-    const application = proxy.addressOf(given)
-    const kept = yield* Effect.tryPromise(
-      () => import('@athrio/loom-design/store'),
-    )
-    const projects = yield* Effect.tryPromise(
-      () => import('@athrio/loom-design/identity'),
-    )
-    const store = kept.localStore()
-    const standing = yield* projects.settle({
-      project,
-      directory,
-      address: application,
-      store,
-    })
-    yield* Option.match(refusalOf(standing, project, directory), {
-      onSome: (message) =>
-        Console.error(message).pipe(
-          Effect.andThen(Effect.sync(() => void (process.exitCode = 1))),
+const design = (project: string, application: string, port: number) =>
+  Effect.gen(function* () {
+    const binary = yield* designBinary
+    const code = yield* Effect.scoped(
+      Effect.flatMap(
+        ChildProcess.make(
+          binary,
+          [project, application, '--port', String(port)],
+          { stdin: 'inherit', stdout: 'inherit', stderr: 'inherit' },
         ),
-      onNone: () =>
-        Effect.gen(function* () {
-          const serving = yield* projects.servedFrom(application)
-          yield* Option.match(serving, {
-            onNone: () => Effect.void,
-            onSome: (from) =>
-              within(from, directory)
-                ? Effect.void
-                : Console.error(
-                    `loom: warning — the server on ${application} is running in ${from}, not in ${directory}`,
-                  ),
-          })
-          yield* Console.log(
-            `loom: Design on http://localhost:${port}, in front of ${application}, noting ${project} in ${directory}`,
-          )
-          yield* Console.log(
-            `loom: the application alone, with the notes bar over it, is on http://localhost:${port}/__loom/bare/`,
-          )
-          yield* Effect.forkDetach(
-            Effect.sleep('700 millis').pipe(
-              Effect.andThen(opened(`http://localhost:${port}`)),
-            ),
-          )
-          yield* Layer.launch(
-            proxy.designServer({ port, application, project, store }),
-          )
-        }),
-    })
+        (running) => running.exitCode,
+      ),
+    )
+    yield* Effect.sync(() => void (process.exitCode = code))
   }).pipe(
+    Effect.catchTag('DesignMissing', () =>
+      Console.error(
+        'loom: Loom Design is not installed.\n' +
+          '      Add it with `bun add -d @athrio/loom-design`, then run this again.',
+      ).pipe(Effect.andThen(Effect.sync(() => void (process.exitCode = 1)))),
+    ),
     Effect.catchCause((cause) =>
       Console.error(
-        `loom: Design could not run in front of ${application}\n${Cause.pretty(cause)}`,
+        `loom: Loom Design could not start\n${Cause.pretty(cause)}`,
       ).pipe(Effect.andThen(Effect.sync(() => void (process.exitCode = 1)))),
     ),
   )
-}
 
 const tangleCommand = Command.make(
   'tangle',
@@ -472,7 +413,6 @@ const program = Command.run(loom, {
 )
 
 if (process.argv[2] === 'lsp') {
-  const { createRequire } = await import('node:module')
   ;(globalThis as { require?: unknown }).require = createRequire(import.meta.url)
   const { startLanguageServer } = await import('@athrio/loom-lang/LoomServer')
   startLanguageServer()

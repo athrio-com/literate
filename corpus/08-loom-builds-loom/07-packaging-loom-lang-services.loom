@@ -30,7 +30,7 @@ document's uri — are supplied by the host bundle.
   "name": "@athrio/loom-lang-services",
   "version": "::[version]",
   "description": "Loom's language services and the LanguageService contract they share.",
-  "license": "Apache-2.0 OR MIT",
+  "license": "MIT",
   "type": "module",
   "exports": {
     "./LanguageService": "./src/LanguageService.ts",

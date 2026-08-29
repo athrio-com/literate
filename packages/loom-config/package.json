@@ -2,7 +2,7 @@
   "name": "@athrio/loom-config",
   "version": "0.0.10",
   "description": "The loom.config.json model and reader for Loom projects.",
-  "license": "Apache-2.0 OR MIT",
+  "license": "MIT",
   "type": "module",
   "exports": {
     "./LoomConfig": "./src/LoomConfig.ts"

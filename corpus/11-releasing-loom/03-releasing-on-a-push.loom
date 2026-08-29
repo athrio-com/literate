@@ -1,5 +1,5 @@
 ---
-Part XII, Chapter 3: Releasing on a push
+Part XI, Chapter 3: Releasing on a push
 Package: .github/workflows/
 Language: YAML
 ---
@@ -52,7 +52,7 @@ jobs:
 
 ## Pushing the images
 
-The images job builds what ships as a container and pushes it to the registry. That is the website alone: Design is a command a developer runs on their own machine, so it ships on npm with the CLI rather than as an image. The job logs in with the workflow's own token, then builds `loom-website` from its Dockerfile, with the whole repository as the build context. The image carries three tags: `latest` and a short commit hash always move to this build, and `v<version>` records the shared version — so a rollback names a commit or a release, and a deployment tracking `latest` follows the default branch.
+The images job builds what ships as a container and pushes it to the registry. That is the website alone. Loom Design releases from its own repository under Athrio's name, and nothing here builds or publishes it. The job logs in with the workflow's own token, then builds `loom-website` from its Dockerfile, with the whole repository as the build context. The image carries three tags: `latest` and a short commit hash always move to this build, and `v<version>` records the shared version — so a rollback names a commit or a release, and a deployment tracking `latest` follows the default branch.
 
 =>
 

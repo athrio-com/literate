@@ -1,0 +1,59 @@
+---
+Part XI: Releasing Loom
+Chapter 1: Continuous integration
+Package: .github/workflows/
+Language: YAML
+---
+
+# Continuous integration
+
+Every push and every pull request runs the same gate: the tests pass, the committed source matches the corpus it tangles from, and the command-line tool carries none of Loom Design. The second half is what a literate framework owes its readers. Loom commits its tangled output so a checkout builds without re-tangling, and that output is only trustworthy if it never drifts from the looms that produce it. The gate re-tangles the corpus and fails on any difference, so a loom edited without a re-tangle cannot reach the default branch.
+
+The third check guards a licence rather than a build. Athrio Media OÜ owns Loom and Loom Design both, and licenses them differently, so a bundle that quietly carries Design publishes the paid product under the free product's terms. Version 0.0.10 did exactly that, and the permissive grant it made on Design's source cannot be withdrawn. Design now lives in a repository of its own, which makes the mistake harder to repeat but not impossible — a dependency added for convenience would be enough — so the check stays.
+
+The release workflow waits on this one. It runs only after the gate passes on the default branch, so nothing publishes on a red build.
+
+## The workflow {Tangle}[ci.yaml]
+
+The job runs on Ubuntu with Bun pinned to the version the workspace declares. It installs against the committed lockfile, runs the whole test suite, type-checks every package that declares a checker, then checks the tangle. The type check earns its place because the bundler does not do it: Vite strips types rather than reading them, so a package without a checker can ship an identifier that resolves to nothing. The check builds the CLI from the committed source and tangles the corpus with it — self-tangling here is deliberate, since the check asks only whether the source and the corpus agree, not whether the tangler is the released one. `git diff --exit-code` then fails the job if the re-tangle changed anything, naming the files that drifted.
+
+The last step packs the tool the way npm would and reads what came out. A file named for Design in the tarball fails the job, and so does a source map that lists one of Design's files among its sources — the path by which Design's TypeScript reached the registry the first time. Design's name inside a string is allowed, since the `design` command has to say which package to install.
+
+=>
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.20
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      - run: bun run --filter './packages/*' typecheck
+      - name: The committed source matches the corpus
+        run: |
+          bun run --filter @athrio/loom build
+          bun packages/loom/dist/main.js tangle corpus
+          git diff --exit-code
+      - name: The CLI carries none of Loom Design
+        working-directory: packages/loom
+        run: |
+          npm pack --ignore-scripts --silent
+          if tar tzf athrio-loom-*.tgz | grep -Eiq 'design|overlay|shell|ui\.'; then
+            echo "the tarball carries Loom Design:" >&2
+            tar tzf athrio-loom-*.tgz | grep -Ei 'design|overlay|shell|ui\.' >&2
+            exit 1
+          fi
+          if grep -oh '"sources":\[[^]]*\]' dist/*.js.map | grep -q 'loom-design'; then
+            echo "a source map carries Loom Design's source" >&2
+            exit 1
+          fi

@@ -23,7 +23,7 @@ configuration, is a real dependency, bundled along with the source.
   "name": "@athrio/loom-config",
   "version": "::[version]",
   "description": "The loom.config.json model and reader for Loom projects.",
-  "license": "Apache-2.0 OR MIT",
+  "license": "MIT",
   "type": "module",
   "exports": {
     "./LoomConfig": "./src/LoomConfig.ts"

@@ -4,7 +4,7 @@
   "displayName": "Loom",
   "description": "A VS Code extension for Loom",
   "version": "0.0.10",
-  "license": "MIT OR Apache-2.0",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/athrio-com/loom.git",

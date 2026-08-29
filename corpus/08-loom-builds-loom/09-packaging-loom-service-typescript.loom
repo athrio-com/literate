@@ -22,7 +22,7 @@ The package carries no dependencies. The build bundles `volar-service-typescript
   "name": "@athrio/loom-service-typescript",
   "version": "::[version]",
   "description": "The loadable TypeScript language service: the product's own editor program, held apart from the frame.",
-  "license": "Apache-2.0 OR MIT",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/athrio-com/loom.git",
@@ -70,3 +70,36 @@ The config extends the workspace base, which supplies the compiler options and t
   },
   "include": ["src"]
 }
+
+## The licence {Tangle}[LICENSE]
+
+npm ships a package's `LICENSE` whatever the `files` field says, and until now this package shipped none — an installer had the SPDX expression in the manifest and no text to read. The file below is that text.
+
+It carries the MIT licence in full. Loom was dual-licensed under MIT and Apache-2.0 for a while, inheriting a Rust convention rather than a decision; the Apache branch bought a patent grant nobody was obliged to take, and dropping it left one licence to read and one string to keep consistent.
+
+It also says what is *not* here. Athrio sells Loom Design under a licence of its own, and a reader who finds a permissive text here should not conclude it reaches that product too.
+
+=>
+
+MIT License
+
+Copyright (c) 2026 Athrio Media OÜ and Loom contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+

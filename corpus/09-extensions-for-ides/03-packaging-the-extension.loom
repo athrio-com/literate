@@ -24,7 +24,7 @@ The `pack:vsix` script builds the bundle and then packages it with `vsce`. The b
   "displayName": "Loom",
   "description": "A VS Code extension for Loom",
   "version": "::[version]",
-  "license": "MIT OR Apache-2.0",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/athrio-com/loom.git",

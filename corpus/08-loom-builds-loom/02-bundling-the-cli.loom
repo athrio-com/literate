@@ -8,11 +8,11 @@ Language: TypeScript
 
 Vite bundles the CLI program, the language server's TypeScript source, and Effect into a single `dist/main.js` module and adds a Node shebang, the line that makes the file directly executable. The installed `loom` binary therefore carries no runtime dependencies and no TypeScript source to compile.
 
+Loom Design is in neither this bundle nor any other file this build writes. Athrio Media OÜ licenses Design commercially and this package permissively, so a copy of Design inside `dist/main.js` would publish the paid product under the free product's terms — which is what version 0.0.10 did, and a permissive grant once made cannot be taken back. `loom design` runs Design's own binary and imports nothing from it, which leaves the bundler no import to follow.
+
 ## Vite build {Tangle}
 
 The `node:` built-in modules stay external, since the runtime supplies them and the bundle need not carry them. Everything else — the language server's TypeScript source and Effect — is inlined into `dist/main.js`.
-
-Design stays external too, for a different reason. They serve the overlay as a file read from their own package, resolved against the module doing the reading, so a copy inlined here would look for that file beside the CLI and never find it. Loom Design therefore loads Design where they are installed rather than carrying a copy, and `loom design` reports plainly when they are not there.
 
 The language server's `exports` field points to TypeScript source files rather than pre-compiled output. Bun runs these files directly, as do tools like `tsx` and code editors, with no compilation step. Vite inlines them at build time, so the published CLI is pure JavaScript. The `loom lsp` command pulls in the server, and with it Volar; some of Volar's dependencies — the `vscode-*-languageservice` packages and `jsonc-parser` — ship only UMD bundles the bundler cannot follow statically, so the `umd2esm` plugin rewrites each to its ESM sibling, the same trick the language-server build uses.
 
@@ -23,7 +23,6 @@ The language server's `exports` field points to TypeScript source files rather t
 =>
 
 import { defineConfig } from 'vite'
-import { copyFileSync, existsSync } from 'node:fs'
 import { builtinModules, createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -51,43 +50,12 @@ const umd2esm = {
 
 ~
 
-Design's browser assets travel with the CLI as files rather than as code. The overlay, the shell, and the setup screen are scripts a browser loads and pages it renders, so nothing in the command-line program imports them — Design names each one by path when a request for it arrives. A bundler follows imports, so it never learns these exist, and this plugin copies them beside `dist/main.js` after the bundle is written.
-
-The list is written by hand, and that is where it fails. An asset added to Design and forgotten here breaks in a browser rather than in the build, because nothing compares this list against the paths Design asks for at runtime. The check below catches only the opposite mistake — a file named here that Design has not built stops the build and says which one.
-
-=>
-
-const designAssets = {
-  name: 'design-assets',
-  closeBundle() {
-    const design = resolve(here, '..', 'loom-design')
-    const carried: ReadonlyArray<readonly [string, string]> = [
-      [resolve(design, 'dist', 'overlay.js'), 'overlay.js'],
-      [resolve(design, 'dist', 'shell.js'), 'shell.js'],
-      [resolve(design, 'dist', 'ui.js'), 'ui.js'],
-      [resolve(design, 'src', 'shell.html'), 'shell.html'],
-      [resolve(design, 'src', 'shell.css'), 'shell.css'],
-      [resolve(design, 'src', 'ui.html'), 'ui.html'],
-    ]
-    for (const [from, name] of carried) {
-      if (!existsSync(from)) {
-        throw new Error(
-          `the CLI carries Design's ${name}, and ${from} is not built — run the Design build first`,
-        )
-      }
-      copyFileSync(from, resolve(here, 'dist', name))
-    }
-  },
-}
-
-~
-
 Vite's library mode builds a single entry point to `dist/main.js`. The bundle targets Node 20, so Node runs it directly and Bun, being Node-compatible, runs the same bundle unchanged. The CLI package uses the ESM format — ECMAScript modules — so Vite emits an ESM bundle with a `#!/usr/bin/env node` shebang, making it directly executable. The VS Code extension runs in the editor's CommonJS host, so its Vite config emits that format instead.
 
 =>
 
 export default defineConfig({
-  plugins: [umd2esm, designAssets],
+  plugins: [umd2esm],
   resolve: {
     conditions: ['node'],
     mainFields: ['main', 'module'],

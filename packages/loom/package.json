@@ -2,7 +2,7 @@
   "name": "@athrio/loom",
   "version": "0.0.10",
   "description": "Tangle Loom literate sources into real source files.",
-  "license": "Apache-2.0 OR MIT",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "loom": "dist/main.js"
@@ -23,14 +23,13 @@
     "access": "public"
   },
   "scripts": {
-    "prebuild": "bun run --filter @athrio/loom-design build",
     "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json",
     "test": "bun test",
     "prepack": "bun run build"
   },
   "devDependencies": {
     "@athrio/loom-config": "workspace:*",
-    "@athrio/loom-design": "workspace:*",
     "@athrio/loom-lang": "workspace:*",
     "@athrio/loom-lang-services": "workspace:*",
     "@effect/platform-node": "4.0.0-beta.97",
