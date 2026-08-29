@@ -13,11 +13,11 @@ The pass reads the parse, not the product. A woven page holds each section's pro
 
 ## What this module draws on
 
-The pass reads the Loom AST and writes the woven model, so it draws from both. From `effect` come the array and option combinators, `Match` for dispatching on a section's runs, and `pipe` for the spine. From the Loom side come the section a page is built from, the preamble and section-body wefts its runs are made of, and the anchor token a code link resolves. The corpus supplies `titleIndexes` and `resolveAnchor` — the same lexical lookup the editor navigates by — so a code anchor reaches the very section a bare `::[…]` composes. The table-of-contents pass supplies the book's structure: `buildContents` reads the corpus's frontmatter into parts and chapters, which the navigation projects into its tree. From the woven side come the schema constructors for every node the pass builds: the corpus, its parts and entries, its pages, the source anchor each block records, and the blocks and links a page holds.
+The pass reads the Loom AST and writes the woven model, so it draws from both. From `effect` come the array and option combinators, `Match` for dispatching on a section's runs, `Order` for the reading order the pages come out in, and `pipe` for the spine. From the Loom side come the section a page is built from, the preamble and section-body wefts its runs are made of, and the anchor token a code link resolves. The corpus supplies `titleIndexes` and `resolveAnchor` — the same lexical lookup the editor navigates by — so a code anchor reaches the very section a bare `::[…]` composes. The table-of-contents pass supplies the book's structure: `buildContents` reads the corpus's frontmatter into parts and chapters, which the navigation projects into its tree. From the woven side come the schema constructors for every node the pass builds: the corpus, its parts and entries, its pages, the source anchor each block records, and the blocks and links a page holds.
 
 =>
 
-import { Array, Context, Effect, Layer, Match, Option, pipe } from 'effect'
+import { Array, Context, Effect, Layer, Match, Option, Order, pipe } from 'effect'
 import type { LoomSection } from '@athrio/loom-ast/LoomAst'
 import type {
   PreambleWeft,
@@ -62,6 +62,8 @@ import {
 
 `buildCorpus` is the spine. It reads the corpus once for the title index a code link resolves through, projects the table of contents into the navigation tree and its loose chapters, maps each chapter to its page, and pairs them into a `WovenCorpus`. A page carries the name of the part it sits under, so the spine reads that from the tree it just built.
 
+Then it sorts. A corpus is a map, and a map hands back its values in the order they were put in — which is the order the loader finished reading them, not an order anyone chose. Left alone, the pages come out in whatever sequence the filesystem answered that morning, and a loader running alongside other work answers differently from one running by itself. The navigation is already in reading order, so the pages take theirs from it. A woven corpus is committed to a repository and read by a site that opens on its first page; it has to come out the same way twice.
+
 =>
 
 export class WeaveBuilder extends Context.Service<WeaveBuilder>()(
@@ -83,9 +85,12 @@ export const buildCorpus = (corpus: LoomCorpusAst): WovenCorpus => {
   const nav = Array.map(toc.parts, wovenPart)
   const loose = Array.map(toc.loose, wovenEntry)
   const partOfSlug = partIndex(nav)
-  const pages = Array.getSomes(Array.map(modules, (module) =>
-    buildPage(module, indexes, partOfSlug),
-  ))
+  const pages = pipe(
+    Array.getSomes(
+      Array.map(modules, (module) => buildPage(module, indexes, partOfSlug)),
+    ),
+    Array.sort(inReadingOrder(navOrder(nav))),
+  )
   return WovenCorpusSchema.make({ nav, loose, pages })
 }
 
@@ -115,7 +120,7 @@ const sliceContent = (text: string, span: Span): string =>
 
 ## The navigation tree
 
-The navigation is the table of contents, projected into the woven model. `buildContents` has already read the corpus's frontmatter into ordered parts and their chapters, so the weave only turns each into its woven node. `wovenPart` maps a part — its number, empty for a numberless one, its name, and its chapters. `wovenEntry` maps a chapter to a `WovenNavEntry`: its number, its title, the slug its path opens, and the status and priority a board reads. `partIndex` inverts the finished tree into a slug-to-part-name lookup, the breadcrumb each page shows.
+The navigation is the table of contents, projected into the woven model. `buildContents` has already read the corpus's frontmatter into ordered parts and their chapters, so the weave only turns each into its woven node. `wovenPart` maps a part — its number, empty for a numberless one, its name, and its chapters. `wovenEntry` maps a chapter to a `WovenNavEntry`: its number, its title, the slug its path opens, and the status and priority a board reads. `partIndex` inverts the finished tree into a slug-to-part-name lookup, the breadcrumb each page shows, and `navOrder` inverts it again into the position each slug holds. `inReadingOrder` sorts pages by that position and falls back to the slug, so a chapter the navigation does not list still lands somewhere fixed.
 
 =>
 
@@ -143,6 +148,31 @@ const partIndex = (
       Array.map(part.chapters, (chapter) => [chapter.slug, part.name] as const),
     ),
   )
+
+const navOrder = (
+  nav: ReadonlyArray<WovenPart>,
+): ReadonlyMap<string, number> =>
+  new Map(
+    Array.map(
+      Array.flatMap(nav, (part) =>
+        Array.map(part.chapters, (chapter) => chapter.slug),
+      ),
+      (slug, at) => [slug, at] as const,
+    ),
+  )
+
+const inReadingOrder = (
+  order: ReadonlyMap<string, number>,
+): Order.Order<WovenPage> =>
+  Order.combineAll([
+    Order.mapInput(Order.Number, (page: WovenPage) =>
+      Option.getOrElse(
+        Option.fromNullishOr(order.get(page.slug)),
+        () => order.size,
+      ),
+    ),
+    Order.mapInput(Order.String, (page: WovenPage) => page.slug),
+  ])
 
 ## A chapter's title
 

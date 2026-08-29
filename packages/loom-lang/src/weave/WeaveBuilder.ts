@@ -1,4 +1,4 @@
-import { Array, Context, Effect, Layer, Match, Option, pipe } from 'effect'
+import { Array, Context, Effect, Layer, Match, Option, Order, pipe } from 'effect'
 import type { LoomSection } from '@athrio/loom-ast/LoomAst'
 import type {
   PreambleWeft,
@@ -56,9 +56,12 @@ export const buildCorpus = (corpus: LoomCorpusAst): WovenCorpus => {
   const nav = Array.map(toc.parts, wovenPart)
   const loose = Array.map(toc.loose, wovenEntry)
   const partOfSlug = partIndex(nav)
-  const pages = Array.getSomes(Array.map(modules, (module) =>
-    buildPage(module, indexes, partOfSlug),
-  ))
+  const pages = pipe(
+    Array.getSomes(
+      Array.map(modules, (module) => buildPage(module, indexes, partOfSlug)),
+    ),
+    Array.sort(inReadingOrder(navOrder(nav))),
+  )
   return WovenCorpusSchema.make({ nav, loose, pages })
 }
 
@@ -102,6 +105,31 @@ const partIndex = (
       Array.map(part.chapters, (chapter) => [chapter.slug, part.name] as const),
     ),
   )
+
+const navOrder = (
+  nav: ReadonlyArray<WovenPart>,
+): ReadonlyMap<string, number> =>
+  new Map(
+    Array.map(
+      Array.flatMap(nav, (part) =>
+        Array.map(part.chapters, (chapter) => chapter.slug),
+      ),
+      (slug, at) => [slug, at] as const,
+    ),
+  )
+
+const inReadingOrder = (
+  order: ReadonlyMap<string, number>,
+): Order.Order<WovenPage> =>
+  Order.combineAll([
+    Order.mapInput(Order.Number, (page: WovenPage) =>
+      Option.getOrElse(
+        Option.fromNullishOr(order.get(page.slug)),
+        () => order.size,
+      ),
+    ),
+    Order.mapInput(Order.String, (page: WovenPage) => page.slug),
+  ])
 
 const isBookRoot = (module: LoomModule): boolean =>
   Array.some(module.doc.sections, (section) => section.entries !== undefined)

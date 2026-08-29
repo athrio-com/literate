@@ -24,7 +24,7 @@
   },
   "scripts": {
     "build": "vite build",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "bun test",
     "prepack": "bun run build"
   },
